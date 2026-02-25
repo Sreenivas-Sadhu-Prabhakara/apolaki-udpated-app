@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Design System Kitchen Sink Light Mode</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f97316", // Aesthetic Orange for accents/CTAs
+                        "primary-dark": "#ea580c",
+                        "secondary": "#1e3a8a", // Corporate Navy Blue for headers/primary buttons
+                        "background-light": "#f0f7ff", // Very light sky blue
+                        "surface-light": "#ffffff",
+                        "navy-900": "#0f172a",
+                        "navy-800": "#1e293b", 
+                        "navy-700": "#334155",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.375rem", "lg": "0.625rem", "xl": "0.875rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light text-navy-800 font-display antialiased">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto shadow-2xl bg-background-light">
+<header class="flex items-center bg-surface-light/80 backdrop-blur-md p-4 sticky top-0 z-50 border-b border-blue-100">
+<button class="flex items-center justify-center p-2 rounded-full hover:bg-blue-50 transition-colors">
+<span class="material-symbols-outlined text-navy-900">arrow_back</span>
+</button>
+<h2 class="text-navy-900 text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-10">
+                Design System V1
+            </h2>
+</header>
+<main class="flex-1 flex flex-col p-4 gap-8">
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary">text_fields</span>
+<h3 class="text-lg font-bold text-secondary">Typography</h3>
+</div>
+<div class="space-y-3 p-5 rounded-xl bg-surface-light shadow-sm border border-blue-50/50">
+<h1 class="text-3xl font-bold text-navy-900">Heading 1</h1>
+<h2 class="text-2xl font-bold text-navy-800">Heading 2</h2>
+<h3 class="text-xl font-semibold text-primary">Heading 3 (Orange Accent)</h3>
+<p class="text-base text-slate-600 leading-relaxed">Body Large: Installation projects require precise coordination between banks and contractors.</p>
+<p class="text-sm text-slate-500">Caption: Last updated 2 mins ago</p>
+</div>
+</section>
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary">smart_button</span>
+<h3 class="text-lg font-bold text-secondary">Buttons</h3>
+</div>
+<div class="flex flex-col gap-3">
+<button class="flex w-full cursor-pointer items-center justify-center rounded-lg h-12 px-5 bg-primary hover:bg-primary-dark active:bg-orange-800 text-white text-base font-bold transition-all shadow-lg shadow-orange-500/20">
+<span class="material-symbols-outlined mr-2 text-[20px]">add_circle</span>
+                        Create Project (CTA)
+                    </button>
+<button class="flex w-full cursor-pointer items-center justify-center rounded-lg h-12 px-5 bg-secondary hover:bg-blue-900 active:bg-blue-950 text-white text-base font-bold transition-all shadow-md shadow-blue-900/10">
+<span class="material-symbols-outlined mr-2 text-[20px]">file_upload</span>
+                        Upload Documents (Primary)
+                    </button>
+<button class="flex w-full cursor-pointer items-center justify-center rounded-lg h-12 px-5 border border-slate-300 bg-white text-navy-700 hover:bg-slate-50 hover:border-slate-400 text-base font-semibold transition-all">
+                        View Details
+                    </button>
+<button class="flex w-full cursor-pointer items-center justify-center h-10 px-4 text-primary font-semibold text-sm hover:underline hover:text-primary-dark">
+                        Skip for now
+                    </button>
+</div>
+</section>
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary">input</span>
+<h3 class="text-lg font-bold text-secondary">Form Inputs</h3>
+</div>
+<div class="p-5 rounded-xl bg-surface-light shadow-sm border border-blue-50/50 space-y-4">
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-semibold text-navy-700">Project Name</label>
+<div class="relative">
+<input class="w-full h-11 rounded-lg border-slate-200 bg-slate-50 text-navy-900 px-4 text-sm focus:ring-2 focus:ring-secondary focus:border-secondary outline-none transition-all placeholder:text-slate-400" placeholder="e.g. Kitchen Renovation" type="text"/>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-semibold text-navy-700">Contractor Type</label>
+<div class="relative">
+<select class="w-full h-11 rounded-lg border-slate-200 bg-slate-50 text-navy-900 px-4 pr-10 text-sm focus:ring-2 focus:ring-secondary focus:border-secondary outline-none appearance-none cursor-pointer">
+<option>HVAC Specialist</option>
+<option>General Contractor</option>
+<option>Plumber</option>
+<option>Electrician</option>
+</select>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+<span class="material-symbols-outlined">expand_more</span>
+</span>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-semibold text-navy-700">Start Date</label>
+<div class="relative">
+<input class="w-full h-11 rounded-lg border-slate-200 bg-slate-50 text-navy-900 px-4 text-sm focus:ring-2 focus:ring-secondary focus:border-secondary outline-none" type="date" value="2023-10-24"/>
+</div>
+</div>
+</div>
+</section>
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary">verified</span>
+<h3 class="text-lg font-bold text-secondary">Status Badges</h3>
+</div>
+<div class="flex flex-wrap gap-3 p-5 rounded-xl bg-surface-light shadow-sm border border-blue-50/50">
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                        Approved
+                    </span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 text-xs font-bold border border-amber-200">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                        Pending Review
+                    </span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
+<span class="material-symbols-outlined text-[14px]">engineering</span>
+                        In Progress
+                    </span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 text-xs font-bold border border-rose-200">
+<span class="material-symbols-outlined text-[14px]">cancel</span>
+                        Declined
+                    </span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-200">
+<span class="material-symbols-outlined text-[14px]">account_balance</span>
+                        Financed
+                    </span>
+</div>
+</section>
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary">view_agenda</span>
+<h3 class="text-lg font-bold text-secondary">Marketplace Cards</h3>
+</div>
+<div class="flex flex-col rounded-xl overflow-hidden bg-surface-light shadow-sm border border-slate-200">
+<div class="h-32 bg-slate-200 relative">
+<img alt="Professional installer working on electrical panel" class="w-full h-full object-cover" data-alt="Close up of construction worker hands with tools" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-nUpy4Yg6AdTCuRmvf5OP3bCxNO2HeKsPMEsdJw8Dbl17Mf9IMFQ1uMxo00WQ0q6apfbe85_6qTeGS4z_Bu2uUWGWVourL2R7lmoYjy9CqWXbhb5BqxzqG_2Rg_zhkM6ccCQYutFwUoSukQzXswtr5tRl76F3RF4iyfYMwe7sRczE0XsD-2MfUeicOECZcT_gpvGxvwreaAXlmnP7fvdyYSPe1TmrkuJuoCPTwmDi34Dzh-HHLQS0wfyImY6sPJ0Gitcrsd7dYooQ"/>
+<div class="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2 py-1 rounded text-xs font-bold flex items-center gap-1 shadow-sm text-navy-900">
+<span class="material-symbols-outlined text-[14px] text-amber-500 fill-1">star</span>
+                            4.9
+                        </div>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h4 class="font-bold text-navy-900 text-lg">Apex Installations Inc.</h4>
+<span class="material-symbols-outlined text-blue-500 text-[20px]" title="Verified">verified</span>
+</div>
+<p class="text-sm text-slate-500 mb-4">Solar Panels • HVAC • Roofing</p>
+<div class="flex items-center justify-between mt-2 pt-3 border-t border-slate-100">
+<span class="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md">
+                                120+ Projects
+                            </span>
+<button class="text-sm font-bold text-primary hover:text-primary-dark transition-colors">View Profile</button>
+</div>
+</div>
+</div>
+<div class="flex flex-col p-5 rounded-xl bg-gradient-to-br from-white to-blue-50 border border-blue-100 shadow-sm relative overflow-hidden group">
+<div class="absolute -top-6 -right-6 p-4 opacity-[0.07] rotate-12 transition-transform group-hover:scale-110">
+<span class="material-symbols-outlined text-[120px] text-secondary">paid</span>
+</div>
+<div class="relative z-10">
+<div class="flex items-center gap-3 mb-4">
+<div class="size-10 rounded-full bg-white flex items-center justify-center shadow-md border border-blue-50">
+<span class="material-symbols-outlined text-secondary">account_balance</span>
+</div>
+<div>
+<h4 class="font-bold text-sm text-navy-900">Green Energy Loan</h4>
+<p class="text-xs text-slate-500">First Horizon Bank</p>
+</div>
+</div>
+<div class="flex gap-8 my-5">
+<div>
+<p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">APR</p>
+<p class="text-2xl font-bold text-secondary">4.5%</p>
+</div>
+<div>
+<p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Term</p>
+<p class="text-2xl font-bold text-secondary">60 Mo</p>
+</div>
+</div>
+<button class="w-full py-2.5 rounded-lg bg-primary hover:bg-primary-dark text-white font-bold text-sm transition-colors shadow-md shadow-orange-500/10">
+                            Apply Now
+                        </button>
+</div>
+</div>
+</section>
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary">person</span>
+<h3 class="text-lg font-bold text-secondary">User Profile Snippets</h3>
+</div>
+<div class="p-4 rounded-xl bg-surface-light shadow-sm flex items-center gap-4 border border-blue-50/50">
+<div class="relative">
+<img alt="Portrait of a smiling man in a suit" class="size-12 rounded-full object-cover ring-2 ring-slate-100" data-alt="Professional headshot of a user" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCd7LwkbbUvq9TFGB8M_59CpifuFh3dO4IrBeHUUSNfhbRGBat4Vu_rr3lo0UCxqlM_mfNgf1WIkr0YL7ty0NLXqrZBJqbkSsjKQmVbQbVoEgit6_NgMXdC-7h0YwvCg6LYk2uRWwRNP1muei0ySs74xgtJz44koKThFDLrsD7d3V6sMZhUZGkhE69Zkewf4UgTvXyfZkVePZpNy47H7lJXPEn90heolBTTtSX8pVYg5XWa45kUZQoiz6SCNMBvXDUq-nkZwI0HKqf2"/>
+<div class="absolute bottom-0 right-0 size-3 bg-emerald-500 rounded-full border-2 border-white"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="font-bold text-navy-900 truncate">Marcus Chen</h4>
+<p class="text-xs text-slate-500 truncate">Project Owner • San Francisco, CA</p>
+</div>
+<button class="size-8 flex items-center justify-center rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</section>
+<div class="h-12"></div>
+</main>
+</div>
+
+</body></html>

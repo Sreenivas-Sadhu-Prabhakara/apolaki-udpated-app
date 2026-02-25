@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Design System Kitchen Sink V1</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#136dec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101822",
+                        "surface-dark": "#1a2330",
+                        "surface-light": "#ffffff",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display antialiased">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto shadow-2xl bg-background-light dark:bg-background-dark">
+<!-- Header -->
+<header class="flex items-center bg-background-light dark:bg-background-dark p-4 sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800">
+<button class="flex items-center justify-center p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-white">arrow_back</span>
+</button>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-10">
+                Design System V1
+            </h2>
+</header>
+<main class="flex-1 flex flex-col p-4 gap-8">
+<!-- Typography Section -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">text_fields</span>
+<h3 class="text-lg font-bold">Typography</h3>
+</div>
+<div class="space-y-2 p-4 rounded-xl bg-surface-light dark:bg-surface-dark shadow-sm">
+<h1 class="text-3xl font-bold">Heading 1</h1>
+<h2 class="text-2xl font-bold">Heading 2</h2>
+<h3 class="text-xl font-semibold text-primary">Heading 3 (Accent)</h3>
+<p class="text-base text-slate-600 dark:text-slate-400">Body Large: Installation projects require precise coordination between banks and contractors.</p>
+<p class="text-sm text-slate-500 dark:text-slate-500">Caption: Last updated 2 mins ago</p>
+</div>
+</section>
+<!-- Buttons Section -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">smart_button</span>
+<h3 class="text-lg font-bold">Buttons</h3>
+</div>
+<div class="flex flex-col gap-3">
+<!-- Primary -->
+<button class="flex w-full cursor-pointer items-center justify-center rounded-lg h-12 px-5 bg-primary hover:bg-blue-600 active:bg-blue-700 text-white text-base font-bold transition-all shadow-lg shadow-blue-500/20">
+<span class="material-symbols-outlined mr-2 text-[20px]">add_circle</span>
+                        Create Project
+                    </button>
+<!-- Secondary -->
+<button class="flex w-full cursor-pointer items-center justify-center rounded-lg h-12 px-5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-900 dark:text-white text-base font-semibold transition-all">
+<span class="material-symbols-outlined mr-2 text-[20px]">file_upload</span>
+                        Upload Documents
+                    </button>
+<!-- Outline / Tertiary -->
+<button class="flex w-full cursor-pointer items-center justify-center rounded-lg h-12 px-5 border border-slate-300 dark:border-slate-700 bg-transparent text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600 text-base font-semibold transition-all">
+                        View Details
+                    </button>
+<!-- Ghost / Text Link -->
+<button class="flex w-full cursor-pointer items-center justify-center h-10 px-4 text-primary font-semibold text-sm hover:underline">
+                        Skip for now
+                    </button>
+</div>
+</section>
+<!-- Inputs Section -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">input</span>
+<h3 class="text-lg font-bold">Form Inputs</h3>
+</div>
+<div class="p-4 rounded-xl bg-surface-light dark:bg-surface-dark shadow-sm space-y-4">
+<!-- Text Input -->
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-medium text-slate-700 dark:text-slate-300">Project Name</label>
+<div class="relative">
+<input class="w-full h-11 rounded-lg border-slate-200 dark:border-slate-700 bg-background-light dark:bg-background-dark text-slate-900 dark:text-white px-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-400" placeholder="e.g. Kitchen Renovation" type="text"/>
+</div>
+</div>
+<!-- Dropdown -->
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-medium text-slate-700 dark:text-slate-300">Contractor Type</label>
+<div class="relative">
+<select class="w-full h-11 rounded-lg border-slate-200 dark:border-slate-700 bg-background-light dark:bg-background-dark text-slate-900 dark:text-white px-4 pr-10 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none appearance-none cursor-pointer">
+<option>HVAC Specialist</option>
+<option>General Contractor</option>
+<option>Plumber</option>
+<option>Electrician</option>
+</select>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+<span class="material-symbols-outlined">expand_more</span>
+</span>
+</div>
+</div>
+<!-- Date Picker Simulation -->
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-medium text-slate-700 dark:text-slate-300">Start Date</label>
+<div class="relative">
+<input class="w-full h-11 rounded-lg border-slate-200 dark:border-slate-700 bg-background-light dark:bg-background-dark text-slate-900 dark:text-white px-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none" type="date" value="2023-10-24"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Status Badges -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">verified</span>
+<h3 class="text-lg font-bold">Status Badges</h3>
+</div>
+<div class="flex flex-wrap gap-3 p-4 rounded-xl bg-surface-light dark:bg-surface-dark shadow-sm">
+<!-- Approved -->
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                        Approved
+                    </span>
+<!-- Pending -->
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold border border-amber-500/20">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                        Pending Review
+                    </span>
+<!-- In Progress -->
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold border border-primary/20">
+<span class="material-symbols-outlined text-[14px]">engineering</span>
+                        In Progress
+                    </span>
+<!-- Rejected -->
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold border border-rose-500/20">
+<span class="material-symbols-outlined text-[14px]">cancel</span>
+                        Declined
+                    </span>
+<!-- Bank Specific -->
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold border border-indigo-500/20">
+<span class="material-symbols-outlined text-[14px]">account_balance</span>
+                        Financed
+                    </span>
+</div>
+</section>
+<!-- Cards / Listings -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">view_agenda</span>
+<h3 class="text-lg font-bold">Marketplace Cards</h3>
+</div>
+<!-- Installer Card -->
+<div class="flex flex-col rounded-xl overflow-hidden bg-surface-light dark:bg-surface-dark shadow-sm border border-slate-200 dark:border-slate-800">
+<div class="h-32 bg-slate-200 dark:bg-slate-700 relative">
+<img alt="Professional installer working on electrical panel" class="w-full h-full object-cover opacity-90" data-alt="Close up of construction worker hands with tools" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-nUpy4Yg6AdTCuRmvf5OP3bCxNO2HeKsPMEsdJw8Dbl17Mf9IMFQ1uMxo00WQ0q6apfbe85_6qTeGS4z_Bu2uUWGWVourL2R7lmoYjy9CqWXbhb5BqxzqG_2Rg_zhkM6ccCQYutFwUoSukQzXswtr5tRl76F3RF4iyfYMwe7sRczE0XsD-2MfUeicOECZcT_gpvGxvwreaAXlmnP7fvdyYSPe1TmrkuJuoCPTwmDi34Dzh-HHLQS0wfyImY6sPJ0Gitcrsd7dYooQ"/>
+<div class="absolute top-3 right-3 bg-white/90 dark:bg-black/80 backdrop-blur-sm px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-amber-500 fill-1">star</span>
+                            4.9
+                        </div>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h4 class="font-bold text-slate-900 dark:text-white">Apex Installations Inc.</h4>
+<span class="material-symbols-outlined text-primary text-[20px]" title="Verified">verified</span>
+</div>
+<p class="text-sm text-slate-500 mb-3">Solar Panels • HVAC • Roofing</p>
+<div class="flex items-center justify-between mt-2">
+<span class="text-xs font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                                 120+ Projects
+                             </span>
+<button class="text-sm font-bold text-primary">View Profile</button>
+</div>
+</div>
+</div>
+<!-- Financial Offer Card -->
+<div class="flex flex-col p-5 rounded-xl bg-gradient-to-br from-surface-light to-slate-50 dark:from-surface-dark dark:to-[#151f2e] border border-primary/20 shadow-sm relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-[100px] text-primary">paid</span>
+</div>
+<div class="relative z-10">
+<div class="flex items-center gap-3 mb-3">
+<div class="size-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-primary">account_balance</span>
+</div>
+<div>
+<h4 class="font-bold text-sm text-slate-900 dark:text-white">Green Energy Loan</h4>
+<p class="text-xs text-slate-500">First Horizon Bank</p>
+</div>
+</div>
+<div class="flex gap-4 my-4">
+<div>
+<p class="text-xs text-slate-500 uppercase tracking-wide">APR</p>
+<p class="text-xl font-bold text-slate-900 dark:text-white">4.5%</p>
+</div>
+<div>
+<p class="text-xs text-slate-500 uppercase tracking-wide">Term</p>
+<p class="text-xl font-bold text-slate-900 dark:text-white">60 Mo</p>
+</div>
+</div>
+<button class="w-full py-2.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-bold text-sm transition-colors">
+                            Apply Now
+                        </button>
+</div>
+</div>
+</section>
+<!-- User Snippet -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">person</span>
+<h3 class="text-lg font-bold">User Profile Snippets</h3>
+</div>
+<div class="p-4 rounded-xl bg-surface-light dark:bg-surface-dark shadow-sm flex items-center gap-4">
+<div class="relative">
+<img alt="Portrait of a smiling man in a suit" class="size-12 rounded-full object-cover ring-2 ring-primary/20" data-alt="Professional headshot of a user" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCd7LwkbbUvq9TFGB8M_59CpifuFh3dO4IrBeHUUSNfhbRGBat4Vu_rr3lo0UCxqlM_mfNgf1WIkr0YL7ty0NLXqrZBJqbkSsjKQmVbQbVoEgit6_NgMXdC-7h0YwvCg6LYk2uRWwRNP1muei0ySs74xgtJz44koKThFDLrsD7d3V6sMZhUZGkhE69Zkewf4UgTvXyfZkVePZpNy47H7lJXPEn90heolBTTtSX8pVYg5XWa45kUZQoiz6SCNMBvXDUq-nkZwI0HKqf2"/>
+<div class="absolute bottom-0 right-0 size-3 bg-emerald-500 rounded-full border-2 border-surface-light dark:border-surface-dark"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="font-bold text-slate-900 dark:text-white truncate">Marcus Chen</h4>
+<p class="text-xs text-slate-500 truncate">Project Owner • San Francisco, CA</p>
+</div>
+<button class="size-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</section>
+<!-- Spacing -->
+<div class="h-12"></div>
+</main>
+</div>
+</body></html>
