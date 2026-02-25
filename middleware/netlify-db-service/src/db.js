@@ -96,7 +96,7 @@ function getSqlInstance() {
   return sql;
 }
 
-export { initializeDatabase, ensureInitialized };
+export { ensureInitialized, initializeDatabase };
 
 /**
  * User operations

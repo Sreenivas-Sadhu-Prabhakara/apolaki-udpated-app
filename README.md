@@ -9,9 +9,12 @@
 
 ## 🎯 Quick Navigation
 
-**New to this project?** 👉 Start with [docs/START_HERE.md](docs/START_HERE.md)
-
-**Looking for documentation?** 👉 See [docs/INDEX.md](docs/INDEX.md)
+| Need | Go To |
+|------|-------|
+| **Getting Started** | [SETUP_GUIDE.md](SETUP_GUIDE.md) - Setup & run locally |
+| **Deploying Code** | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Deploy to staging/production |
+| **Building UI** | [COMPONENTS.md](COMPONENTS.md) - UI components reference |
+| **Full Details** | [DOCUMENTATION.md](DOCUMENTATION.md) - Complete documentation |
 
 ---
 
