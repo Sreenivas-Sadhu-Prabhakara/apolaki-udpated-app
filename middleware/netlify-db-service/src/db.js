@@ -1,15 +1,50 @@
 /**
  * Database client for Netlify Neon
- * Handles all database operations using @netlify/neon
+ * Handles all database operations using @netlify/neon with PostgreSQL fallback
  */
 
 import { neon } from '@netlify/neon';
+import pkg from 'pg';
+const { Pool } = pkg;
 
-/**
- * Initialize Netlify Neon database connection
- * Uses NETLIFY_DATABASE_URL environment variable automatically
- */
-export const sql = neon();
+let sql;
+let initialized = false;
+
+// Lazy initialization function for database connection
+function initializeDatabase() {
+  if (initialized) return;
+  
+  const databaseUrl = process.env.NETLIFY_DATABASE_URL;
+  
+  if (!databaseUrl) {
+    throw new Error('Database URL not configured. Please set NETLIFY_DATABASE_URL environment variable.');
+  }
+
+  try {
+    // Try Netlify Neon first
+    sql = neon();
+  } catch (error) {
+    // Fallback to pg client for local development
+    console.log('Neon client failed, using pg client for local development');
+    const pool = new Pool({
+      connectionString: databaseUrl,
+    });
+
+    // Create a neon-like interface with the pg pool
+    sql = async (strings, ...values) => {
+      const query = strings.join('?');
+      const result = await pool.query(query, values);
+      return result.rows;
+    };
+  }
+  
+  initialized = true;
+}
+
+// Initialize on first import
+initializeDatabase();
+
+export { sql, initializeDatabase };
 
 /**
  * User operations

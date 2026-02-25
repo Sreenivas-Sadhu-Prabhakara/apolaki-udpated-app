@@ -3,16 +3,16 @@
  * Express server using Netlify Neon database
  */
 
-import cors from 'cors';
 import dotenv from 'dotenv';
+dotenv.config();
+
+import cors from 'cors';
 import express from 'express';
 import session from 'express-session';
 import passport from 'passport';
 import { initializePassport } from './auth/passport.js';
 import routes from './routes.js';
 import authRoutes from './routes/auth.js';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;

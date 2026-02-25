@@ -14,7 +14,7 @@ import {
     performanceData,
     solarInstallations,
     users
-} from '../db.js';
+} from './db.js';
 
 const router = express.Router();
 
