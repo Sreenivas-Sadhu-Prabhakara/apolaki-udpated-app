@@ -21,47 +21,25 @@ function initializeDatabase() {
     throw new Error('Database URL not configured. Please set NETLIFY_DATABASE_URL environment variable.');
   }
 
-  // For local development, use pg client directly
-  // For production with Netlify Neon, set NETLIFY_NEON=true in .env
-  const useNeon = process.env.NETLIFY_NEON === 'true';
-  
-  if (useNeon) {
-    try {
-      // Use Netlify Neon for serverless functions
-      sql = neon();
-      console.log('Using Netlify Neon database client');
-    } catch (error) {
-      console.log('Neon initialization failed, falling back to pg client');
-      // Fallback to pg client
-      pool = new Pool({
-        connectionString: databaseUrl,
-      });
-      sql = createPgSqlInterface();
-    }
-  } else {
-    // Use pg client for local development (default)
-    console.log('Using PostgreSQL pg client for local development');
+  try {
+    // Try Netlify Neon first
+    sql = neon();
+  } catch (error) {
+    // Fallback to pg client for local development
+    console.log('Neon client failed, using pg client for local development');
     pool = new Pool({
       connectionString: databaseUrl,
     });
-    sql = createPgSqlInterface();
+
+    // Create a neon-like interface with the pg pool
+    sql = async (strings, ...values) => {
+      const query = strings.join('?');
+      const result = await pool.query(query, values);
+      return result.rows;
+    };
   }
   
   initialized = true;
-}
-
-// Create a neon-like interface for pg client
-function createPgSqlInterface() {
-  return async (strings, ...values) => {
-    const query = strings.join('?');
-    try {
-      const result = await pool.query(query, values);
-      return result.rows;
-    } catch (error) {
-      console.error('Database query error:', error);
-      throw error;
-    }
-  };
 }
 
 // Ensure database is initialized when needed

@@ -3,8 +3,13 @@
  * Express server using Netlify Neon database
  */
 
+// Load environment variables FIRST, before anything else
 import dotenv from 'dotenv';
 dotenv.config();
+
+// Initialize database connection before importing routes
+import { initializeDatabase } from './db.js';
+initializeDatabase();
 
 import cors from 'cors';
 import express from 'express';
