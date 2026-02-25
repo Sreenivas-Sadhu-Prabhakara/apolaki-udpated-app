@@ -3,9 +3,9 @@
  * Handles login, signup, OAuth callbacks, and token management
  */
 
+import axios from 'axios';
 import express from 'express';
 import passport from 'passport';
-import axios from 'axios';
 import { extractTokenFromHeader, generateRefreshToken, generateSessionToken, generateToken, verifyToken } from '../auth/jwt.js';
 import { hashPassword, verifyPassword } from '../auth/password.js';
 import { auditLogs, oauthProviders, sessions, users } from '../db.js';

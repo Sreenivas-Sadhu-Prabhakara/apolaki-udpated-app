@@ -3,8 +3,8 @@
  * Custom implementation for Viber authentication
  */
 
-import { Strategy as PassportStrategy } from 'passport-strategy';
 import axios from 'axios';
+import { Strategy as PassportStrategy } from 'passport-strategy';
 
 export default class ViberStrategy extends PassportStrategy {
   constructor(options, verify) {
