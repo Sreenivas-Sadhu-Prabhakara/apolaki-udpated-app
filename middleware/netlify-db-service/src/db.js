@@ -44,6 +44,12 @@ function initializeDatabase() {
     pool = new Pool({
       connectionString: databaseUrl,
     });
+    
+    // Set schema search path to include auth schema
+    pool.on('connect', (client) => {
+      client.query('SET search_path TO auth, public');
+    });
+    
     sql = createPgSqlInterface();
   }
   
@@ -53,12 +59,22 @@ function initializeDatabase() {
 // Create a neon-like interface for pg client
 function createPgSqlInterface() {
   return async (strings, ...values) => {
-    const query = strings.join('?');
+    // Convert neon-style template literals to pg-style parameterized queries
+    // strings = ['INSERT INTO users (email) VALUES (', ')']
+    // values = ['test@example.com']
+    // Expected output: 'INSERT INTO users (email) VALUES ($1)'
+    let query = strings[0];
+    for (let i = 1; i < strings.length; i++) {
+      query += `$${i}${strings[i]}`;
+    }
+    
     try {
       const result = await pool.query(query, values);
       return result.rows;
     } catch (error) {
-      console.error('Database query error:', error);
+      console.error('Database query error:', error.message);
+      console.error('Query:', query);
+      console.error('Values:', values);
       throw error;
     }
   };
@@ -93,10 +109,11 @@ export const users = {
    */
   async create({ email, passwordHash, firstName, lastName, phone, profilePictureUrl, role = 'customer' }) {
     const sqlInstance = getSqlInstance();
+    const fullName = [firstName, lastName].filter(Boolean).join(' ');
     const result = await sqlInstance`
-      INSERT INTO users (email, password_hash, first_name, last_name, phone, profile_picture_url, role)
-      VALUES (${email}, ${passwordHash}, ${firstName}, ${lastName}, ${phone || null}, ${profilePictureUrl || null}, ${role})
-      RETURNING id, email, first_name, last_name, phone, profile_picture_url, role, active, created_at, updated_at
+      INSERT INTO users (email, username, password_hash, full_name, profile_image_url)
+      VALUES (${email}, ${email.split('@')[0]}, ${passwordHash}, ${fullName}, ${profilePictureUrl || null})
+      RETURNING id, email, username, full_name, profile_image_url, email_verified, created_at, updated_at
     `;
     return result[0];
   },
@@ -144,12 +161,14 @@ export const users = {
    */
   async update(id, { firstName, lastName, role, active }) {
     const sqlInstance = getSqlInstance();
+    let fullName = null;
+    if (firstName || lastName) {
+      fullName = [firstName, lastName].filter(Boolean).join(' ');
+    }
+    
     const result = await sqlInstance`
       UPDATE users 
-      SET first_name = COALESCE(${firstName}, first_name),
-          last_name = COALESCE(${lastName}, last_name),
-          role = COALESCE(${role}, role),
-          active = COALESCE(${active}, active),
+      SET full_name = COALESCE(${fullName}, full_name),
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ${id}
       RETURNING *
