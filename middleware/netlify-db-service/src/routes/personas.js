@@ -9,8 +9,8 @@
  */
 
 import express from 'express';
-import { auditLogs, breakGlassSessions, maintenanceLog, solarInstallations, users } from '../db.js';
 import { authenticateToken, authorizeRole } from '../auth/middleware.js';
+import { auditLogs, breakGlassSessions, ensureInitialized, maintenanceLog, solarInstallations, users } from '../db.js';
 
 const router = express.Router();
 
@@ -45,7 +45,7 @@ router.get('/me', authenticateToken, async (req, res) => {
         email: user.email,
         role,
         permissions,
-        fullName: user.full_name,
+        fullName: [user.first_name, user.last_name].filter(Boolean).join(' '),
       },
     });
   } catch (error) {
@@ -144,7 +144,7 @@ router.post('/dealer/commission', authenticateToken, authorizeRole('dealer', 'in
 router.get('/operations/alerts', authenticateToken, authorizeRole('operations', 'admin', 'superadmin'), async (req, res) => {
   try {
     // Return all pending/scheduled maintenance as "alerts"
-    const sqlInstance = (await import('../db.js')).default.sql;
+    const sqlInstance = ensureInitialized();
     // We don't have a direct getAll on maintenanceLog, so query via sql tagged template
     // Use the getByInstallation with a broad query - but let's just get all pending
     const alerts = await sqlInstance`
@@ -214,7 +214,7 @@ router.get('/admin/users', authenticateToken, authorizeRole('admin', 'superadmin
         id: u.id,
         email: u.email,
         role: u.role,
-        fullName: u.full_name,
+        fullName: [u.first_name, u.last_name].filter(Boolean).join(' '),
         active: u.active,
         createdAt: u.created_at,
       })),
@@ -240,7 +240,7 @@ router.put('/admin/users/:userId/role', authenticateToken, authorizeRole('admin'
       return res.status(403).json({ success: false, error: 'Only superadmin can assign superadmin role' });
     }
 
-    const sqlInstance = (await import('../db.js')).default.sql;
+    const sqlInstance = ensureInitialized();
     const result = await sqlInstance`
       UPDATE users SET role = ${role}, updated_at = CURRENT_TIMESTAMP
       WHERE id = ${req.params.userId}

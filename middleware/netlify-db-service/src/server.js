@@ -9,7 +9,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Import ConfigManager - centralizes all configuration
-import { configManager } from '../../config/config.manager.js';
+import { configManager } from '../../../config/config.manager.js';
 
 // Initialize configuration from environment variables
 configManager.initialize();

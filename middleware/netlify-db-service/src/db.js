@@ -41,6 +41,14 @@ function initializeDatabase() {
   } else {
     // Use pg client for local development (default)
     console.log('Using PostgreSQL pg client for local development');
+
+    // Clear PG* env vars that would override connectionString
+    // (e.g. when Neon sets PGHOST, PGUSER, PGDATABASE, PGPASSWORD in the shell)
+    delete process.env.PGHOST;
+    delete process.env.PGUSER;
+    delete process.env.PGDATABASE;
+    delete process.env.PGPASSWORD;
+
     pool = new Pool({
       connectionString: databaseUrl,
     });
@@ -109,11 +117,10 @@ export const users = {
    */
   async create({ email, passwordHash, firstName, lastName, phone, profilePictureUrl, role = 'customer' }) {
     const sqlInstance = getSqlInstance();
-    const fullName = [firstName, lastName].filter(Boolean).join(' ');
     const result = await sqlInstance`
-      INSERT INTO users (email, username, password_hash, full_name, first_name, last_name, phone, profile_image_url, role)
-      VALUES (${email}, ${email.split('@')[0]}, ${passwordHash}, ${fullName}, ${firstName || ''}, ${lastName || ''}, ${phone || null}, ${profilePictureUrl || null}, ${role})
-      RETURNING id, email, username, full_name, first_name, last_name, phone, profile_image_url, role, email_verified, active, created_at, updated_at
+      INSERT INTO users (email, password_hash, first_name, last_name, phone, profile_picture_url, role)
+      VALUES (${email}, ${passwordHash}, ${firstName || ''}, ${lastName || ''}, ${phone || null}, ${profilePictureUrl || null}, ${role})
+      RETURNING id, email, first_name, last_name, phone, profile_picture_url, role, active, created_at, updated_at
     `;
     return result[0];
   },
@@ -161,15 +168,10 @@ export const users = {
    */
   async update(id, { firstName, lastName, role, active }) {
     const sqlInstance = getSqlInstance();
-    let fullName = null;
-    if (firstName || lastName) {
-      fullName = [firstName, lastName].filter(Boolean).join(' ');
-    }
     
     const result = await sqlInstance`
       UPDATE users 
-      SET full_name = COALESCE(${fullName}, full_name),
-          first_name = COALESCE(${firstName || null}, first_name),
+      SET first_name = COALESCE(${firstName || null}, first_name),
           last_name = COALESCE(${lastName || null}, last_name),
           role = COALESCE(${role || null}, role),
           active = COALESCE(${active !== undefined ? active : null}, active),
@@ -886,7 +888,7 @@ export const breakGlassSessions = {
 };
 
 export default {
-  sql,
+  get sql() { return getSqlInstance(); },
   users,
   solarInstallations,
   monitoringData,
