@@ -46,6 +46,9 @@ All docs live in **[`docs/`](docs/)**. Pick the one you need:
 | [END_TO_END_SETUP_GUIDE](docs/END_TO_END_SETUP_GUIDE.md) | Detailed walkthrough of every service, start to finish |
 | [DOCUMENTATION](docs/DOCUMENTATION.md) | Master reference — architecture, API, DB schema, env vars |
 
+**Governance:**
+[Constitution](CONSTITUTION.md) · [Agent Guidelines](AGENTS.md)
+
 **Product roadmap:**
 [MVP PRD](docs/MVP.PRD.md) · [Phase 1](docs/PHASE1.PRD.md) · [Phase 2](docs/PHASE2.PRD.md)
 

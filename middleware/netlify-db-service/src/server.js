@@ -1,11 +1,29 @@
 /**
  * Apolaki Solar Platform - Netlify DB Service
  * Express server using Netlify Neon database
+ * Configuration is read from environment variables via ConfigManager
  */
 
 // Load environment variables FIRST, before anything else
 import dotenv from 'dotenv';
 dotenv.config();
+
+// Import ConfigManager - centralizes all configuration
+import { configManager } from '../../config/config.manager.js';
+
+// Initialize configuration from environment variables
+configManager.initialize();
+
+// Validate configuration - throws errors if invalid
+try {
+  configManager.validate();
+} catch (error) {
+  console.error('❌ Configuration validation failed:', error.message);
+  process.exit(1);
+}
+
+// Log safe configuration info (no secrets)
+console.log('Configuration:', configManager.logConfig());
 
 // Initialize database connection before importing routes
 import { initializeDatabase } from './db.js';
@@ -20,7 +38,16 @@ import routes from './routes.js';
 import authRoutes from './routes/auth.js';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+
+// Get configuration values
+const config = configManager.getAll();
+const PORT = config.app.port;
+const corsOptions = {
+  origin: config.cors.origin,
+  credentials: config.cors.credentials,
+  methods: config.cors.methods,
+  allowedHeaders: config.cors.allowedHeaders
+};
 
 // Initialize Passport strategies
 initializePassport();
@@ -30,24 +57,20 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // CORS configuration
-const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
-};
 app.use(cors(corsOptions));
 
 // Session configuration
+const sessionConfig = config.session;
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || 'your-session-secret-change-this',
+    secret: sessionConfig.secret,
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      secure: sessionConfig.secure,
+      httpOnly: sessionConfig.httpOnly,
+      sameSite: sessionConfig.sameSite,
+      maxAge: sessionConfig.maxAge
     }
   })
 );

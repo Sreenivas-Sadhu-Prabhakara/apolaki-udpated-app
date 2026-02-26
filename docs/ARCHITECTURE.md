@@ -6,48 +6,74 @@ Apolaki is a comprehensive solar energy management platform built with a modern,
 
 ## Architecture Pattern
 
-**Event-Driven Microservices Architecture** with clear separation of concerns:
-- **Frontend Layer**: Reactive framework (Vue.js/React)
-- **Middleware Layer**: Go-based microservices
-- **Backend Layer**: Database and external service integrations
+**Event-Driven Microservices Architecture** with clear separation of concerns and independent deployable units:
+- **Frontend Deployable** (frontend/): Reactive framework (Vue.js 3)
+- **Backend Deployable** (middleware/ + config/): Go-based microservices with configurable data layer
+- **Data Layer**: Database and external service integrations (configurable at runtime)
+- **Combined Deployment**: Netlify integration for unified deployment with separate build processes
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Frontend Layer (Vue/React)               │
-│  ┌──────────────┬──────────────┬──────────────────────────┐ │
-│  │   Dashboard  │  Marketplace │  Finance & Contracts    │ │
-│  │  Monitoring  │  Solar Options│  Assessment Tools      │ │
-│  └──────────────┴──────────────┴──────────────────────────┘ │
-└──────────────────────────────────────────────────────────────┘
-                            ↓ (REST/GraphQL APIs)
 ┌──────────────────────────────────────────────────────────────┐
-│              Middleware Layer (Go Microservices)             │
-│  ┌──────────────────────────────────────────────────────────┐│
-│  │  Solar Service (Domain-driven, expandable)              ││
-│  │  ├─ Monitoring & Analytics                              ││
-│  │  ├─ Marketplace Management                              ││
-│  │  ├─ Contract Management                                 ││
-│  │  └─ Finance & Assessment                                ││
-│  └──────────────────────────────────────────────────────────┘│
-│  ┌──────────────────────────────────────────────────────────┐│
-│  │  Service Mesh / API Gateway                             ││
-│  │  ├─ Authentication & Authorization                      ││
-│  │  ├─ Rate Limiting & Circuit Breaking                    ││
-│  │  └─ Request/Response Transformation                     ││
-│  └──────────────────────────────────────────────────────────┘│
+│          FRONTEND DEPLOYABLE (Independent Build & Deploy)    │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │              Vue.js 3 + Vite Application               │  │
+│  │  ┌──────────────┬──────────────┬──────────────────────┐ │  │
+│  │  │   Dashboard  │  Marketplace │  Finance & Contracts│ │  │
+│  │  │  Monitoring  │  Solar Options│  Assessment Tools  │ │  │
+│  │  └──────────────┴──────────────┴──────────────────────┘ │  │
+│  │  Deployment: Netlify Static, Vercel, or Docker         │  │
+│  └────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────┘
-                            ↓ (gRPC/REST)
+                      ↓ (REST/WebSocket APIs)
 ┌──────────────────────────────────────────────────────────────┐
-│                Backend Layer                                 │
-│  ┌──────────────┬──────────────┬──────────────────────────┐ │
-│  │   Database   │   Cache      │  Message Queue           │ │
-│  │  PostgreSQL  │   Redis      │  RabbitMQ/Kafka         │ │
-│  └──────────────┴──────────────┴──────────────────────────┘ │
-│  ┌──────────────┬──────────────┬──────────────────────────┐ │
-│  │  File Storage│  Search      │  Monitoring              │ │
-│  │  S3/Cloud    │  Elasticsearch│  Prometheus/ELK         │ │
-│  └──────────────┴──────────────┴──────────────────────────┘ │
+│         BACKEND DEPLOYABLE (Independent Build & Deploy)      │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │        Go Microservices (middleware/)                  │  │
+│  │  ┌────────────────────────────────────────────────────┐│  │
+│  │  │  Solar Service (Domain-driven, expandable)          ││  │
+│  │  │  ├─ Monitoring & Analytics                          ││  │
+│  │  │  ├─ Marketplace Management                          ││  │
+│  │  │  ├─ Contract Management                             ││  │
+│  │  │  └─ Finance & Assessment                            ││  │
+│  │  └────────────────────────────────────────────────────┘│  │
+│  │  ┌────────────────────────────────────────────────────┐│  │
+│  │  │  DB Service (Node.js, Auth & Data Access)          ││  │
+│  │  │  ├─ User Authentication & Sessions                 ││  │
+│  │  │  ├─ OAuth2 Integration                             ││  │
+│  │  │  ├─ Database Abstraction Layer                     ││  │
+│  │  │  └─ Configuration Management (★ NEW)               ││  │
+│  │  └────────────────────────────────────────────────────┘│  │
+│  │  ┌────────────────────────────────────────────────────┐│  │
+│  │  │  API Gateway & Middleware                           ││  │
+│  │  │  ├─ Authentication & Authorization                 ││  │
+│  │  │  ├─ Rate Limiting & Circuit Breaking               ││  │
+│  │  │  ├─ Request/Response Transformation                ││  │
+│  │  │  └─ Dynamic Configuration Loading (★ NEW)          ││  │
+│  │  └────────────────────────────────────────────────────┘│  │
+│  │  Deployment: Netlify Functions, Docker, K8s            │  │
+│  └────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────┘
+                      ↓ (gRPC/REST - Configurable)
+┌──────────────────────────────────────────────────────────────┐
+│      DATA LAYER (Configurable at Runtime - No Hardcoding)    │
+│  ┌──────────────┬──────────────┬──────────────────────────┐  │
+│  │   Database   │   Cache      │  Message Queue           │  │
+│  │  PostgreSQL  │   Redis      │  RabbitMQ/Kafka         │  │
+│  │ (Config-based)│ (Config-based)│ (Config-based)         │  │
+│  └──────────────┴──────────────┴──────────────────────────┘  │
+│  ┌──────────────┬──────────────┬──────────────────────────┐  │
+│  │  File Storage│  Search      │  Monitoring              │  │
+│  │  S3/Cloud    │  Elasticsearch│  Prometheus/ELK         │  │
+│  │(Config-based)│ (Config-based)│ (Config-based)          │  │
+│  └──────────────┴──────────────┴──────────────────────────┘  │
+└──────────────────────────────────────────────────────────────┘
+
+★ NEW: Configuration Management System
+  - Database settings loaded at startup (NOT from code/env files)
+  - Supports multiple sources: environment variables, config files, vault services
+  - ConfigManager abstraction for runtime flexibility
+  - Enables safe Netlify platform variable injection
+  - No secrets in code or .env files
 ```
 
 ## Frontend Layer
@@ -309,22 +335,144 @@ Core Tables:
 
 ## Deployment Strategy
 
+### Separate Deployables Architecture (★ NEW)
+
+The system now supports independent, separately deployable units for maximum flexibility and scalability:
+
+#### **Frontend Deployable**
+- **Location**: `frontend/` directory
+- **Build Output**: Static HTML, CSS, JavaScript bundles
+- **Build Tool**: Vite
+- **Deploy Target**: 
+  - Netlify Static Hosting
+  - Vercel
+  - AWS S3 + CloudFront
+  - Docker (for containerized deployment)
+- **Configuration**: Runtime environment variables for API endpoint
+- **Independence**: Can be deployed without touching backend
+
+#### **Backend Deployable** 
+- **Location**: `middleware/` + `config/` directories
+- **Build Output**: Docker image(s) or compiled Go binaries
+- **Languages**: Go (solar-service), Node.js (db-service)
+- **Deploy Target**:
+  - Netlify Functions (Functions + Env Vars)
+  - Docker + Kubernetes
+  - AWS Lambda + RDS
+  - Traditional VPS/servers
+- **Configuration**: ConfigManager system (★ NEW) - NO hardcoded settings
+- **Independence**: Can be deployed without touching frontend
+
+#### **Data Layer (Configurable at Runtime)**
+- **Location**: External services, not versioned with code
+- **Configuration Sources**:
+  - Environment variables (Netlify platform vars)
+  - Config files (Git-excluded `.env.local`)
+  - Vault services (Hashicorp Vault, AWS Secrets Manager)
+  - Runtime configuration API (future phase)
+- **Key Feature**: Database settings injected at startup, NOT in code
+- **Benefit**: Same container can run in dev, staging, or production with different configs
+
+### Configuration Management (★ NEW)
+
+**ConfigManager Pattern**: All database and service settings are loaded at application startup via the `ConfigManager` module:
+
+```
+Application Startup
+  ↓
+ConfigManager.Load()
+  ├─→ Check environment variables (PRIORITY: 1)
+  ├─→ Check vault service (PRIORITY: 2)
+  ├─→ Check config files (PRIORITY: 3)
+  ├─→ Apply defaults (PRIORITY: 4)
+  ↓
+Return Config object
+  ├─ Database: { Host, Port, User, Password, Name }
+  ├─ Cache: { Host, Port, TTL }
+  ├─ Security: { JWTSecret, HashCost }
+  └─ API: { Port, Timeout, RateLimit }
+  ↓
+Pass to service constructors
+  (NO GLOBAL STATE, pure dependency injection)
+```
+
+**Zero Hardcoding Policy**:
+- ❌ `const DB_HOST = "localhost"` (hardcoded)
+- ❌ `process.env.DB_HOST || "localhost"` (fallback to hardcoded)
+- ✅ `config.Database.Host` (injected, required)
+
 ### Container Orchestration
 - Docker for containerization
-- Kubernetes for orchestration
-- Helm charts for configuration management
+- Kubernetes for orchestration (optional, scalability feature)
+- Helm charts for configuration management (optional)
 
 ### CI/CD Pipeline
 ```
 Code Push → GitHub Actions → Build → Test → 
-Registry → Deploy to Dev → Deploy to Staging → 
-Approval → Deploy to Production
+  ├─ Frontend Build (npm run build → dist/)
+  ├─ Backend Build (docker build + go build)
+  ├─ Run Tests (npm test + go test)
+  └─ Security Scan
+  ↓
+Registry Push
+  ├─ Frontend: Netlify Static or artifact storage
+  ├─ Backend: Docker Registry (Docker Hub, ECR, etc.)
+  └─ Config: Netlify Env Vars, Vault, or config service
+  ↓
+Deploy to Dev → Deploy to Staging → Approval → Deploy to Production
 ```
 
 ### Environments
-- Development (local/dev cluster)
-- Staging (pre-production)
-- Production (multi-region ready)
+- **Development** (local/dev cluster)
+  - Config: `.env.local` (Git-excluded)
+  - Backend: `npm run dev` or `docker-compose up`
+  - Frontend: `npm run dev` (Vite dev server)
+  
+- **Staging** (pre-production, separate deployables)
+  - Config: Platform environment variables (Netlify)
+  - Backend: Docker image with staging environment
+  - Frontend: Built static assets
+  
+- **Production** (multi-region ready, separate deployables)
+  - Config: Vault service or encrypted platform variables
+  - Backend: Docker image with production environment
+  - Frontend: Built static assets with CDN
+
+### Netlify Combined Deployment
+
+**Single `netlify.toml` orchestrates both frontend and backend**:
+
+```toml
+# Build frontend as static site
+[build]
+  command = "npm run build:frontend"
+  publish = "frontend/dist"
+  
+# Backend runs as Netlify Functions
+[[functions]]
+  directory = "middleware/netlify-db-service/functions"
+  node_bundler = "esbuild"
+
+# Environment variables injected at deploy time
+# NO .env file needed - ALL config via platform variables
+[env.production]
+  DATABASE_URL = "..." (from Netlify dashboard)
+  REDIS_URL = "..."
+  JWT_SECRET = "..."
+  [env.production.functions]
+    NODE_ENV = "production"
+```
+
+**Deploy Process**:
+1. Commit to `main` → GitHub Actions triggered
+2. Run: `npm run test:all` (frontend + backend tests)
+3. Build frontend: `npm run build:frontend` → outputs to `frontend/dist`
+4. Build backend: Prepare functions for Netlify Functions
+5. Push to Netlify (via git or CLI)
+6. Netlify automatically:
+   - Deploys static frontend to CDN
+   - Deploys backend functions with configured environment variables
+   - Both live at same domain with `/api/*` routed to functions
 
 ## Error Handling & Resilience
 
