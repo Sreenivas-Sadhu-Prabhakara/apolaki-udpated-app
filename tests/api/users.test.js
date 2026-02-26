@@ -23,7 +23,7 @@ describe('API › Users', function () {
       expect(res.status).to.equal(200);
       expect(res.data).to.have.property('data');
       expect(res.data.data).to.be.an('array');
-      expect(res.data.data.length).to.be.at.least(5); // seeded users
+      expect(res.data.data.length).to.be.at.least(8); // seeded users
     });
   });
 

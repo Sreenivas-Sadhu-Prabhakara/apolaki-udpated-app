@@ -12,6 +12,9 @@ export const useUserStore = defineStore('user', () => {
   const connectedProviders = ref([])
 
   const isAuthenticated = computed(() => !!token.value && !!user.value)
+  const userRole = computed(() => user.value?.role || 'customer')
+
+  const hasRole = (...roles) => roles.includes(userRole.value)
 
   const login = async (email, password) => {
     loading.value = true
@@ -149,6 +152,8 @@ export const useUserStore = defineStore('user', () => {
     loading,
     error,
     isAuthenticated,
+    userRole,
+    hasRole,
     connectedProviders,
     login,
     signup,

@@ -25,7 +25,13 @@ CREATE TABLE IF NOT EXISTS auth.users (
     username VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255),
     full_name VARCHAR(255),
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    phone VARCHAR(20),
     profile_image_url TEXT,
+    profile_picture_url VARCHAR(500),
+    role VARCHAR(50) DEFAULT 'customer',
+    active BOOLEAN DEFAULT true,
     email_verified BOOLEAN DEFAULT false,
     email_verified_at TIMESTAMP,
     two_factor_enabled BOOLEAN DEFAULT false,
@@ -189,11 +195,15 @@ CREATE INDEX idx_chat_messages_platform ON public.chat_messages(platform);
 -- ============================================================================
 
 INSERT INTO auth.roles (name, description, permissions) VALUES
-('admin', 'Administrator with full access', '{"*": true}'),
-('installer', 'Solar installer', '{"installations:create": true, "installations:edit_own": true, "analytics:view": true}'),
+('admin', 'Organization administrator', '{"*": true}'),
+('installer', 'Solar installer (legacy)', '{"installations:create": true, "installations:edit_own": true, "analytics:view": true}'),
 ('homeowner', 'Residential solar owner', '{"installations:view_own": true, "trading:list": true, "trading:sell": true, "analytics:view_own": true}'),
 ('trader', 'Energy trader', '{"trading:buy": true, "trading:sell": true, "analytics:view": true}'),
-('support', 'Customer support', '{"users:view": true, "tickets:manage": true}')
+('support', 'Customer support', '{"users:view": true, "tickets:manage": true}'),
+('customer', 'End user / prosumer', '{"installations:view_own": true, "trading:list": true, "trading:sell": true, "analytics:view_own": true}'),
+('dealer', 'Installer / reseller', '{"installations:create": true, "installations:commission": true, "contracts:create": true}'),
+('operations', 'Field operations / maintenance', '{"alerts:view": true, "alerts:resolve": true, "maintenance:create": true, "maintenance:update": true}'),
+('superadmin', 'Break-glass emergency admin', '{"*": true, "break_glass:activate": true}')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================================

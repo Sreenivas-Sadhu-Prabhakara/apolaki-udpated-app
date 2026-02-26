@@ -16,6 +16,18 @@
           <li><router-link to="/monitoring" class="nav-link text-white hover:text-yellow-100 transition">Monitoring</router-link></li>
           <li><router-link to="/marketplace" class="nav-link text-white hover:text-yellow-100 transition">Marketplace</router-link></li>
           <li><router-link to="/assessment" class="nav-link text-white hover:text-yellow-100 transition">Assessment</router-link></li>
+          <li v-if="userStore.hasRole('dealer', 'installer', 'admin', 'superadmin')">
+            <router-link to="/dealer" class="nav-link text-white hover:text-yellow-100 transition">🔧 Dealer</router-link>
+          </li>
+          <li v-if="userStore.hasRole('operations', 'admin', 'superadmin')">
+            <router-link to="/operations" class="nav-link text-white hover:text-yellow-100 transition">🛠️ Operations</router-link>
+          </li>
+          <li v-if="userStore.hasRole('admin', 'superadmin')">
+            <router-link to="/admin" class="nav-link text-white hover:text-yellow-100 transition">👤 Admin</router-link>
+          </li>
+          <li v-if="userStore.hasRole('superadmin')">
+            <router-link to="/superadmin" class="nav-link text-red-200 hover:text-red-100 transition font-bold">🚨 Break-Glass</router-link>
+          </li>
         </ul>
 
         <!-- User Menu -->
@@ -223,53 +235,5 @@ const logout = () => {
     padding: 0.5rem 1rem !important;
     font-size: 0.875rem;
   }
-}
-</style>
-
-.nav-user {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.main-content {
-  flex: 1;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 2rem;
-  width: 100%;
-}
-
-.footer {
-  margin-top: auto;
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s;
-}
-
-.btn-light {
-  background-color: white;
-  color: #1f2937;
-}
-
-.btn-light:hover {
-  background-color: #f3f4f6;
-}
-
-.btn-outline-light {
-  border: 2px solid white;
-  color: white;
-  background-color: transparent;
-}
-
-.btn-outline-light:hover {
-  background-color: white;
-  color: #1f2937;
 }
 </style>

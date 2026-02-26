@@ -45,9 +45,9 @@ function initializeDatabase() {
       connectionString: databaseUrl,
     });
     
-    // Set schema search path to include auth schema
+    // Use public schema for all queries (unified with seeds and schema.sql)
     pool.on('connect', (client) => {
-      client.query('SET search_path TO auth, public');
+      client.query('SET search_path TO public');
     });
     
     sql = createPgSqlInterface();
@@ -111,9 +111,9 @@ export const users = {
     const sqlInstance = getSqlInstance();
     const fullName = [firstName, lastName].filter(Boolean).join(' ');
     const result = await sqlInstance`
-      INSERT INTO users (email, username, password_hash, full_name, profile_image_url)
-      VALUES (${email}, ${email.split('@')[0]}, ${passwordHash}, ${fullName}, ${profilePictureUrl || null})
-      RETURNING id, email, username, full_name, profile_image_url, email_verified, created_at, updated_at
+      INSERT INTO users (email, username, password_hash, full_name, first_name, last_name, phone, profile_image_url, role)
+      VALUES (${email}, ${email.split('@')[0]}, ${passwordHash}, ${fullName}, ${firstName || ''}, ${lastName || ''}, ${phone || null}, ${profilePictureUrl || null}, ${role})
+      RETURNING id, email, username, full_name, first_name, last_name, phone, profile_image_url, role, email_verified, active, created_at, updated_at
     `;
     return result[0];
   },
@@ -169,6 +169,10 @@ export const users = {
     const result = await sqlInstance`
       UPDATE users 
       SET full_name = COALESCE(${fullName}, full_name),
+          first_name = COALESCE(${firstName || null}, first_name),
+          last_name = COALESCE(${lastName || null}, last_name),
+          role = COALESCE(${role || null}, role),
+          active = COALESCE(${active !== undefined ? active : null}, active),
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ${id}
       RETURNING *

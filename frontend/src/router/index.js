@@ -49,6 +49,31 @@ const routes = [
     name: 'Assessment',
     component: () => import('../views/Assessment.vue'),
     meta: { requiresAuth: true }
+  },
+  // ── Persona Routes ─────────────────────────────────────────────
+  {
+    path: '/dealer',
+    name: 'DealerPortal',
+    component: () => import('../views/DealerPortal.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'] }
+  },
+  {
+    path: '/operations',
+    name: 'OperationsCenter',
+    component: () => import('../views/OperationsCenter.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['operations', 'admin', 'superadmin'] }
+  },
+  {
+    path: '/admin',
+    name: 'AdminConsole',
+    component: () => import('../views/AdminConsole.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['admin', 'superadmin'] }
+  },
+  {
+    path: '/superadmin',
+    name: 'SuperAdminConsole',
+    component: () => import('../views/SuperAdminConsole.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['superadmin'] }
   }
 ]
 
@@ -57,13 +82,16 @@ const router = createRouter({
   routes
 })
 
-// Navigation guard for authentication
+// Navigation guard for authentication & role-based access
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
-  
+
   if (to.meta.requiresAuth && !userStore.isAuthenticated) {
     next('/login')
   } else if ((to.name === 'Login' || to.name === 'Signup') && userStore.isAuthenticated) {
+    next('/')
+  } else if (to.meta.allowedRoles && !to.meta.allowedRoles.includes(userStore.userRole)) {
+    // Role-based guard: redirect to dashboard if user lacks permission
     next('/')
   } else {
     next()
