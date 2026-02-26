@@ -754,3 +754,179 @@ Data Layer:
 **Status**: Strategic Vision  
 **Target Approval**: Q2 2026  
 **Execution Start**: Q1 2027
+
+# Personas
+
+To align Phase 2 features with real-world users and stakeholders, define the following personas. Each persona includes goals, pain points, success metrics, and the primary flows they interact with.
+
+## Platform Persona (Product / Platform Owner)
+- Goal: Grow active user base across domains, ensure platform reliability, increase revenue via trading & enterprise licenses.
+- Pain Points: Multi-region compliance, scaling marketplace liquidity, integrating heterogeneous energy assets.
+- Success Metrics: MAU, uptime (99.95%+), transaction volume, enterprise deployments.
+- Primary Flows: Global configuration, monitoring platform health, enterprise onboarding, marketplace governance.
+
+## User Persona (Prosumer / Residential Commercial User)
+- Goal: Monitor generation/consumption, sell excess energy, reduce bills, participate in community pools.
+- Pain Points: Complex pricing, unpredictable production, battery degradation concerns.
+- Success Metrics: Reduced energy costs, revenue from trades, battery lifecycle metrics.
+- Primary Flows: Onboarding -> Device registration -> Monitoring dashboard -> List energy for sale -> Accept trades -> Billing & payouts.
+
+## Dealer Persona (Installer / Reseller)
+- Goal: Efficiently install and commission systems, manage quotes and contracts, close sales and service tickets.
+- Pain Points: Time-consuming commissioning, manual paperwork, delayed payments.
+- Success Metrics: Installation throughput, quote-to-install conversion, SLA compliance.
+- Primary Flows: Lead -> Quote -> Contract & financing -> Schedule installation -> Commissioning -> Handover -> Post-sale service.
+
+## Operations Persona (Field Operations / Maintenance Engineer)
+- Goal: Rapidly detect and resolve faults, optimize fleet performance, manage scheduled maintenance.
+- Pain Points: Alert fatigue, noisy telemetry, coordinating field crews.
+- Success Metrics: Mean time to repair (MTTR), number of prevented failures, maintenance SLAs.
+- Primary Flows: Alert triage -> Diagnostics -> Dispatch crew -> Apply fix -> Verify & close.
+
+## Admin Persona (Organization Admin)
+- Goal: Manage users, roles, and organization-level settings; oversee billing and compliance.
+- Pain Points: Granular RBAC needs, auditability, multi-tenant isolation.
+- Success Metrics: Admin task completion time, audit log completeness, security incidents.
+- Primary Flows: Invite users -> Assign roles -> Configure org settings -> Review audits & billing.
+
+## Super Admin Persona (Break-Glass Emergency Admin)
+- Goal: Perform critical interventions in emergencies across tenants (security incidents, mass outages).
+- Pain Points: High-risk operations, accountability, restricting access to only when necessary.
+- Success Metrics: Speed and correctness of emergency actions, post-incident audit clarity.
+- Primary Flows (Break-Glass): Declare emergency -> Temporary elevated access with MFA & justification -> Execute emergency actions -> Revoke access -> Post-incident review and audit logging.
+
+# Curated User Flows
+
+Below are concise, step-by-step flow outlines for the most important user journeys in Phase 2. These should be used to drive UI design, API endpoints, test cases, and acceptance criteria.
+
+## 1) New Prosumer Onboarding (User)
+1. User signs up (email/SSO) -> Accepts TOS & chooses region/currency.
+2. Add site (address) -> Select system type (solar/wind/hydro) -> Add device(s)/serial numbers.
+3. Verify device telemetry (pairing via QR/OTP) -> Initial health check.
+4. Configure billing & payout method -> Set trading preferences (auto-sell rules, price limits).
+5. Complete onboarding -> Landing dashboard shows live production & estimated revenue.
+
+Acceptance: site appears in dashboard, telemetry streams within 5 minutes, default trading rules applied.
+
+## 2) Dealer Installation & Commissioning (Dealer)
+1. Dealer creates installation order -> Uploads quote & contract.
+2. Schedule installation -> Field engineer uses mobile app to scan devices and run commissioning checklist.
+3. Commissioning runs diagnostics -> System registers with platform -> Owner notified for handover.
+4. Post-install validation period (7 days) -> Dealer marks install as complete -> Payment milestone initiated.
+
+Acceptance: Commissioning checklist 100% complete, telemetry signal OK, documents attached.
+
+## 3) Operations Incident Workflow (Operations)
+1. Automated alert triggered (telemetry anomaly) -> Alert routed to operations queue.
+2. Triage: operations engineer reviews telemetry & diagnostics -> Assign severity.
+3. If remote remedy available, apply configuration fix -> Monitor for recovery.
+4. If on-site required, dispatch crew -> Record work order and resolution.
+5. Close incident -> Root-cause analysis & preventive action scheduled.
+
+Acceptance: Incident closed with RCA attached, MTTR within SLA.
+
+## 4) Marketplace Trading Flow (User / Platform)
+1. User lists excess capacity with price & time window -> Order posted to marketplace.
+2. Matching engine finds buyer(s) -> Notification sent -> Smart contract prepared.
+3. Buyer accepts or auction completes -> Settlement orchestrated via settlement layer.
+4. Energy delivery verified by metering -> Funds released to seller minus fees.
+5. Trade recorded on ledger, user sees P&L in analytics.
+
+Acceptance: Settlement completed within agreed SLA and trade appears in history.
+
+## 5) Admin & Break-Glass Flow (Admin / Super Admin)
+1. Admin handles normal user & org management tasks via RBAC UI.
+2. For emergencies, super admin initiates break-glass with multi-factor unlock and justification.
+3. Emergency actions are scoped, logged, and time-limited.
+4. After remediation, actions are reviewed; access revoked; incident logged in system.
+
+Acceptance: Break-glass events require justification, are immutable in audit logs, and expire automatically.
+
+# Updated End-to-End System Flow (High Level)
+
+This sequence shows system components and key handoffs for a combined scenario: a dealer installs a site for a prosumer who then lists energy to the marketplace and a trading match causes settlement.
+
+1. Dealer creates installation order via Dealer Portal (frontend -> backend API).
+2. Field engineer commissions device (mobile app -> device gateway -> telemetry ingestion service).
+3. Telemetry stored in time-series DB and indexed in event store; monitoring service evaluates KPIs.
+4. Owner configures trading preferences in UI -> Trading service stores limits & policies.
+5. Excess energy detected by ingestion service -> Optimization service predicts surplus -> Trading service auto-lists.
+6. Marketplace matching engine finds buyer -> Smart contract prepared in blockchain service (or ledger service).
+7. Meter verification executed by verification service -> Settlement initiated in settlement service (payments gateway).
+8. Accounting service logs revenue & updates user balance -> Payout scheduled to user’s payout method.
+9. Notifications & receipts sent (email/sms/push) -> Analytics updated for platform metrics.
+10. Auditing & compliance module records immutable transaction and administrative actions.
+
+# Testing Plan (End-to-End + CI)
+
+Goals: Validate full stack flows (frontend, backend, integrations) for key journeys: onboarding, commissioning, trading, incident management, and admin break-glass.
+
+Test types and targets:
+- Unit tests: all services (goal 90%+ coverage for core modules).
+- Integration tests: trading engine, settlement layer, device ingestion, and external APIs (mocked where necessary).
+- End-to-end tests: User onboarding -> Commissioning -> Trading -> Settlement.
+- Security tests: RBAC, break-glass controls, MFA, audit log immutability.
+- Performance tests: load tests for ingestion & trading (target API calls/day scaling validation).
+
+Local E2E checklist (developer):
+1. Start local services (see /dev-setup.sh and scripts/dev scripts).
+2. Seed demo data (seeds/ README) -> run seeds script.
+3. Start frontend dev server: cd frontend && npm install && npm run dev.
+4. Run e2e tests: cd tests && npm install && npm run e2e (uses helpers/driverFactory.js).
+5. Validate results, fix failures, and re-run.
+
+CI pipeline (recommended):
+- Run unit & lint checks.
+- Build backend & run integration tests in containers (use docker-compose.test).
+- Build frontend and run headless e2e tests (Playwright / Cypress in CI).
+- On success, publish artifacts and trigger Netlify deploy for frontend and appropriate deployment for backend (helm/k8s).
+
+Sample GitHub Actions job snippet (concept):
+- name: CI Build & E2E
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+    - run: npm ci && npm run lint && npm test
+    - name: Build frontend
+      working-directory: frontend
+      run: npm ci && npm run build
+    - name: Run e2e tests
+      run: npm --prefix tests ci && npm --prefix tests run e2e
+    - name: Deploy to Netlify
+      if: success()
+      uses: netlify/actions/cli@master
+      with:
+        args: deploy --dir=frontend/dist --prod
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+# Netlify Deployment & Staging Strategy
+
+We already have a `netlify.toml` at the repo root. Recommended deployment pattern:
+
+1. Staging site: Deploy from `develop` branch to Netlify staging site. Set NETLIFY_SITE_ID_STAGING.
+2. Production site: Deploy from `main` (or `production`) branch to production Netlify site. Set NETLIFY_SITE_ID.
+3. Use GitHub Actions or Netlify native Git integration. Prefer GitHub Actions for coordinated backend->frontend deploys.
+
+Netlify CI notes:
+- Build command: cd frontend && npm ci && npm run build
+- Publish directory: frontend/dist
+- Environment variables: API_BASE_URL (staging/prod), REGION, FEATURE_FLAGS
+- For atomic releases, deploy backend first (helm apply), then frontend (Netlify deploy) so UI points at healthy APIs.
+
+# E2E Test Cases (short list)
+1. Onboarding happy path: signup -> add site -> device telemetry visible.
+2. Dealer commissioning: create install order -> commission devices -> telemetry OK.
+3. Trading happy path: auto-list surplus -> match buyer -> settlement success.
+4. Incident response: telemetry anomaly -> operations triage -> remote fix.
+5. Admin break-glass: super admin activates emergency -> performs scoped action -> logs captured.
+
+# Next Steps / Actions
+- Product: review personas & acceptance criteria, confirm metrics and SLAs.
+- Eng: convert curated flows into API contracts and UI wireframes; implement end-to-end tests for each flow.
+- QA: create test data sets and schedule load tests for ingestion/trading.
+- DevOps: add GitHub Actions secrets for Netlify and configure staging/production sites.

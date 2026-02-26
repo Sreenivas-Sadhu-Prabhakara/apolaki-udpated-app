@@ -1,82 +1,105 @@
-# Apolaki Solar Platform - Master Documentation
+# Apolaki Solar Platform — Complete System Documentation
+
+**Version**: 2.0  
+**Status**: Production-Ready  
+**Last Updated**: February 26, 2026  
+**Authoritative Source**: Use this file as your single reference
+
+---
 
 ## Quick Navigation
 
-- **Getting Started?** → See [SETUP_GUIDE.md](SETUP_GUIDE.md)
-- **Deploying Code?** → See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
-- **Building UI?** → See [COMPONENTS.md](COMPONENTS.md)
-- **Need Details?** → See section below
+**👤 Getting Started?**
+- [System Overview](#overview)
+- [Quick Start](#quick-start)
+- [Prerequisites](#prerequisites)
+
+**💻 Building Code?**
+- [Development Setup](#development-setup)
+- [Technology Stack](#technology-stack)
+- [Code Guidelines → AGENTS.md](AGENTS.md)
+
+**🚀 Deploying?**
+- [Deployment Architecture](#deployment-architecture)
+- [Configuration Management](#configuration-management)
+- [Environment Variables](#environment-variables)
+
+**🔐 Setting Up Security?**
+- [Authentication](#authentication)
+- [OWASP Compliance → AGENTS.md](AGENTS.md)
+
+**📊 Monitoring?**
+- [Logging & Monitoring](#logging-monitoring)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
-## Table of Contents
+## Overview
 
-1. [Project Overview](#project-overview)
-2. [Architecture](#architecture)
-3. [Technology Stack](#technology-stack)
-4. [Project Structure](#project-structure)
-5. [Backend Services](#backend-services)
-6. [Frontend Application](#frontend-application)
-7. [Database](#database)
-8. [API Reference](#api-reference)
-9. [Authentication](#authentication)
-10. [Monitoring & Troubleshooting](#monitoring--troubleshooting)
+### What is Apolaki?
 
----
+Apolaki is an enterprise-grade **Solar Energy Management Platform** with:
+- Real-time monitoring of solar installations
+- Financial assessment & ROI calculations
+- Digital marketplace for solar products
+- Contract management & e-signatures
+- Multi-provider OAuth authentication
 
-## Project Overview
+### Architecture Pattern
 
-### What is Apolaki Solar?
+**Three-Tier Separate Deployables**:
+1. **Frontend** (Vue.js 3) - Independent deployable to CDN/Netlify/Vercel
+2. **Backend** (Node.js + Go) - Independent deployable to FaaS/Docker/Kubernetes
+3. **Data** (PostgreSQL + Redis) - External services with runtime configuration
 
-Apolaki Solar Platform is a comprehensive web-based application for managing solar energy installations, monitoring systems, conducting solar assessments, and facilitating solar product marketplace transactions.
-
-### Key Features
-
-- **Installation Management**: Create and manage solar installations
-- **Real-time Monitoring**: Track system performance and energy generation
-- **Solar Assessment**: Calculate solar potential for properties
-- **Marketplace**: Browse and purchase solar products
-- **User Management**: OAuth-based authentication with Google, GitHub, Viber, Telegram
-- **Analytics Dashboard**: Performance metrics and KPIs
-- **API-driven**: RESTful APIs for all services
-
-### Target Users
-
-- Solar installers and engineers
-- Property owners considering solar
-- Solar product retailers
-- System administrators
+**Key Feature**: Same backend container code runs in dev/staging/production with different configuration (ConfigManager pattern).
 
 ---
 
-## Architecture
+## Prerequisites
 
-### High-Level Overview
+### System Requirements
+- macOS 13+, Linux (Ubuntu 20+), or Windows 10+ with WSL2
+- 8GB RAM minimum, 16GB recommended
+- 10GB disk space
 
+### Required Software
+- **Node.js**: 18+ (https://nodejs.org/)
+- **PostgreSQL**: 15+ (https://www.postgresql.org/download/)
+- **Git**: Latest version
+- **Docker** (optional but recommended)
+
+### Optional Tools
+- VS Code with Vue, JavaScript, Go extensions
+- Postman/Insomnia for API testing
+
+---
+
+## Quick Start
+
+```bash
+# 1. Clone repository
+git clone <repo-url>
+cd apolaki-updated-app
+
+# 2. Install all dependencies
+npm install
+
+# 3. Set environment variables
+cp config/env/.env.example .env.local
+# Edit .env.local with your PostgreSQL credentials
+
+# 4. Initialize database
+npm run db:reset
+npm run db:migrate
+
+# 5. Start everything
+npm run dev
+
+# Access:
+# Frontend: http://localhost:5173
+# Backend: http://localhost:3000
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Frontend (Vue.js 3)                   │
-│  ─ Dashboard, Installations, Monitoring, Assessment      │
-│  ─ Marketplace, User Profile, Settings                   │
-└──────────────────────┬──────────────────────────────────┘
-                       │ (HTTP/HTTPS)
-        ┌──────────────┼──────────────┐
-        │              │              │
-    ┌───▼────┐  ┌──────▼──────┐  ┌───▼────────┐
-    │Database│  │  API Server │  │   Solar    │
-    │Service │  │  (Node.js)  │  │   Service  │
-    │(Netlify)   │             │  │    (Go)    │
-    └────────┘  └─────────────┘  └────────────┘
-        │              │              │
-    PostgreSQL    Express.js      External APIs
-```
-
-### Services
-
-1. **Frontend**: Vue.js 3 SPA with Vite
-2. **Database Service**: Node.js middleware with PostgreSQL
-3. **Solar Service**: Go microservice for calculations
-4. **Authentication**: OAuth 2.0 (Google, GitHub, Viber, Telegram)
 
 ---
 
@@ -84,32 +107,25 @@ Apolaki Solar Platform is a comprehensive web-based application for managing sol
 
 ### Frontend
 - **Framework**: Vue.js 3 (Composition API)
-- **Build Tool**: Vite 5
-- **State Management**: Pinia
-- **HTTP Client**: Axios
-- **Styling**: CSS3 + Tailwind utilities
-- **Node.js**: >= 18.0.0
+- **Build Tool**: Vite
+- **State**: Pinia
+- **Styling**: Tailwind CSS
+- **HTTP**: Axios
+- **Real-time**: WebSocket
 
 ### Backend
-- **Runtime**: Node.js 18+ (Database Service)
-- **Framework**: Express.js
-- **Language**: Go (Solar Service)
-- **Database**: PostgreSQL 14+
-- **ORM**: pg-promise or direct SQL
+- **Database Service**: Node.js + Express
+- **Solar Service**: Go 1.21+
+- **Database**: PostgreSQL 15+
+- **Cache**: Redis (optional)
+- **Auth**: JWT + Passport.js
+- **Testing**: Jest (Node), Testify (Go)
 
 ### Infrastructure
-- **Containerization**: Docker
+- **Containers**: Docker & Docker Compose
 - **Orchestration**: Kubernetes + Helm
 - **CI/CD**: GitHub Actions
-- **Cloud**: AWS / Digital Ocean / Self-hosted
 - **Monitoring**: Prometheus + Grafana (optional)
-
-### Development Tools
-- **Package Manager**: npm
-- **Version Control**: Git
-- **Code Quality**: ESLint
-- **Testing**: Vitest, Jest
-- **Documentation**: Markdown
 
 ---
 
@@ -117,397 +133,881 @@ Apolaki Solar Platform is a comprehensive web-based application for managing sol
 
 ```
 apolaki-updated-app/
-├── frontend/                    # Vue.js 3 application
+├── README.md                       Main entry point
+├── DOCUMENTATION.md               THIS FILE (single source of truth)
+├── AGENTS.md                      AI agent operating guidelines
+├── CONSTITUTION.md                Governance & principles
+├── CONTRIBUTING.md                Contribution process
+│
+├── frontend/                      Vue.js 3 (Independent Build)
 │   ├── src/
-│   │   ├── components/         # Reusable UI components
-│   │   ├── views/              # Page-level components
-│   │   ├── stores/             # Pinia state stores
-│   │   ├── services/           # API services
-│   │   ├── router/             # Vue Router config
-│   │   ├── styles/             # Global styles
-│   │   ├── App.vue             # Root component
-│   │   └── main.js             # Entry point
-│   ├── public/                 # Static assets
+│   │   ├── components/           UI components
+│   │   ├── pages/                Page components
+│   │   ├── stores/               Pinia state
+│   │   ├── services/             API client
+│   │   ├── composables/          Reusable logic
+│   │   └── styles/               Global styles
 │   ├── package.json
 │   ├── vite.config.js
 │   └── Dockerfile
 │
-├── middleware/
-│   ├── netlify-db-service/     # Database API service (Node.js)
+├── middleware/                    Backend Services (Independent Build)
+│   ├── netlify-db-service/        Node.js Database & Auth Service
 │   │   ├── src/
-│   │   │   ├── db.js           # Database connection
-│   │   │   ├── server.js       # Express server
-│   │   │   ├── routes/         # API routes
-│   │   │   └── middleware/     # Custom middleware
+│   │   │   ├── routes/           HTTP endpoints
+│   │   │   ├── services/         Business logic
+│   │   │   ├── models/           Database models
+│   │   │   ├── middleware/       Express middleware
+│   │   │   └── config/           ConfigManager
 │   │   ├── package.json
-│   │   ├── .env.example
 │   │   └── Dockerfile
 │   │
-│   └── solar-service/          # Solar calculations (Go)
-│       ├── main.go
-│       ├── handlers/
+│   └── solar-service/             Go Microservice
+│       ├── cmd/                   Entry point
+│       ├── internal/              Internal packages
 │       └── Dockerfile
 │
-├── config/                     # Configuration files
-│   ├── docker-compose.yml
-│   ├── env/
-│   │   ├── .env.dev
-│   │   ├── .env.staging
-│   │   ├── .env.prod
-│   │   └── .env.example
-│   └── init-db.sql             # Database schema
+├── config/                        Configuration
+│   ├── config.manager.js          Loads env variables at startup
+│   ├── docker-compose.yml         Local development
+│   ├── init-db.sql                Database schema
+│   └── env/
+│       └── .env.example           Template
 │
-├── scripts/                    # Automation & utilities
-│   ├── deploy-prod.sh          # Production deployment
-│   ├── dev-setup-local.sh      # Local dev setup
-│   ├── docker-utils.sh         # Docker commands
-│   ├── k8s-utils.sh            # Kubernetes commands
-│   └── README.md
+├── docs/                          Reference Documentation
+│   ├── ARCHITECTURE.md            System design details
+│   ├── API_REFERENCE.md           REST endpoints
+│   ├── CI_CD_PIPELINE.md          GitHub Actions
+│   ├── COMPONENTS.md              UI components library
+│   ├── DEPLOYMENT_GUIDE.md        Production deployment procedures
+│   ├── MONITORING_LOGGING.md      Observability & logging
+│   ├── OAUTH_SETUP_GUIDE.md       OAuth provider configuration
+│   ├── SETUP_GUIDE.md             Detailed local setup
+│   ├── VIBER_TELEGRAM_SETUP_GUIDE.md  Bot integration
+│   ├── PRODUCTION_RUNBOOK.md      Emergency procedures
+│   └── MVP.PRD.md, PHASE*.PRD.md  Product roadmap
 │
-├── helm/                       # Kubernetes Helm charts
-│   ├── frontend/
-│   ├── db-service/
-│   ├── solar-service/
-│   ├── values-dev.yaml
-│   ├── values-staging.yaml
-│   ├── values-production.yaml
-│   └── README.md
-│
-├── .github/workflows/          # CI/CD pipelines
-│   ├── frontend-ci.yml
-│   ├── backend-ci.yml
-│   ├── docker-build.yml
-│   └── deploy.yml
-│
-├── docs/                       # Detailed documentation
-├── DOCUMENTATION.md            # This file
-├── SETUP_GUIDE.md             # Setup instructions
-├── DEPLOYMENT_GUIDE.md        # Deployment procedures
-├── COMPONENTS.md              # UI components reference
-└── README.md
+├── tests/                         Test Suite
+├── seeds/                         Database Seeders
+├── scripts/                       Automation Scripts
+├── helm/                          Kubernetes Charts
+└── netlify.toml                   Netlify Config
 ```
 
 ---
 
-## Backend Services
+## Development Setup
 
-### Database Service (Node.js + Express)
-
-**Purpose**: RESTful API for database operations  
-**Port**: 3000 (development)  
-**Documentation**: See [SETUP_GUIDE.md - Database Service](SETUP_GUIDE.md#database-service)
-
-**Key Endpoints**:
-- `POST /api/users` - Create user
-- `GET /api/users/:id` - Get user
-- `POST /api/installations` - Create installation
-- `GET /api/installations` - List installations
-- `GET /api/installations/:id` - Get installation details
-
-**Database**: PostgreSQL
-
-### Solar Service (Go)
-
-**Purpose**: Solar calculations and assessments  
-**Port**: 8080 (development)  
-**Language**: Go
-
-**Key Features**:
-- Solar potential calculations
-- Roof analysis
-- Energy generation forecasts
-- System sizing recommendations
-
----
-
-## Frontend Application
-
-### Architecture
-
-The frontend is a single-page application (SPA) built with Vue 3 and Vite.
-
-**Key Components**:
-- **Dashboard**: Overview of installations and metrics
-- **Installations**: CRUD operations for solar systems
-- **Monitoring**: Real-time system monitoring
-- **Assessment**: Solar potential calculator
-- **Marketplace**: Product browsing and purchasing
-- **Authentication**: Google OAuth login
-
-**State Management**: Pinia stores for user and installation data
-
-**Routing**: Vue Router with protected routes
-
-### Development
+### Step 1: Clone & Install
 
 ```bash
-cd frontend
+git clone <repo-url>
+cd apolaki-updated-app
 npm install
-npm run dev           # Start dev server on port 5173
-npm run build         # Production build
-npm run preview       # Preview production build
-npm run lint          # Code quality check
-npm run test          # Run unit tests
 ```
 
----
+### Step 2: Environment Configuration
 
-## Database
+```bash
+# Copy template
+cp config/env/.env.example .env.local
 
-### Schema Overview
+# Edit with your database credentials
+vim .env.local
 
-```sql
--- Users table
-CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
-  email VARCHAR(255) UNIQUE,
-  first_name VARCHAR(100),
-  last_name VARCHAR(100),
-  oauth_provider VARCHAR(50),
-  oauth_id VARCHAR(255),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Installations table
-CREATE TABLE installations (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER REFERENCES users(id),
-  name VARCHAR(255),
-  address TEXT,
-  capacity DECIMAL(10,2),
-  status VARCHAR(50),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- (See config/init-db.sql for complete schema)
+# Minimum required:
+# DATABASE_URL=postgresql://user:password@localhost:5432/apolaki
+# JWT_SECRET=random-secret-min-32-chars
+# NODE_ENV=development
+# VITE_API_URL=http://localhost:3000
 ```
 
-### Connection
+### Step 3: Database Setup
 
-**Host**: localhost (development)  
-**Port**: 5432  
-**Database**: apolaki  
-**User**: apolaki_user  
+```bash
+# Create PostgreSQL database
+createdb apolaki
 
----
+# Initialize schema
+npm run db:migrate
 
-## API Reference
-
-### Base URL
-- Development: `http://localhost:3000`
-- Staging: `https://api-staging.apolaki.com`
-- Production: `https://api.apolaki.com`
-
-### Authentication
-
-All endpoints except login/signup require bearer token:
-
-```
-Authorization: Bearer <JWT_TOKEN>
+# (Optional) Seed with sample data
+npm run db:seed
 ```
 
-### Key Endpoints
+### Step 4: Start Development
 
-#### Users
-- `POST /api/users` - Create user
-- `GET /api/users/:id` - Get user
-- `PUT /api/users/:id` - Update user
-- `DELETE /api/users/:id` - Delete user
+```bash
+# All at once
+npm run dev
 
-#### Installations
-- `GET /api/installations` - List user's installations
-- `POST /api/installations` - Create installation
-- `GET /api/installations/:id` - Get installation details
-- `PUT /api/installations/:id` - Update installation
-- `DELETE /api/installations/:id` - Delete installation
+# Or individually (separate terminals):
+cd frontend && npm run dev                    # Port 5173
+cd middleware/netlify-db-service && npm run dev  # Port 3000
+```
 
-#### Assessments
-- `POST /api/assessments` - Create solar assessment
-- `GET /api/assessments/:id` - Get assessment results
-
----
-
-## Authentication
-
-### OAuth 2.0 Providers
-
-Supported:
-- Google OAuth 2.0
-- GitHub OAuth 2.0
-- Viber OAuth
-- Telegram OAuth
-
-### Flow
-
-1. User clicks "Login with [Provider]"
-2. Redirected to provider's login page
-3. User authorizes application
-4. Redirected back with authorization code
-5. Backend exchanges code for access token
-6. User created/updated in database
-7. JWT token issued to frontend
-8. Frontend stores token in localStorage
-
-### Implementation
-
-See detailed guides:
-- OAuth Setup: [SETUP_GUIDE.md - Authentication](SETUP_GUIDE.md#authentication)
-- Components Reference: [COMPONENTS.md](COMPONENTS.md)
-
----
-
-## Monitoring & Troubleshooting
-
-### Common Issues
-
-#### Database Connection Failed
-1. Check PostgreSQL is running: `pg_isready`
-2. Verify credentials in `.env` file
-3. Check database exists: `psql -l`
-4. Check user permissions
-
-**Solution**: See [DEPLOYMENT_GUIDE.md - Troubleshooting](DEPLOYMENT_GUIDE.md#troubleshooting)
-
-#### API Returns 401 Unauthorized
-1. Check JWT token is valid
-2. Verify token in Authorization header
-3. Check token hasn't expired
-
-**Solution**: Refresh token or re-login
-
-#### Frontend Won't Load
-1. Check frontend dev server is running
-2. Verify port 5173 is accessible
-3. Check browser console for errors
-4. Clear browser cache
-
-**Solution**: `npm run dev` in frontend directory
-
-### Logs
-
-- **Frontend**: Browser DevTools Console
-- **Backend**: `logs/app.log` or Docker logs
-- **Database**: PostgreSQL logs
-- **Docker**: `docker logs <container_name>`
-
-### Health Checks
+### Step 5: Verify
 
 ```bash
 # Frontend
 curl http://localhost:5173
 
-# Backend API
+# Backend
 curl http://localhost:3000/health
 
 # Database
-psql -U apolaki_user -d apolaki -c "SELECT 1"
+psql apolaki -c "SELECT COUNT(*) FROM users"
+```
+
+### Available Commands
+
+**Frontend**:
+```bash
+npm run dev              # Vite dev server
+npm run build            # Production build
+npm run preview          # Preview build
+npm run test             # Unit tests
+npm run lint             # Code linting
+```
+
+**Backend**:
+```bash
+npm run dev              # Start with hot reload
+npm run start            # Production start
+npm run test             # Tests
+npm run lint             # Linting
+```
+
+**Database**:
+```bash
+npm run db:migrate       # Run migrations
+npm run db:seed          # Seed data
+npm run db:reset         # Reset (development only!)
+```
+
+**All**:
+```bash
+npm run build:all        # Build frontend + backend
+npm run test:all         # Test all
+npm run lint:all         # Lint all
+```
+
+---
+
+## Deployment Architecture
+
+### Separate Deployables Pattern
+
+**Benefit**: Frontend and backend can be deployed independently without coordination.
+
+#### Frontend Deployable
+
+```
+INPUT:  frontend/ directory
+BUILD:  npm run build → frontend/dist/
+OUTPUT: HTML, CSS, JavaScript static files
+DEPLOY: Upload to CDN or Netlify Static
+HOSTS:  Netlify, Vercel, AWS S3, GitHub Pages
+TIME:   ~30 seconds
+```
+
+**Example Deployment**:
+```bash
+cd frontend
+npm install
+npm run build
+netlify deploy --prod --dir dist/
+```
+
+#### Backend Deployable
+
+```
+INPUT:  middleware/ directory
+BUILD:  Docker build or npm build
+OUTPUT: Docker image or compiled binaries
+DEPLOY: Push to registry, deploy to FaaS/Docker/K8s
+HOSTS:  Netlify Functions, Heroku, Railway, AWS Lambda
+TIME:   ~2 minutes
+```
+
+**Example Deployment**:
+```bash
+cd middleware/netlify-db-service
+npm install
+docker build -t apolaki-backend .
+docker push my-registry/apolaki-backend:latest
+```
+
+#### Data Layer (External Services)
+
+```
+Components: PostgreSQL, Redis, Message Queue, S3
+Location:   External (Netlify Neon, AWS RDS, etc.)
+Config:     Injected at container startup
+Benefit:    Same image, different config per environment
+```
+
+### Deployment Scenarios
+
+#### Scenario 1: Netlify (MVP)
+
+```
+                Netlify
+        ┌───────────────────┐
+        │ Frontend CDN      │
+        │ (frontend/dist)   │
+        └────────┬──────────┘
+                 │
+            ┌────┴─────┐
+            │           │
+        ┌───▼──┐   ┌────▼────┐
+        │Backend │   │ Neon DB │
+        │Funcs   │   │(Postgres)
+        └────────┘   └─────────┘
+```
+
+**Deploy**: `git push origin main` (automatic Netlify deploy)
+
+#### Scenario 2: Frontend on Netlify, Backend on Heroku
+
+```
+Netlify CDN ─────┐
+                 │
+            ┌────┴────────┐
+            │             │
+        Frontend      Heroku API
+            │             │
+            └──────┬──────┘
+                   │
+               AWS RDS
+            (PostgreSQL)
+```
+
+#### Scenario 3: Kubernetes (Enterprise)
+
+```
+         ┌─── Kubernetes Cluster ───┐
+         │                          │
+    ┌────▼────┐          ┌─────────▼──┐
+    │ Frontend │          │ API Pods   │
+    │ Service  │─────────→│ (replicas) │
+    └──────────┘          └─────────┬──┘
+                                    │
+                            ┌───────▼──────┐
+                            │ Cloud SQL    │
+                            │ (Postgres)   │
+                            └──────────────┘
+```
+
+**Deploy**: `helm install apolaki ./helm -f helm/values-production.yaml`
+
+---
+
+## Configuration Management
+
+### The Problem
+
+Hardcoding database URLs, API keys, and secrets in code makes it impossible to use the same codebase in development, staging, and production.
+
+### The Solution: ConfigManager
+
+All configuration is loaded from environment variables at application startup, **not** from code.
+
+### How It Works
+
+```javascript
+// config/config.manager.js
+class ConfigManager {
+  static async load() {
+    const config = {
+      database: {
+        host: process.env.DATABASE_HOST,
+        port: parseInt(process.env.DATABASE_PORT),
+        user: process.env.DATABASE_USER,
+        password: process.env.DATABASE_PASSWORD,
+        name: process.env.DATABASE_NAME,
+      },
+      jwt: {
+        secret: process.env.JWT_SECRET,
+      },
+      // ... more config
+    };
+
+    // Validate all required config is present
+    if (!config.database.host) {
+      throw new Error('DATABASE_HOST environment variable is required');
+    }
+    // ... more validation
+
+    return config;
+  }
+}
+
+// At startup
+async function start() {
+  const config = await ConfigManager.load();
+  // Pass config to all services
+  startServer(config);
+}
+```
+
+### Zero Hardcoding Rule
+
+**❌ WRONG** (hardcoded):
+```javascript
+const DB_HOST = "localhost";
+const JWT_SECRET = "my-secret-key";  // NEVER!
+```
+
+**❌ WRONG** (fallback to hardcoded):
+```javascript
+const host = process.env.DATABASE_HOST || "localhost";
+// This is still hardcoding!
+```
+
+**✅ CORRECT** (fail if missing):
+```javascript
+const host = process.env.DATABASE_HOST;
+if (!host) throw new Error('DATABASE_HOST is required');
+```
+
+### Same Code, Different Config
+
+```bash
+# Development (.env.local)
+DATABASE_HOST=localhost
+DATABASE_PASSWORD=dev-password
+NODE_ENV=development
+
+# Production (Netlify Dashboard env vars)
+DATABASE_HOST=neon-production.com
+DATABASE_PASSWORD=<secure-production-password>
+NODE_ENV=production
+
+# Same Docker image, different behavior!
+docker run -e DATABASE_HOST=localhost app:latest     # Development
+docker run -e DATABASE_HOST=prod.db app:latest       # Production
 ```
 
 ---
 
 ## Environment Variables
 
-### Frontend (.env.local)
-```env
-VITE_API_URL=http://localhost:3000
-VITE_APP_NAME=Apolaki Solar Platform
-VITE_GOOGLE_CLIENT_ID=your-google-client-id
-```
+### Frontend
 
-### Backend (.env)
-```env
-DATABASE_URL=postgresql://user:pass@localhost:5432/apolaki
-NODE_ENV=development
-JWT_SECRET=your-jwt-secret
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-```
-
----
-
-## Deployment
-
-### Quick Deploy
-
-For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
+**Build-time variables** (in `.env` or `.env.local`):
 
 ```bash
-# Production deployment
-./scripts/deploy-prod.sh production v1.0.0
+# API Endpoint
+VITE_API_URL=http://localhost:3000              # Development
+VITE_API_URL=https://api.apolaki.com            # Production
 
-# Staging deployment
-./scripts/deploy-prod.sh staging latest
+# Feature Flags (optional)
+VITE_ENABLE_DARK_MODE=true
+VITE_ENABLE_BETA_FEATURES=false
 
-# Check status
-./scripts/k8s-utils.sh status production
+# OAuth Providers (optional)
+VITE_GOOGLE_CLIENT_ID=your-google-client-id
+VITE_GITHUB_CLIENT_ID=your-github-client-id
+```
+
+**Note**: Build-time variables are baked into the bundle. API URL can alternatively be set at deploy time via netlify.toml.
+
+### Backend
+
+**Runtime variables** (in `.env.local` for development OR Netlify Dashboard for production):
+
+```bash
+# === DATABASE (REQUIRED) ===
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres
+DATABASE_NAME=apolaki
+
+# OR use connection string (recommended for production)
+DATABASE_URL=postgresql://user:pass@host:5432/apolaki
+
+# === SERVER ===
+NODE_ENV=development              # or production
+API_PORT=3000
+API_TIMEOUT=30000
+
+# === SECURITY (GENERATED) ===
+JWT_SECRET=<random-32-char-string>
+BCRYPT_COST=12
+SESSION_SECRET=<another-random-string>
+
+# === CORS ===
+CORS_ORIGINS=http://localhost:5173,https://apolaki.com
+
+# === CACHE (OPTIONAL) ===
+REDIS_HOST=localhost
+REDIS_PORT=6379
+CACHE_TTL=3600
+
+# === OAuth PROVIDERS ===
+GOOGLE_CLIENT_ID=xxx
+GOOGLE_CLIENT_SECRET=yyy
+FACEBOOK_CLIENT_ID=xxx
+FACEBOOK_CLIENT_SECRET=yyy
+
+# === LOGGING ===
+LOG_LEVEL=debug                   # development
+LOG_LEVEL=info                    # production
+LOG_FORMAT=json                   # structured logging
+```
+
+### Generating Secure Values
+
+```bash
+# Generate JWT_SECRET
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+# Generate SESSION_SECRET
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+### Setting Variables by Platform
+
+**Development** (local):
+```bash
+cp config/env/.env.example .env.local
+vim .env.local
+```
+
+**Netlify** (production):
+1. Go to Netlify Dashboard
+2. Site Settings → Build & Deploy → Environment
+3. Add each variable (secured)
+4. No .env file needed
+
+**Heroku**:
+```bash
+heroku config:set DATABASE_URL="..." JWT_SECRET="..." --app myapp
+```
+
+**Kubernetes**:
+```bash
+kubectl create secret generic apolaki-config \
+  --from-literal=DATABASE_URL="..." \
+  --from-literal=JWT_SECRET="..." \
+  -n apolaki
 ```
 
 ---
 
-## Support & Resources
+## Authentication
 
-### Documentation Files
+### Supported Methods
 
-| File | Purpose |
-|------|---------|
-| [SETUP_GUIDE.md](SETUP_GUIDE.md) | Installation & configuration |
-| [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | Deployment & operations |
-| [COMPONENTS.md](COMPONENTS.md) | UI components reference |
-| [DOCUMENTATION.md](DOCUMENTATION.md) | This file |
+#### 1. Email/Password
+- Registration with email validation
+- Login with password
+- Password reset
+- Bcrypt hashing (cost 12)
 
-### Key Scripts
+#### 2. OAuth2 Multi-Provider
+- Google OAuth
+- Facebook OAuth
+- Instagram OAuth
+- GitHub OAuth (extensible)
 
-| Script | Purpose |
-|--------|---------|
-| `scripts/dev-setup-local.sh` | Local development setup |
-| `scripts/deploy-prod.sh` | Production deployment |
-| `scripts/docker-utils.sh` | Docker commands |
-| `scripts/k8s-utils.sh` | Kubernetes commands |
+#### 3. Session Management
+- JWT access tokens (15 minutes)
+- Refresh tokens (7 days)
+- HttpOnly, Secure, SameSite cookies
+- Automatic token refresh
+
+#### 4. Authorization (RBAC)
+- Roles: admin, manager, viewer, provider
+- Per-endpoint permission checks
+- Resource-level access control
+
+### OAuth Setup Quick Guide
+
+**Google OAuth**:
+
+1. Go to https://console.cloud.google.com
+2. Create new project
+3. Enable OAuth 2.0 APIs
+4. Create OAuth credentials (Web application)
+5. Set callback: `https://yourdomain.com/api/auth/google/callback`
+6. Copy Client ID and Secret
+7. Add to environment:
+   ```bash
+   GOOGLE_CLIENT_ID=xxx
+   GOOGLE_CLIENT_SECRET=yyy
+   ```
+
+**Facebook OAuth**: Similar process at https://developers.facebook.com/
+
+**Full OAuth Guide**: See `docs/OAUTH_SETUP_GUIDE.md`
+
+---
+
+## Logging & Monitoring
+
+### Structured Logging
+
+All logs are in JSON format for easy parsing:
+
+```javascript
+logger.info('User login', {
+  userId: '123',
+  provider: 'google',
+  timestamp: new Date().toISOString(),
+  correlationId: 'req-abc123'
+});
+
+// Output:
+// {"level":"info","message":"User login","userId":"123",...}
+```
+
+### Log Levels
+
+- **debug**: Development details (verbose)
+- **info**: Important events (logins, API calls)
+- **warn**: Potential issues (slow queries)
+- **error**: Errors (not fatal)
+- **fatal**: Critical errors (requires restart)
+
+### Monitoring Tools
+
+- **Logs**: Netlify Logs, CloudWatch, or ELK Stack
+- **Metrics**: Prometheus + Grafana
+- **APM**: DataDog or New Relic
+
+### Health Checks
+
+```bash
+# Application health
+curl http://localhost:3000/health
+# Response: {"status":"ok","timestamp":"..."}
+
+# Database connectivity
+curl http://localhost:3000/health/db
+# Response: {"status":"healthy","latency":5}
+```
+
+---
+
+## Database
+
+### Schema (Quick Overview)
+
+```sql
+-- Users
+CREATE TABLE users (
+  id UUID PRIMARY KEY,
+  email VARCHAR(255) UNIQUE,
+  password_hash VARCHAR(255),
+  first_name VARCHAR(100),
+  last_name VARCHAR(100),
+  role VARCHAR(50),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Installations
+CREATE TABLE installations (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  name VARCHAR(255),
+  capacity_kw DECIMAL(10,2),
+  location VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Monitoring Data
+CREATE TABLE monitoring_data (
+  id UUID PRIMARY KEY,
+  installation_id UUID REFERENCES installations(id),
+  power_output DECIMAL(10,2),
+  timestamp TIMESTAMP DEFAULT NOW()
+);
+
+-- (See config/init-db.sql for complete schema)
+```
+
+### Migrations
+
+```bash
+# Create migration
+npm run db:migration:create -- add_users_table
+
+# Run all pending migrations
+npm run db:migrate
+
+# Rollback last migration
+npm run db:migrate:undo
+
+# Reset (development only!)
+npm run db:reset
+```
+
+### Security
+
+- ✅ Parameterized queries (GORM/pg-promise)
+- ✅ Bcrypt password hashing (cost 12)
+- ✅ Foreign key constraints
+- ✅ Audit logging
+- ✅ Encrypted PII columns
+- ✅ Regular backups
+
+---
+
+## API Reference
+
+### Base URLs
+
+- **Development**: `http://localhost:3000`
+- **Production**: `https://api.apolaki.com`
+
+### Authentication
+
+All endpoints (except login/register) require JWT in header:
+
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+```
+
+### Key Endpoints
+
+**Authentication**:
+```
+POST   /api/auth/register          Register new user
+POST   /api/auth/login             Login with email/password
+GET    /api/auth/oauth/:provider   OAuth login initiation
+POST   /api/auth/refresh           Refresh access token
+POST   /api/auth/logout            Logout
+```
+
+**Installations**:
+```
+GET    /api/installations          List user's installations
+POST   /api/installations          Create new installation
+GET    /api/installations/:id      Get installation details
+PUT    /api/installations/:id      Update installation
+DELETE /api/installations/:id      Delete installation
+```
+
+**Monitoring**:
+```
+GET    /api/monitoring/:id/current  Get latest data
+GET    /api/monitoring/:id/range    Get data range
+WS     /ws/monitoring/:id          WebSocket real-time
+```
+
+**Marketplace**:
+```
+GET    /api/marketplace/products   List products
+GET    /api/marketplace/providers  List providers
+```
+
+**Assessment**:
+```
+POST   /api/assessment/calculate   Calculate ROI
+```
+
+**Contracts**:
+```
+GET    /api/contracts             List contracts
+GET    /api/contracts/:id         Get contract
+POST   /api/contracts/:id/sign    Sign contract
+```
+
+### Error Responses
+
+All errors return consistent format:
+
+```json
+{
+  "error": "Error message",
+  "code": "ERROR_CODE",
+  "status": 400,
+  "correlationId": "req-abc123"
+}
+```
+
+**Status Codes**:
+- 200: Success
+- 201: Created
+- 400: Bad request
+- 401: Unauthorized
+- 403: Forbidden
+- 404: Not found
+- 409: Conflict
+- 500: Server error
+
+---
+
+## Deployment Checklist
+
+### Before Deploy
+
+- [ ] All tests pass: `npm run test:all`
+- [ ] Linting passes: `npm run lint:all`
+- [ ] No hardcoded secrets in code
+- [ ] Database migrations created
+- [ ] Documentation updated
+- [ ] Environment variables configured
+- [ ] Security review completed
+
+### During Deploy
+
+- [ ] Backup production database
+- [ ] Deploy to staging first
+- [ ] Run smoke tests on staging
+- [ ] Verify monitoring is working
+- [ ] Deploy to production
+- [ ] Monitor logs & metrics
+
+### After Deploy
+
+- [ ] Monitor for 24+ hours
+- [ ] Check error rates
+- [ ] Verify core workflows
+- [ ] Be ready to rollback
+
+---
+
+## Troubleshooting
+
+### Database Connection Failed
+
+**Error**: `Error: getaddrinfo ENOTFOUND postgres`
+
+**Solutions**:
+1. Check PostgreSQL is running:
+   ```bash
+   pg_isready -h localhost
+   ```
+
+2. Check credentials in `.env.local`:
+   ```bash
+   DATABASE_HOST=localhost
+   DATABASE_USER=postgres
+   DATABASE_PASSWORD=postgres
+   ```
+
+3. Verify database exists:
+   ```bash
+   psql -l | grep apolaki
+   ```
+
+### Port Already in Use
+
+**Error**: `Error: listen EADDRINUSE :::3000`
+
+**Solution**:
+```bash
+# Find and kill process
+lsof -i :3000
+kill -9 <PID>
+
+# Or use different port
+API_PORT=3001 npm run dev
+```
+
+### Frontend API Connection Refused
+
+**Error**: `Failed to fetch from http://localhost:3000`
+
+**Solutions**:
+1. Check backend is running:
+   ```bash
+   curl http://localhost:3000/health
+   ```
+
+2. Check CORS is configured:
+   ```bash
+   # In .env.local
+   CORS_ORIGINS=http://localhost:5173
+   ```
+
+3. Check API URL in frontend:
+   ```bash
+   # In .env.local
+   VITE_API_URL=http://localhost:3000
+   ```
+
+### Module Not Found
+
+**Error**: `Cannot find module 'X'`
+
+**Solutions**:
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Check file exists (case-sensitive):
+   ```bash
+   ls -la path/to/file
+   ```
+
+3. Verify import path:
+   ```javascript
+   // Correct
+   import Button from '@/components/Button.vue'
+   // Wrong (case-sensitive)
+   import Button from '@/components/button.vue'
+   ```
+
+### "JWT Token Expired"
+
+**Solution**: Refresh token or re-login
+
+**In frontend**:
+```javascript
+// Auto refresh in api client
+if (error.status === 401) {
+  await refreshToken();
+  return retryRequest();
+}
+```
+
+---
+
+## Code Guidelines
+
+**All code must comply with**:
+
+1. **SOLID Principles**: Single responsibility, Open/closed, Liskov substitution, Interface segregation, Dependency inversion
+2. **Tier Separation**: Frontend → Backend → Database (NO direct frontend → database)
+3. **OWASP Security**: Input validation, parameterized queries, secure auth, encryption
+4. **Code Quality**: Tests, linting, documentation, proper error handling
+
+**Full Guidelines**: See `AGENTS.md`
+
+---
+
+## Resources
+
+### Documentation
+- `DOCUMENTATION.md` — **THIS FILE** (system reference)
+- `docs/SETUP_GUIDE.md` — Installation & local setup
+- `docs/DEPLOYMENT_GUIDE.md` — Production deployment
+- `AGENTS.md` — Code guidelines & standards
+- `docs/ARCHITECTURE.md` — Detailed system design
+- `docs/API_REFERENCE.md` — API endpoints
+- `docs/COMPONENTS.md` — UI components
+- `docs/OAUTH_SETUP_GUIDE.md` — OAuth setup
 
 ### External Resources
+- Vue.js: https://vuejs.org/
+- Express.js: https://expressjs.com/
+- PostgreSQL: https://www.postgresql.org/docs/
+- Docker: https://docs.docker.com/
+- Kubernetes: https://kubernetes.io/docs/
 
-- [Vue.js Documentation](https://vuejs.org)
-- [Express.js Guide](https://expressjs.com)
-- [PostgreSQL Manual](https://www.postgresql.org/docs)
-- [Docker Documentation](https://docs.docker.com)
-- [Kubernetes Docs](https://kubernetes.io/docs)
-
----
-
-## Getting Help
-
-1. **Check logs**: `logs/`, Docker logs, or browser DevTools
-2. **Read documentation**: Check SETUP_GUIDE.md or DEPLOYMENT_GUIDE.md
-3. **Review examples**: See code comments and documentation
-4. **Run diagnostics**: `./scripts/k8s-utils.sh events production`
+### Support
+- **Issues**: GitHub Issues (with labels: bug, feature, question)
+- **Discussions**: GitHub Discussions
+- **Email**: (team contact if applicable)
 
 ---
 
-## Contributing
-
-### Development Workflow
-
-1. Create feature branch: `git checkout -b feature/my-feature`
-2. Make changes and test locally
-3. Commit with clear messages: `git commit -m "feat: add new feature"`
-4. Push to branch: `git push origin feature/my-feature`
-5. Create pull request for review
-
-### Code Style
-
-- Frontend: Follow Vue.js style guide
-- Backend: Follow Node.js best practices
-- Database: Normalized schema design
-- Comments: Use JSDoc for functions
-
-### Testing
-
-- Frontend: Unit tests with Vitest
-- Backend: Unit and integration tests
-- Database: Test with real data
-
----
-
-**Last Updated**: February 26, 2026  
-**Version**: 1.0.0  
-**Status**: Production-Ready
+**Maintained By**: Apolaki Team  
+**License**: MIT  
+**Last Updated**: February 26, 2026

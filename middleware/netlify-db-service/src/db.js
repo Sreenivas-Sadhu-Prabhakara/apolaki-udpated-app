@@ -803,6 +803,84 @@ export const auditLogs = {
   }
 };
 
+/**
+ * Break-Glass Sessions operations (superadmin emergency access)
+ */
+export const breakGlassSessions = {
+  /**
+   * Start a break-glass session
+   */
+  async create({ userId, justification, expiresAt, ipAddress, userAgent }) {
+    const result = await sql`
+      INSERT INTO break_glass_sessions (user_id, justification, expires_at, ip_address, user_agent)
+      VALUES (${userId}, ${justification}, ${expiresAt}, ${ipAddress}, ${userAgent})
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  /**
+   * Get active session for user
+   */
+  async getActiveByUserId(userId) {
+    const result = await sql`
+      SELECT * FROM break_glass_sessions
+      WHERE user_id = ${userId} AND status = 'active' AND expires_at > CURRENT_TIMESTAMP
+      ORDER BY started_at DESC LIMIT 1
+    `;
+    return result[0];
+  },
+
+  /**
+   * Record an action taken during a session
+   */
+  async recordAction(sessionId, action) {
+    const result = await sql`
+      UPDATE break_glass_sessions
+      SET actions_taken = actions_taken || ${JSON.stringify([action])}::jsonb
+      WHERE id = ${sessionId} AND status = 'active'
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  /**
+   * End a break-glass session
+   */
+  async end(sessionId) {
+    const result = await sql`
+      UPDATE break_glass_sessions
+      SET status = 'ended', ended_at = CURRENT_TIMESTAMP
+      WHERE id = ${sessionId}
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  /**
+   * Get all sessions (for audit)
+   */
+  async getAll(limit = 100) {
+    return await sql`
+      SELECT * FROM break_glass_sessions
+      ORDER BY started_at DESC LIMIT ${limit}
+    `;
+  },
+
+  /**
+   * Review a session (post-incident)
+   */
+  async review(sessionId, reviewedBy, reviewNotes) {
+    const result = await sql`
+      UPDATE break_glass_sessions
+      SET reviewed_by = ${reviewedBy}, reviewed_at = CURRENT_TIMESTAMP, review_notes = ${reviewNotes}
+      WHERE id = ${sessionId}
+      RETURNING *
+    `;
+    return result[0];
+  }
+};
+
 export default {
   sql,
   users,
@@ -816,5 +894,6 @@ export default {
   finance,
   oauthProviders,
   sessions,
-  auditLogs
+  auditLogs,
+  breakGlassSessions
 };

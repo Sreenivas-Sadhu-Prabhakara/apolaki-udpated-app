@@ -28,29 +28,35 @@ Full setup details → [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md)
 
 ## Documentation
 
-All docs live in **[`docs/`](docs/)**. Pick the one you need:
+**📖 Start here:** [`DOCUMENTATION.md`](DOCUMENTATION.md) — Complete system reference (single source of truth)
 
-| Document | What It Covers |
-|----------|---------------|
-| [SETUP_GUIDE](docs/SETUP_GUIDE.md) | Prerequisites, install, run locally, env vars, troubleshooting |
-| [DEPLOYMENT_GUIDE](docs/DEPLOYMENT_GUIDE.md) | Docker, Kubernetes, Helm, staging → production, rollbacks |
-| [ARCHITECTURE](docs/ARCHITECTURE.md) | System design, service boundaries, data flow |
-| [API_REFERENCE](docs/API_REFERENCE.md) | REST endpoints, auth, request / response examples |
-| [COMPONENTS](docs/COMPONENTS.md) | Vue 3 UI components — Button, Card, Badge, Modal, Alert |
-| [OAUTH_SETUP_GUIDE](docs/OAUTH_SETUP_GUIDE.md) | Google, Facebook, Instagram OAuth configuration |
-| [VIBER_TELEGRAM_SETUP_GUIDE](docs/VIBER_TELEGRAM_SETUP_GUIDE.md) | Viber & Telegram bot / OAuth setup |
-| [CI_CD_PIPELINE](docs/CI_CD_PIPELINE.md) | GitHub Actions workflows, build & deploy automation |
-| [MONITORING_LOGGING](docs/MONITORING_LOGGING.md) | Logs, metrics, alerts, Grafana / ELK setup |
-| [PRODUCTION_RUNBOOK](docs/PRODUCTION_RUNBOOK.md) | Emergency procedures, incident response, rollback |
-| [NETLIFY_DB_INTEGRATION](docs/NETLIFY_DB_INTEGRATION.md) | GORM models, DB connection, solar-service middleware |
-| [END_TO_END_SETUP_GUIDE](docs/END_TO_END_SETUP_GUIDE.md) | Detailed walkthrough of every service, start to finish |
-| [DOCUMENTATION](docs/DOCUMENTATION.md) | Master reference — architecture, API, DB schema, env vars |
+### Quick Links by Role
 
-**Governance:**
-[Constitution](CONSTITUTION.md) · [Agent Guidelines](AGENTS.md)
+**🚀 Deploying?** → See [DOCUMENTATION.md § Deployment Architecture](DOCUMENTATION.md#deployment-architecture)
 
-**Product roadmap:**
-[MVP PRD](docs/MVP.PRD.md) · [Phase 1](docs/PHASE1.PRD.md) · [Phase 2](docs/PHASE2.PRD.md)
+**💻 Developing?** → See [DOCUMENTATION.md § Development Setup](DOCUMENTATION.md#development-setup)
+
+**🔐 Setting up authentication?** → See [DOCUMENTATION.md § Authentication](DOCUMENTATION.md#authentication)
+
+**📊 Need monitoring/logging?** → See [DOCUMENTATION.md § Logging & Monitoring](DOCUMENTATION.md#logging--monitoring)
+
+**❓ Troubleshooting?** → See [DOCUMENTATION.md § Troubleshooting](DOCUMENTATION.md#troubleshooting)
+
+### Additional References
+
+| Document | For |
+|----------|-----|
+| [AGENTS.md](AGENTS.md) | Code standards, SOLID principles, OWASP security |
+| [CONSTITUTION.md](CONSTITUTION.md) | Governance, values, decision-making |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute code |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Deep-dive system design |
+| [docs/API_REFERENCE.md](docs/API_REFERENCE.md) | Detailed API endpoints |
+| [docs/COMPONENTS.md](docs/COMPONENTS.md) | Vue.js components library |
+| [docs/OAUTH_SETUP_GUIDE.md](docs/OAUTH_SETUP_GUIDE.md) | OAuth provider setup (step-by-step) |
+| [docs/CI_CD_PIPELINE.md](docs/CI_CD_PIPELINE.md) | GitHub Actions workflows |
+| [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) | Detailed production deployment |
+| [docs/MONITORING_LOGGING.md](docs/MONITORING_LOGGING.md) | Observability setup |
+| [docs/MVP.PRD.md](docs/MVP.PRD.md) | Product requirements |
 
 ---
 

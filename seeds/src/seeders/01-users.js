@@ -12,11 +12,14 @@ const BCRYPT_ROUNDS = parseInt(process.env.SEED_BCRYPT_ROUNDS || '10', 10);
 
 /** Fixed UUIDs for deterministic cross-seeder references */
 export const USER_IDS = {
-  admin:     '00000000-0000-4000-a000-000000000001',
-  homeowner: '00000000-0000-4000-a000-000000000002',
-  installer: '00000000-0000-4000-a000-000000000003',
-  trader:    '00000000-0000-4000-a000-000000000004',
-  viewer:    '00000000-0000-4000-a000-000000000005',
+  admin:      '00000000-0000-4000-a000-000000000001',
+  homeowner:  '00000000-0000-4000-a000-000000000002',
+  installer:  '00000000-0000-4000-a000-000000000003',
+  trader:     '00000000-0000-4000-a000-000000000004',
+  viewer:     '00000000-0000-4000-a000-000000000005',
+  dealer:     '00000000-0000-4000-a000-000000000006',
+  operations: '00000000-0000-4000-a000-000000000007',
+  superadmin: '00000000-0000-4000-a000-000000000008',
 };
 
 const USERS = [
@@ -64,6 +67,33 @@ const USERS = [
     last_name: 'Mendoza',
     phone: '+63 921 567 8901',
     role: 'customer',
+  },
+  {
+    id: USER_IDS.dealer,
+    email: 'dealer@apolaki.solar',
+    password: 'Dealer@Sun1!',
+    first_name: 'Miguel',
+    last_name: 'Torres',
+    phone: '+63 922 678 9012',
+    role: 'dealer',
+  },
+  {
+    id: USER_IDS.operations,
+    email: 'ops@apolaki.solar',
+    password: 'Ops@Solar1!',
+    first_name: 'Liza',
+    last_name: 'Ramos',
+    phone: '+63 923 789 0123',
+    role: 'operations',
+  },
+  {
+    id: USER_IDS.superadmin,
+    email: 'superadmin@apolaki.solar',
+    password: 'Super@Admin1!',
+    first_name: 'Rafael',
+    last_name: 'Aquino',
+    phone: '+63 924 890 1234',
+    role: 'superadmin',
   },
 ];
 

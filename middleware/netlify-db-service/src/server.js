@@ -36,6 +36,7 @@ import passport from 'passport';
 import { initializePassport } from './auth/passport.js';
 import routes from './routes.js';
 import authRoutes from './routes/auth.js';
+import personaRoutes from './routes/personas.js';
 
 const app = express();
 
@@ -87,6 +88,9 @@ app.use((req, res, next) => {
 
 // Auth routes
 app.use('/api/auth', authRoutes);
+
+// Persona routes
+app.use('/api/personas', personaRoutes);
 
 // API routes
 app.use('/api', routes);

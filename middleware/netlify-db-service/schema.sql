@@ -196,19 +196,51 @@ CREATE TABLE IF NOT EXISTS finance (
 );
 
 -- Create indexes for better query performance
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_oauth_providers_user_id ON oauth_providers(user_id);
-CREATE INDEX idx_oauth_providers_provider_provider_id ON oauth_providers(provider, provider_id);
-CREATE INDEX idx_sessions_user_id ON sessions(user_id);
-CREATE INDEX idx_sessions_session_token ON sessions(session_token);
-CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
-CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
-CREATE INDEX idx_solar_installations_user_id ON solar_installations(user_id);
-CREATE INDEX idx_monitoring_data_installation_id ON monitoring_data(installation_id);
-CREATE INDEX idx_monitoring_data_timestamp ON monitoring_data(timestamp);
-CREATE INDEX idx_performance_data_installation_id ON performance_data(installation_id);
-CREATE INDEX idx_performance_data_date ON performance_data(date);
-CREATE INDEX idx_maintenance_log_installation_id ON maintenance_log(installation_id);
-CREATE INDEX idx_contracts_user_id ON contracts(user_id);
-CREATE INDEX idx_finance_user_id ON finance(user_id);
-CREATE INDEX idx_assessments_user_id ON assessments(user_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_oauth_providers_user_id ON oauth_providers(user_id);
+CREATE INDEX IF NOT EXISTS idx_oauth_providers_provider_provider_id ON oauth_providers(provider, provider_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_session_token ON sessions(session_token);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_solar_installations_user_id ON solar_installations(user_id);
+CREATE INDEX IF NOT EXISTS idx_monitoring_data_installation_id ON monitoring_data(installation_id);
+CREATE INDEX IF NOT EXISTS idx_monitoring_data_timestamp ON monitoring_data(timestamp);
+CREATE INDEX IF NOT EXISTS idx_performance_data_installation_id ON performance_data(installation_id);
+CREATE INDEX IF NOT EXISTS idx_performance_data_date ON performance_data(date);
+CREATE INDEX IF NOT EXISTS idx_maintenance_log_installation_id ON maintenance_log(installation_id);
+CREATE INDEX IF NOT EXISTS idx_contracts_user_id ON contracts(user_id);
+CREATE INDEX IF NOT EXISTS idx_finance_user_id ON finance(user_id);
+CREATE INDEX IF NOT EXISTS idx_assessments_user_id ON assessments(user_id);
+
+-- ============================================================================
+-- Persona Roles:
+--   customer    - End user / prosumer
+--   dealer      - Installer / reseller
+--   operations  - Field ops / maintenance engineer
+--   admin       - Organization administrator
+--   superadmin  - Break-glass emergency admin
+--   installer   - Legacy alias for dealer (kept for backward compat)
+-- ============================================================================
+
+-- Break-Glass Sessions table (superadmin emergency access)
+CREATE TABLE IF NOT EXISTS break_glass_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  justification TEXT NOT NULL,
+  actions_taken JSONB DEFAULT '[]',
+  started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  expires_at TIMESTAMP NOT NULL,
+  ended_at TIMESTAMP,
+  status VARCHAR(50) DEFAULT 'active',
+  ip_address VARCHAR(45),
+  user_agent TEXT,
+  reviewed_by UUID REFERENCES users(id),
+  reviewed_at TIMESTAMP,
+  review_notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_break_glass_sessions_user_id ON break_glass_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_break_glass_sessions_status ON break_glass_sessions(status);

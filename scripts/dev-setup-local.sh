@@ -159,7 +159,7 @@ main() {
     echo "  3. View services:   docker-compose -f config/docker-compose.yml ps"
     echo "  4. View logs:       docker-compose -f config/docker-compose.yml logs -f"
     echo ""
-    echo "Documentation: See docs/INDEX.md for guides and references"
+    echo "Documentation: See DOCUMENTATION.md for guides and references"
     echo ""
 }
 

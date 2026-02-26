@@ -193,7 +193,7 @@ $(ls -lh "$BUILD_DIR" 2>/dev/null || echo "No build artifacts")
 ## Next Steps
 
 1. Start services: \`npm start\` in each service directory
-2. Deploy with Docker: See \`docs/DEPLOYMENT.md\`
+2. Deploy with Docker: See \`docs/DEPLOYMENT_GUIDE.md\`
 3. Deploy to Kubernetes: See \`helm/README.md\`
 
 EOF

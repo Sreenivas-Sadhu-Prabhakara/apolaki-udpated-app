@@ -346,12 +346,9 @@ tail -f logs/deployment_*.log
 
 ## 📚 Related Documentation
 
-- **Deployment Guide:** `docs/setup/END_TO_END_SETUP_GUIDE.md`
-- **Deployment Checklist:** `DEPLOYMENT_CHECKLIST.md`
-- **Quick Reference:** `QUICK_REFERENCE.md`
-- **File Organization:** `FILE_ORGANIZATION.md`
-- **Docker Documentation:** `docs/setup/DOCKER_SETUP.md`
-- **Kubernetes Documentation:** `docs/setup/KUBERNETES_SETUP.md`
+- **Deployment Guide:** `DOCUMENTATION.md` § Deployment Architecture
+- **Docker & Kubernetes:** See `DOCUMENTATION.md` for orchestration details
+- **Setup Instructions:** `docs/SETUP_GUIDE.md`
 
 ---
 

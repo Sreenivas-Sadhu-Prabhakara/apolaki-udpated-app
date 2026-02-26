@@ -346,8 +346,8 @@ kubectl get events -n production --sort-by='.lastTimestamp'
 - **Deployment Script:** `scripts/deploy-prod.sh`
 - **Kubernetes Utils:** `scripts/k8s-utils.sh`
 - **Deployment Workflow:** `.github/workflows/deploy.yml`
-- **Deployment Guide:** `docs/setup/END_TO_END_SETUP_GUIDE.md`
-- **Deployment Checklist:** `DEPLOYMENT_CHECKLIST.md`
+- **Deployment Guide:** `DOCUMENTATION.md` § Deployment Architecture
+- **Helm Guidance:** See `DOCUMENTATION.md` § Kubernetes Deployment
 
 ---
 

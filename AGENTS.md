@@ -7,6 +7,28 @@
 
 ---
 
+## ⚠️ Single Source of Truth
+
+**ALL system documentation is consolidated in `DOCUMENTATION.md`**
+
+This file (`AGENTS.md`) contains **code and standards guidelines** only.  
+For system overview, setup, deployment, and API reference: → see **`DOCUMENTATION.md`**
+
+| Need | See |
+|------|-----|
+| System overview, architecture, setup | `DOCUMENTATION.md` |
+| Development setup, local installation | `DOCUMENTATION.md` |
+| Deployment, environments, Docker | `DOCUMENTATION.md` |
+| API endpoints, database schema | `DOCUMENTATION.md` |
+| Environment variables, configuration | `DOCUMENTATION.md` |
+| **Code standards, SOLID, security rules** | **`AGENTS.md` (this file)** |
+| **Implementation patterns** | **`AGENTS.md` (this file)** |
+| **Naming conventions, testing** | **`AGENTS.md` (this file)** |
+| Governance, values, principles | `CONSTITUTION.md` |
+| How to contribute | `CONTRIBUTING.md` |
+
+---
+
 ## Purpose
 
 This document defines the rules, constraints, and behavioral expectations for any AI agent (GitHub Copilot, custom GPT agents, CI bots, code-generation tools) working on the Apolaki Solar Platform codebase. Every code suggestion, refactor, or generation **must** comply with these guidelines. Violations should be flagged, not shipped.
@@ -573,7 +595,7 @@ NEVER:
 **Agent Rule**: If an agent wants to add a new environment variable:
 1. Declare it in ConfigManager
 2. Add to .env.example (WITHOUT the value)
-3. Document in ENVIRONMENT_VARIABLES.md
+3. Document in DOCUMENTATION.md § Configuration Management
 4. NEVER commit actual values to git
 5. Netlify deployment sets actual values via dashboard
 

@@ -31,6 +31,18 @@ const config = {
       email: process.env.TEST_INSTALLER_EMAIL || 'installer@apolaki.solar',
       password: process.env.TEST_INSTALLER_PASSWORD || 'Install@Sun1!',
     },
+    dealer: {
+      email: process.env.TEST_DEALER_EMAIL || 'dealer@apolaki.solar',
+      password: process.env.TEST_DEALER_PASSWORD || 'Dealer@Sun1!',
+    },
+    operations: {
+      email: process.env.TEST_OPS_EMAIL || 'ops@apolaki.solar',
+      password: process.env.TEST_OPS_PASSWORD || 'Ops@Solar1!',
+    },
+    superadmin: {
+      email: process.env.TEST_SUPERADMIN_EMAIL || 'superadmin@apolaki.solar',
+      password: process.env.TEST_SUPERADMIN_PASSWORD || 'Super@Admin1!',
+    },
   },
 
   // ── Selenium / WebDriver ──────────────────────────────────────────────
@@ -43,11 +55,14 @@ const config = {
   // ── Known seeded UUIDs ─────────────────────────────────────────────────
   ids: {
     users: {
-      admin:     '00000000-0000-4000-a000-000000000001',
-      homeowner: '00000000-0000-4000-a000-000000000002',
-      installer: '00000000-0000-4000-a000-000000000003',
-      trader:    '00000000-0000-4000-a000-000000000004',
-      viewer:    '00000000-0000-4000-a000-000000000005',
+      admin:      '00000000-0000-4000-a000-000000000001',
+      homeowner:  '00000000-0000-4000-a000-000000000002',
+      installer:  '00000000-0000-4000-a000-000000000003',
+      trader:     '00000000-0000-4000-a000-000000000004',
+      viewer:     '00000000-0000-4000-a000-000000000005',
+      dealer:     '00000000-0000-4000-a000-000000000006',
+      operations: '00000000-0000-4000-a000-000000000007',
+      superadmin: '00000000-0000-4000-a000-000000000008',
     },
     installations: {
       makati_residential: '10000000-0000-4000-a000-000000000001',

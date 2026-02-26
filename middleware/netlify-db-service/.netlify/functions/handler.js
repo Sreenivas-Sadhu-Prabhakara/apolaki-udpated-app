@@ -4,8 +4,8 @@
  * Configuration is read from environment variables via ConfigManager
  */
 
-import serverless from 'serverless-http';
 import dotenv from 'dotenv';
+import serverless from 'serverless-http';
 
 // Load environment variables
 dotenv.config();
