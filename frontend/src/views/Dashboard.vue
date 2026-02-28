@@ -44,26 +44,26 @@
           <p class="kpi-meta">Active projects in portfolio</p>
         </div>
 
-        <!-- KPI Card 2: Active Systems -->
+        <!-- KPI Card 2: Daily Energy -->
         <div class="kpi-card card-accent-green">
           <div class="kpi-header">
-            <span class="kpi-icon">☀️</span>
+            <span class="kpi-icon">⚡</span>
             <span class="kpi-trend trend-up">↑ 8%</span>
           </div>
-          <h3 class="kpi-title">Active Systems</h3>
-          <p class="kpi-value">{{ activeCount }}</p>
-          <p class="kpi-meta">Currently generating power</p>
+          <h3 class="kpi-title">Daily Energy</h3>
+          <p class="kpi-value">{{ dailyEnergyKwh }} <span class="kpi-unit">kWh</span></p>
+          <p class="kpi-meta">Estimated today's generation</p>
         </div>
 
         <!-- KPI Card 3: Total Capacity -->
         <div class="kpi-card card-accent-amber">
           <div class="kpi-header">
-            <span class="kpi-icon">⚡</span>
+            <span class="kpi-icon">☀️</span>
             <span class="kpi-trend trend-up">↑ 12%</span>
           </div>
           <h3 class="kpi-title">Total Capacity</h3>
           <p class="kpi-value">{{ totalCapacity }} <span class="kpi-unit">kW</span></p>
-          <p class="kpi-meta">Installed capacity</p>
+          <p class="kpi-meta">{{ activeCount }} of {{ installationStore.installations.length }} systems active</p>
         </div>
 
         <!-- KPI Card 4: Efficiency -->
@@ -75,6 +75,28 @@
           <h3 class="kpi-title">System Efficiency</h3>
           <p class="kpi-value">94.8%</p>
           <p class="kpi-meta">Average performance</p>
+        </div>
+
+        <!-- KPI Card 5: Monthly Savings -->
+        <div class="kpi-card card-accent-green">
+          <div class="kpi-header">
+            <span class="kpi-icon">💰</span>
+            <span class="kpi-trend trend-up">↑ 5%</span>
+          </div>
+          <h3 class="kpi-title">Monthly Savings</h3>
+          <p class="kpi-value">${{ estimatedMonthlySavings }}</p>
+          <p class="kpi-meta">Estimated utility savings</p>
+        </div>
+
+        <!-- KPI Card 6: CO₂ Offset -->
+        <div class="kpi-card card-accent-blue">
+          <div class="kpi-header">
+            <span class="kpi-icon">🌱</span>
+            <span class="kpi-trend trend-up">↑ 10%</span>
+          </div>
+          <h3 class="kpi-title">CO₂ Offset</h3>
+          <p class="kpi-value">{{ carbonOffsetMonthly }} <span class="kpi-unit">kg/mo</span></p>
+          <p class="kpi-meta">{{ carbonOffsetYearly }} tons per year</p>
         </div>
       </div>
     </section>
@@ -207,147 +229,283 @@
     <section class="charts-section mb-8">
       <div class="section-header">
         <h2>Performance Analytics</h2>
-        <p class="text-gray-600">Weekly energy generation overview</p>
+        <div class="time-range-tabs">
+          <button v-for="range in timeRanges" :key="range.value"
+            @click="selectedRange = range.value"
+            :class="['range-tab', { active: selectedRange === range.value }]">
+            {{ range.label }}
+          </button>
+        </div>
       </div>
       
       <div class="charts-grid">
-        <!-- Weekly Generation Chart -->
+        <!-- Energy Generation Chart -->
         <div class="chart-card">
-          <h3>Weekly Energy Generation</h3>
+          <h3>Energy Generation (kWh)</h3>
           <div class="chart-placeholder">
-            <div class="chart-bar" style="height: 60%"></div>
-            <div class="chart-bar" style="height: 80%"></div>
-            <div class="chart-bar" style="height: 75%"></div>
-            <div class="chart-bar" style="height: 90%"></div>
-            <div class="chart-bar" style="height: 85%"></div>
-            <div class="chart-bar" style="height: 95%"></div>
-            <div class="chart-bar" style="height: 88%"></div>
+            <div v-for="(bar, idx) in chartData" :key="idx"
+              class="chart-bar"
+              :style="{ height: bar.heightPercent + '%' }"
+              :title="bar.label + ': ' + bar.value + ' kWh'">
+            </div>
           </div>
           <div class="chart-labels">
-            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+            <span v-for="(bar, idx) in chartData" :key="'l-'+idx">{{ bar.label }}</span>
+          </div>
+          <div class="chart-summary">
+            <span>Total: <strong>{{ chartTotal }} kWh</strong></span>
+            <span>Avg: <strong>{{ chartAvg }} kWh</strong></span>
           </div>
         </div>
 
         <!-- System Status Pie Chart -->
         <div class="chart-card">
           <h3>System Status Distribution</h3>
-          <div class="pie-chart">
-            <div class="pie-slice active" style="--percentage: 70%"></div>
-            <div class="pie-slice inactive" style="--percentage: 20%"></div>
-            <div class="pie-slice maintenance" style="--percentage: 10%"></div>
-          </div>
+          <div class="pie-chart" :style="pieChartStyle"></div>
           <div class="pie-legend">
-            <div><span class="dot active"></span> Active</div>
-            <div><span class="dot inactive"></span> Inactive</div>
-            <div><span class="dot maintenance"></span> Maintenance</div>
+            <div><span class="dot active"></span> Active ({{ activeCount }})</div>
+            <div><span class="dot inactive"></span> Inactive ({{ inactiveCount }})</div>
+            <div><span class="dot maintenance"></span> Maintenance ({{ maintenanceCount }})</div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- UI Components Showcase Section -->
-    <section class="components-showcase mb-8">
+    <!-- Weather & Savings Row -->
+    <section class="insights-row mb-8">
+      <!-- Weather Widget -->
+      <div class="insight-card weather-card">
+        <h3>☁️ Weather Conditions</h3>
+        <div class="weather-main">
+          <span class="weather-icon">{{ weatherData.icon }}</span>
+          <div>
+            <p class="weather-temp">{{ weatherData.temperature }}°C</p>
+            <p class="weather-desc">{{ weatherData.description }}</p>
+          </div>
+        </div>
+        <div class="weather-details">
+          <div><span>☀️ UV Index</span><strong>{{ weatherData.uvIndex }}</strong></div>
+          <div><span>💨 Wind</span><strong>{{ weatherData.wind }} km/h</strong></div>
+          <div><span>💧 Humidity</span><strong>{{ weatherData.humidity }}%</strong></div>
+          <div><span>🌤️ Cloud Cover</span><strong>{{ weatherData.cloudCover }}%</strong></div>
+        </div>
+        <p class="weather-impact" :class="weatherData.solarImpact === 'High' ? 'impact-good' : weatherData.solarImpact === 'Moderate' ? 'impact-moderate' : 'impact-low'">
+          Solar Production Potential: <strong>{{ weatherData.solarImpact }}</strong>
+        </p>
+      </div>
+
+      <!-- Savings & CO2 Widget -->
+      <div class="insight-card savings-card">
+        <h3>💰 Estimated Savings & Impact</h3>
+        <div class="savings-grid">
+          <div class="savings-item">
+            <span class="savings-icon">💵</span>
+            <div>
+              <p class="savings-value">${{ estimatedMonthlySavings }}</p>
+              <p class="savings-label">Monthly Savings</p>
+            </div>
+          </div>
+          <div class="savings-item">
+            <span class="savings-icon">💰</span>
+            <div>
+              <p class="savings-value">${{ estimatedYearlySavings }}</p>
+              <p class="savings-label">Yearly Savings</p>
+            </div>
+          </div>
+          <div class="savings-item">
+            <span class="savings-icon">🌱</span>
+            <div>
+              <p class="savings-value">{{ carbonOffsetMonthly }} kg</p>
+              <p class="savings-label">CO₂ Offset / Month</p>
+            </div>
+          </div>
+          <div class="savings-item">
+            <span class="savings-icon">🌍</span>
+            <div>
+              <p class="savings-value">{{ carbonOffsetYearly }} tons</p>
+              <p class="savings-label">CO₂ Offset / Year</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Alerts Section -->
+    <section class="alerts-section mb-8">
       <div class="section-header">
-        <h2>UI Components Reference</h2>
-        <p class="text-gray-600">Modern interactive components used throughout the platform</p>
+        <h2>⚠️ System Alerts</h2>
+        <p class="text-gray-600">{{ systemAlerts.length }} active alert{{ systemAlerts.length !== 1 ? 's' : '' }}</p>
       </div>
-
-      <!-- Buttons Showcase -->
-      <div class="showcase-card">
-        <h3>Buttons</h3>
-        <div class="showcase-grid">
-          <button class="btn btn-primary">Primary Button</button>
-          <button class="btn btn-secondary">Secondary Button</button>
-          <button class="btn btn-success">Success Button</button>
-          <button class="btn btn-danger">Danger Button</button>
-          <button class="btn btn-outline">Outline Button</button>
-          <button class="btn btn-ghost">Ghost Button</button>
-        </div>
+      <div v-if="systemAlerts.length === 0" class="alert alert-success">
+        <span class="alert-icon">✓</span>
+        <span>All systems operating normally. No issues detected.</span>
       </div>
-
-      <!-- Input Elements -->
-      <div class="showcase-card">
-        <h3>Form Inputs</h3>
-        <div class="showcase-form">
-          <div class="form-group">
-            <label>Text Input</label>
-            <input type="text" placeholder="Enter text..." class="input">
-          </div>
-          <div class="form-group">
-            <label>Email Input</label>
-            <input type="email" placeholder="example@email.com" class="input">
-          </div>
-          <div class="form-group">
-            <label>Select Dropdown</label>
-            <select class="input">
-              <option>Option 1</option>
-              <option>Option 2</option>
-              <option>Option 3</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="checkbox-label">
-              <input type="checkbox" class="checkbox">
-              <span>Accept terms and conditions</span>
-            </label>
-          </div>
+      <div v-for="(alert, idx) in systemAlerts" :key="idx"
+        :class="['alert', 'alert-' + alert.severity]">
+        <span class="alert-icon">{{ alert.icon }}</span>
+        <div class="alert-body">
+          <strong>{{ alert.title }}</strong>
+          <span>{{ alert.message }}</span>
         </div>
-      </div>
-
-      <!-- Badges and Tags -->
-      <div class="showcase-card">
-        <h3>Badges & Status Indicators</h3>
-        <div class="badge-showcase">
-          <span class="badge badge-primary">Primary</span>
-          <span class="badge badge-success">Success</span>
-          <span class="badge badge-warning">Warning</span>
-          <span class="badge badge-danger">Danger</span>
-          <span class="badge badge-info">Info</span>
-          <span class="status-badge status-active">Active</span>
-          <span class="status-badge status-inactive">Inactive</span>
-          <span class="status-badge status-pending">Pending</span>
-        </div>
-      </div>
-
-      <!-- Alert Messages -->
-      <div class="showcase-card">
-        <h3>Alerts</h3>
-        <div class="alert alert-success">
-          <span class="alert-icon">✓</span>
-          <span>Success message - Operation completed successfully!</span>
-        </div>
-        <div class="alert alert-warning">
-          <span class="alert-icon">⚠️</span>
-          <span>Warning message - Please review this information.</span>
-        </div>
-        <div class="alert alert-danger">
-          <span class="alert-icon">✕</span>
-          <span>Error message - Something went wrong. Please try again.</span>
-        </div>
-        <div class="alert alert-info">
-          <span class="alert-icon">ⓘ</span>
-          <span>Info message - Additional information for your attention.</span>
-        </div>
+        <span class="alert-time">{{ alert.time }}</span>
       </div>
     </section>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useInstallationStore } from '../stores/installationStore'
 import { useUserStore } from '../stores/userStore'
 
 const userStore = useUserStore()
 const installationStore = useInstallationStore()
 
-// Computed properties
-const activeCount = computed(() => {
-  return installationStore.installations.filter(i => i.status === 'active').length
+// ── Time Range ──
+const selectedRange = ref('7d')
+const timeRanges = [
+  { label: '24h', value: '24h' },
+  { label: '7 Days', value: '7d' },
+  { label: '30 Days', value: '30d' },
+  { label: 'Year', value: 'yearly' }
+]
+
+// ── Computed KPIs ──
+const activeCount = computed(() =>
+  installationStore.installations.filter(i => i.status === 'active').length
+)
+const inactiveCount = computed(() =>
+  installationStore.installations.filter(i => i.status === 'inactive').length
+)
+const maintenanceCount = computed(() =>
+  installationStore.installations.filter(i => i.status === 'maintenance').length
+)
+const totalCapacity = computed(() =>
+  installationStore.installations.reduce((sum, i) => sum + (i.capacity || 0), 0).toFixed(2)
+)
+
+// ── Simulated daily energy based on capacity ──
+const dailyEnergyKwh = computed(() => {
+  const cap = parseFloat(totalCapacity.value) || 0
+  return (cap * 4.5).toFixed(1) // ~4.5 peak sun hours average
+})
+const monthlyEnergyKwh = computed(() => (parseFloat(dailyEnergyKwh.value) * 30).toFixed(0))
+
+// ── Savings estimates (avg $0.12/kWh, 0.42 kg CO₂/kWh) ──
+const estimatedMonthlySavings = computed(() =>
+  (parseFloat(monthlyEnergyKwh.value) * 0.12).toFixed(0)
+)
+const estimatedYearlySavings = computed(() =>
+  (parseFloat(estimatedMonthlySavings.value) * 12).toLocaleString()
+)
+const carbonOffsetMonthly = computed(() =>
+  (parseFloat(monthlyEnergyKwh.value) * 0.42).toFixed(0)
+)
+const carbonOffsetYearly = computed(() =>
+  ((parseFloat(monthlyEnergyKwh.value) * 12 * 0.42) / 1000).toFixed(1)
+)
+
+// ── Chart Data (simulated by range) ──
+function generateChartData(range) {
+  const cap = parseFloat(totalCapacity.value) || 5
+  const random = (min, max) => Math.round((Math.random() * (max - min) + min) * 10) / 10
+  if (range === '24h') {
+    return Array.from({ length: 12 }, (_, i) => {
+      const hour = (7 + i * 1.5) | 0
+      const val = hour >= 7 && hour <= 18 ? random(cap * 0.1, cap * 0.5) : 0
+      return { label: `${hour}:00`, value: val }
+    })
+  } else if (range === '7d') {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    return days.map(d => ({ label: d, value: random(cap * 3, cap * 5.5) }))
+  } else if (range === '30d') {
+    return Array.from({ length: 15 }, (_, i) => ({
+      label: `Day ${(i * 2) + 1}`,
+      value: random(cap * 3, cap * 5.5)
+    }))
+  } else {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    return months.map(m => ({ label: m, value: random(cap * 80, cap * 160) }))
+  }
+}
+
+const chartData = computed(() => {
+  const data = generateChartData(selectedRange.value)
+  const maxVal = Math.max(...data.map(d => d.value), 1)
+  return data.map(d => ({ ...d, heightPercent: (d.value / maxVal) * 100 }))
+})
+const chartTotal = computed(() => chartData.value.reduce((s, d) => s + d.value, 0).toFixed(1))
+const chartAvg = computed(() => (parseFloat(chartTotal.value) / chartData.value.length).toFixed(1))
+
+// ── Pie chart style ──
+const pieChartStyle = computed(() => {
+  const total = installationStore.installations.length || 1
+  const a = (activeCount.value / total) * 360
+  const b = (inactiveCount.value / total) * 360
+  return {
+    background: `conic-gradient(#22c55e 0deg ${a}deg, #ef4444 ${a}deg ${a + b}deg, #eab308 ${a + b}deg 360deg)`
+  }
 })
 
-const totalCapacity = computed(() => {
-  return installationStore.installations.reduce((sum, i) => sum + (i.capacity || 0), 0).toFixed(2)
+// ── Weather (simulated) ──
+const weatherData = computed(() => {
+  const conditions = [
+    { icon: '☀️', description: 'Sunny & Clear', temperature: 32, uvIndex: 8, wind: 12, humidity: 35, cloudCover: 10, solarImpact: 'High' },
+    { icon: '⛅', description: 'Partly Cloudy', temperature: 28, uvIndex: 5, wind: 18, humidity: 55, cloudCover: 45, solarImpact: 'Moderate' },
+    { icon: '🌤️', description: 'Mostly Sunny', temperature: 30, uvIndex: 7, wind: 10, humidity: 40, cloudCover: 20, solarImpact: 'High' },
+  ]
+  // Pick based on current hour for some variety
+  return conditions[new Date().getHours() % conditions.length]
+})
+
+// ── System Alerts (data-driven) ──
+const systemAlerts = computed(() => {
+  const alerts = []
+  const installs = installationStore.installations
+
+  const inactive = installs.filter(i => i.status === 'inactive')
+  if (inactive.length > 0) {
+    alerts.push({
+      severity: 'danger',
+      icon: '🔴',
+      title: `${inactive.length} System${inactive.length > 1 ? 's' : ''} Offline`,
+      message: inactive.map(i => i.name).join(', ') + ' — check connection.',
+      time: 'Now'
+    })
+  }
+
+  const maint = installs.filter(i => i.status === 'maintenance')
+  if (maint.length > 0) {
+    alerts.push({
+      severity: 'warning',
+      icon: '🟡',
+      title: 'Maintenance Scheduled',
+      message: maint.map(i => i.name).join(', ') + ' — scheduled maintenance.',
+      time: 'Today'
+    })
+  }
+
+  if (parseFloat(totalCapacity.value) > 0 && activeCount.value === 0) {
+    alerts.push({
+      severity: 'danger',
+      icon: '⚡',
+      title: 'No Active Generation',
+      message: 'None of your systems are currently generating power.',
+      time: 'Now'
+    })
+  }
+
+  if (weatherData.value.cloudCover > 40) {
+    alerts.push({
+      severity: 'info',
+      icon: '☁️',
+      title: 'Reduced Solar Output Expected',
+      message: `Cloud cover at ${weatherData.value.cloudCover}% may reduce generation by ~${Math.round(weatherData.value.cloudCover * 0.6)}%.`,
+      time: 'Today'
+    })
+  }
+
+  return alerts
 })
 
 // Lifecycle
@@ -922,118 +1080,200 @@ onMounted(async () => {
   background: #eab308;
 }
 
-/* Components Showcase */
-.components-showcase {
-  margin-bottom: 3rem;
+/* Time Range Tabs */
+.time-range-tabs {
+  display: flex;
+  gap: 0.5rem;
+  background: var(--gray-100);
+  border-radius: 0.5rem;
+  padding: 0.25rem;
 }
 
-.showcase-card {
+.range-tab {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.range-tab:hover {
+  color: var(--gray-900);
+}
+
+.range-tab.active {
+  background: white;
+  color: var(--primary);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Chart Summary */
+.chart-summary {
+  display: flex;
+  justify-content: space-around;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gray-200);
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--gray-600);
+}
+
+.chart-summary strong {
+  color: var(--gray-900);
+}
+
+/* Insights Row (Weather & Savings) */
+.insights-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 2rem;
+}
+
+.insight-card {
   background: white;
   border-radius: 1rem;
   padding: 2rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-bottom: 1.5rem;
 }
 
-.showcase-card h3 {
-  font-size: 1.25rem;
+.insight-card h3 {
+  font-size: 1.125rem;
   font-weight: 600;
   margin: 0 0 1.5rem 0;
   color: var(--gray-900);
 }
 
-.showcase-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
+.weather-main {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
   margin-bottom: 1.5rem;
 }
 
-.showcase-form {
+.weather-icon {
+  font-size: 3rem;
+}
+
+.weather-temp {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0;
+}
+
+.weather-desc {
+  font-size: 0.95rem;
+  color: var(--gray-600);
+  margin: 0.25rem 0 0 0;
+}
+
+.weather-details {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-group label {
-  font-weight: 600;
-  color: var(--gray-700);
-  font-size: 0.95rem;
-}
-
-.input {
-  padding: 0.75rem;
-  border: 1px solid var(--gray-300);
-  border-radius: 0.5rem;
-  font-size: 0.95rem;
-  transition: all 0.2s;
-  font-family: inherit;
-}
-
-.input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  font-size: 0.95rem;
-}
-
-.checkbox-label input {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-.badge-showcase {
-  display: flex;
-  flex-wrap: wrap;
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
-.badge {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  border-radius: 9999px;
+.weather-details > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: var(--gray-50);
+  border-radius: 0.5rem;
   font-size: 0.875rem;
-  font-weight: 600;
 }
 
-.badge-primary {
-  background: #dbeafe;
-  color: #1e40af;
+.weather-details span {
+  color: var(--gray-600);
 }
 
-.badge-success {
+.weather-details strong {
+  color: var(--gray-900);
+}
+
+.weather-impact {
+  font-size: 0.925rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  margin: 0;
+}
+
+.impact-good {
   background: #dcfce7;
   color: #166534;
 }
 
-.badge-warning {
+.impact-moderate {
   background: #fef3c7;
   color: #92400e;
 }
 
-.badge-danger {
+.impact-low {
   background: #fee2e2;
   color: #7f1d1d;
 }
 
-.badge-info {
-  background: #cffafe;
-  color: #164e63;
+/* Savings Grid */
+.savings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.savings-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--gray-50);
+  border-radius: 0.75rem;
+}
+
+.savings-icon {
+  font-size: 1.5rem;
+}
+
+.savings-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0;
+}
+
+.savings-label {
+  font-size: 0.8rem;
+  color: var(--gray-600);
+  margin: 0.125rem 0 0 0;
+}
+
+/* Alert Details */
+.alert-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  flex: 1;
+}
+
+.alert-body strong {
+  font-size: 0.9rem;
+}
+
+.alert-body span {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.alert-time {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  opacity: 0.7;
+  font-weight: 500;
 }
 
 .status-badge {
@@ -1055,6 +1295,11 @@ onMounted(async () => {
 }
 
 .status-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-maintenance {
   background-color: #fef3c7;
   color: #92400e;
 }
@@ -1233,11 +1478,19 @@ onMounted(async () => {
     grid-template-columns: 1fr;
   }
 
-  .showcase-grid {
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  .insights-row {
+    grid-template-columns: 1fr;
   }
 
-  .showcase-form {
+  .time-range-tabs {
+    flex-wrap: wrap;
+  }
+
+  .savings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .weather-details {
     grid-template-columns: 1fr;
   }
 }
