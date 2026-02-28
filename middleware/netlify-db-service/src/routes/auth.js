@@ -21,7 +21,7 @@ const router = express.Router();
 // ============================================
 
 /**
- * Auto-seed the default admin user (admin@apolaki.solar / admin123)
+ * Auto-seed the default admin user (admin@apolaki.com / admin123)
  * Runs once when the auth routes module loads.
  * Wraps in setTimeout(0) so it doesn't block cold-start of serverless function.
  */
@@ -33,7 +33,7 @@ async function seedAdminUser() {
     // Ensure schema exists before seeding
     await ensureSchema();
     
-    const adminEmail = 'admin@apolaki.solar';
+    const adminEmail = 'admin@apolaki.com';
     const adminPassword = 'admin123';
     const existing = await users.getByEmail(adminEmail);
     if (!existing) {
@@ -46,9 +46,9 @@ async function seedAdminUser() {
         phone: null,
         role: 'admin'
       });
-      console.log('✅ Seeded default admin user: admin@apolaki.solar / admin123');
+      console.log('✅ Seeded default admin user: admin@apolaki.com / admin123');
     } else {
-      console.log('ℹ️  Admin user already exists: admin@apolaki.solar');
+      console.log('ℹ️  Admin user already exists: admin@apolaki.com');
     }
   } catch (err) {
     adminSeeded = false; // Allow retry on next request
