@@ -295,8 +295,8 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { useAssessmentStore } from '../stores/assessmentStore'
 import { lookupSolarPotential } from '../services/solarApi'
+import { useAssessmentStore } from '../stores/assessmentStore'
 
 const assessmentStore = useAssessmentStore()
 const loading = ref(false)
