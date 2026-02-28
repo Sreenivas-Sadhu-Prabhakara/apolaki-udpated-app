@@ -26,9 +26,9 @@ const USERS = [
   {
     id: USER_IDS.admin,
     email: 'admin@apolaki.solar',
-    password: 'Admin@12345!',
-    first_name: 'Maria',
-    last_name: 'Santos',
+    password: 'admin123',
+    first_name: 'Admin',
+    last_name: 'User',
     phone: '+63 917 123 4567',
     role: 'admin',
   },

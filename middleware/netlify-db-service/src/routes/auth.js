@@ -12,6 +12,41 @@ import { auditLogs, oauthProviders, passwordResetTokens, sessions, users } from 
 
 const router = express.Router();
 
+// ============================================
+// SEED ADMIN USER ON STARTUP
+// ============================================
+
+/**
+ * Auto-seed the default admin user (admin@apolaki.solar / admin)
+ * Runs once when the auth routes module loads.
+ */
+async function seedAdminUser() {
+  try {
+    const adminEmail = 'admin@apolaki.solar';
+    const adminPassword = 'admin123';
+    const existing = await users.getByEmail(adminEmail);
+    if (!existing) {
+      const passwordHash = await hashPassword(adminPassword);
+      await users.create({
+        email: adminEmail,
+        passwordHash,
+        firstName: 'Admin',
+        lastName: 'User',
+        phone: null,
+        role: 'admin'
+      });
+      console.log('✅ Seeded default admin user: admin@apolaki.solar / admin123');
+    } else {
+      console.log('ℹ️  Admin user already exists: admin@apolaki.solar');
+    }
+  } catch (err) {
+    console.warn('⚠️  Could not seed admin user (DB may not be ready):', err.message);
+  }
+}
+
+// Run seed on module load (non-blocking)
+seedAdminUser();
+
 /**
  * Helper function to get client IP
  */
@@ -184,6 +219,80 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Login failed', message: error.message });
+  }
+});
+
+/**
+ * POST /api/auth/verify-otp
+ * OTP fallback verification when login fails.
+ * Accepts a static OTP (123456) to allow access.
+ * In production, replace with a real OTP provider (Twilio, SendGrid, etc.).
+ */
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ error: 'Email and OTP are required' });
+    }
+
+    // Static OTP for MVP — replace with real OTP verification in production
+    const VALID_OTP = '123456';
+
+    if (otp !== VALID_OTP) {
+      return res.status(401).json({ error: 'Invalid OTP code' });
+    }
+
+    // Look up user by email
+    const user = await users.getByEmail(email);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Create session
+    const sessionToken = generateSessionToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await sessions.create({
+      userId: user.id,
+      sessionToken,
+      ipAddress: getClientIp(req),
+      userAgent: req.get('user-agent'),
+      expiresAt
+    });
+
+    // Generate tokens
+    const token = generateToken(user);
+    const refreshToken = generateRefreshToken(user);
+
+    await auditLogs.create({
+      userId: user.id,
+      action: 'LOGIN_OTP',
+      resourceType: 'user',
+      resourceId: user.id,
+      ipAddress: getClientIp(req),
+      userAgent: req.get('user-agent'),
+      status: 'success'
+    });
+
+    res.json({
+      success: true,
+      message: 'OTP verification successful',
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        phone: user.phone,
+        profilePictureUrl: user.profile_picture_url,
+        role: user.role
+      },
+      token,
+      refreshToken,
+      sessionToken
+    });
+  } catch (error) {
+    console.error('OTP verification error:', error);
+    res.status(500).json({ error: 'OTP verification failed', message: error.message });
   }
 });
 

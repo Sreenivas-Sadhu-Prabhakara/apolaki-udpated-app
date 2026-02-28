@@ -144,6 +144,22 @@ export const useUserStore = defineStore('user', () => {
     return false
   }
 
+  const verifyOtp = async (email, otp) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await api.post('/auth/verify-otp', { email, otp })
+      setAuthTokens(response.data)
+      user.value = response.data.user
+      return true
+    } catch (err) {
+      error.value = err.response?.data?.error || 'OTP verification failed'
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     user,
     token,
@@ -163,7 +179,8 @@ export const useUserStore = defineStore('user', () => {
     refreshAuthToken,
     setAuthTokens,
     restoreSession,
-    handleOAuthCallback
+    handleOAuthCallback,
+    verifyOtp
   }
 })
 

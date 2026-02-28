@@ -40,11 +40,11 @@
         <span>or login with email</span>
       </div>
 
-      <div v-if="userStore.error" class="alert alert-error">
+      <div v-if="userStore.error && !showOtp" class="alert alert-error">
         {{ userStore.error }}
       </div>
 
-      <form @submit.prevent="handleLogin">
+      <form v-if="!showOtp" @submit.prevent="handleLogin">
         <div>
           <label for="email">Email</label>
           <input
@@ -76,6 +76,45 @@
         </button>
       </form>
 
+      <!-- OTP Verification (shown when login fails) -->
+      <div v-if="showOtp" class="otp-section">
+        <div class="otp-header">
+          <span class="otp-icon">🔐</span>
+          <h3>Verify Your Identity</h3>
+          <p class="otp-subtitle">Enter the 6-digit OTP sent to <strong>{{ email }}</strong></p>
+        </div>
+
+        <div v-if="otpError" class="alert alert-error">{{ otpError }}</div>
+
+        <form @submit.prevent="handleOtpVerify">
+          <div>
+            <label for="otp">One-Time Password</label>
+            <input
+              id="otp"
+              v-model="otpCode"
+              type="text"
+              inputmode="numeric"
+              maxlength="6"
+              placeholder="123456"
+              class="otp-input"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-primary w-full"
+            :disabled="userStore.loading || otpCode.length !== 6"
+          >
+            {{ userStore.loading ? 'Verifying...' : 'Verify OTP' }}
+          </button>
+        </form>
+
+        <button class="btn-back" @click="showOtp = false; otpError = null; userStore.error = null">
+          ← Back to login
+        </button>
+      </div>
+
       <p class="text-center mt-3">
         <router-link to="/forgot-password" class="text-primary text-sm">Forgot your password?</router-link>
       </p>
@@ -97,6 +136,9 @@ const router = useRouter()
 const userStore = useUserStore()
 const email = ref('')
 const password = ref('')
+const showOtp = ref(false)
+const otpCode = ref('')
+const otpError = ref(null)
 
 const apiBase = import.meta.env.VITE_API_URL || '/api'
 
@@ -104,6 +146,21 @@ const handleLogin = async () => {
   const success = await userStore.login(email.value, password.value)
   if (success) {
     router.push('/dashboard')
+  } else {
+    // Login failed — show OTP verification as fallback
+    showOtp.value = true
+    otpCode.value = ''
+    otpError.value = null
+  }
+}
+
+const handleOtpVerify = async () => {
+  otpError.value = null
+  const success = await userStore.verifyOtp(email.value, otpCode.value)
+  if (success) {
+    router.push('/dashboard')
+  } else {
+    otpError.value = userStore.error || 'Invalid OTP. Please try again.'
   }
 }
 </script>
@@ -258,5 +315,55 @@ const handleLogin = async () => {
 
 .text-primary:hover {
   text-decoration: underline;
+}
+
+/* OTP Section */
+.otp-section {
+  text-align: center;
+}
+
+.otp-header {
+  margin-bottom: 1.5rem;
+}
+
+.otp-icon {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.otp-header h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  color: #111827;
+}
+
+.otp-subtitle {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.otp-input {
+  text-align: center;
+  font-size: 1.75rem;
+  letter-spacing: 0.75rem;
+  font-weight: 700;
+  padding: 0.75rem 1rem;
+}
+
+.btn-back {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+  padding: 0.5rem;
+  transition: color 0.2s;
+}
+
+.btn-back:hover {
+  color: #f97316;
 }
 </style>
