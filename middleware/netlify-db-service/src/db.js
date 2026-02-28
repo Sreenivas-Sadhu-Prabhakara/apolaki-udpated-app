@@ -195,6 +195,24 @@ export const users = {
   async delete(id) {
     const sqlInstance = getSqlInstance();
     return await sqlInstance`DELETE FROM users WHERE id = ${id}`;
+  },
+
+  /**
+   * Update user password
+   * @param {string} id - User ID
+   * @param {string} passwordHash - New hashed password
+   * @returns {Promise} Updated user
+   */
+  async updatePassword(id, passwordHash) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      UPDATE users
+      SET password_hash = ${passwordHash},
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${id}
+      RETURNING id, email, first_name, last_name, role, updated_at
+    `;
+    return result[0];
   }
 };
 
@@ -1127,6 +1145,46 @@ export const breakGlassSessions = {
       RETURNING *
     `;
     return result[0];
+  }
+};
+
+/**
+ * Password Reset Token operations
+ */
+export const passwordResetTokens = {
+  /**
+   * Create a password reset token
+   */
+  async create({ userId, token, expiresAt }) {
+    const sqlInstance = getSqlInstance();
+    // Invalidate any existing tokens for this user
+    await sqlInstance`UPDATE password_reset_tokens SET used = true WHERE user_id = ${userId} AND used = false`;
+    const result = await sqlInstance`
+      INSERT INTO password_reset_tokens (user_id, token, expires_at)
+      VALUES (${userId}, ${token}, ${expiresAt})
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  /**
+   * Get token record by token string
+   */
+  async getByToken(token) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      SELECT * FROM password_reset_tokens
+      WHERE token = ${token} AND used = false AND expires_at > CURRENT_TIMESTAMP
+    `;
+    return result[0];
+  },
+
+  /**
+   * Mark token as used
+   */
+  async markUsed(token) {
+    const sqlInstance = getSqlInstance();
+    await sqlInstance`UPDATE password_reset_tokens SET used = true WHERE token = ${token}`;
   }
 };
 

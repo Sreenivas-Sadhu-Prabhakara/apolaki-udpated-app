@@ -8,7 +8,7 @@ import express from 'express';
 import passport from 'passport';
 import { extractTokenFromHeader, generateRefreshToken, generateSessionToken, generateToken, verifyToken } from '../auth/jwt.js';
 import { hashPassword, verifyPassword } from '../auth/password.js';
-import { auditLogs, oauthProviders, sessions, users } from '../db.js';
+import { auditLogs, oauthProviders, passwordResetTokens, sessions, users } from '../db.js';
 
 const router = express.Router();
 
@@ -260,6 +260,122 @@ router.post('/refresh', async (req, res) => {
   } catch (error) {
     console.error('Token refresh error:', error);
     res.status(401).json({ error: 'Token refresh failed', message: error.message });
+  }
+});
+
+// ============================================
+// PASSWORD RESET
+// ============================================
+
+/**
+ * POST /api/auth/forgot-password
+ * Request a password reset token
+ */
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const user = await users.getByEmail(email);
+
+    // Always return success to prevent email enumeration
+    if (!user) {
+      return res.json({
+        success: true,
+        message: 'If an account with that email exists, a reset link has been sent.'
+      });
+    }
+
+    // Generate a secure reset token
+    const crypto = await import('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await passwordResetTokens.create({
+      userId: user.id,
+      token: resetToken,
+      expiresAt
+    });
+
+    await auditLogs.create({
+      userId: user.id,
+      action: 'PASSWORD_RESET_REQUESTED',
+      resourceType: 'user',
+      resourceId: user.id,
+      ipAddress: getClientIp(req),
+      userAgent: req.get('user-agent'),
+      status: 'success'
+    });
+
+    // In production, send email with reset link
+    // For MVP/dev, include the token in the response
+    const isDev = process.env.NODE_ENV !== 'production';
+    const response = {
+      success: true,
+      message: 'If an account with that email exists, a reset link has been sent.'
+    };
+
+    if (isDev) {
+      response.resetToken = resetToken;
+      response.resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+    }
+
+    res.json(response);
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Password reset request failed' });
+  }
+});
+
+/**
+ * POST /api/auth/reset-password
+ * Reset password using a token
+ */
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ error: 'Token and new password are required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    // Validate token
+    const resetRecord = await passwordResetTokens.getByToken(token);
+    if (!resetRecord) {
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+
+    // Hash new password and update
+    const passwordHash = await hashPassword(password);
+    await users.updatePassword(resetRecord.user_id, passwordHash);
+
+    // Mark token as used
+    await passwordResetTokens.markUsed(token);
+
+    await auditLogs.create({
+      userId: resetRecord.user_id,
+      action: 'PASSWORD_RESET_COMPLETED',
+      resourceType: 'user',
+      resourceId: resetRecord.user_id,
+      ipAddress: getClientIp(req),
+      userAgent: req.get('user-agent'),
+      status: 'success'
+    });
+
+    res.json({
+      success: true,
+      message: 'Password has been reset successfully. You can now log in with your new password.'
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Password reset failed' });
   }
 });
 

@@ -4,6 +4,12 @@ import { useUserStore } from '../stores/userStore'
 const routes = [
   {
     path: '/',
+    name: 'Landing',
+    component: () => import('../views/Landing.vue'),
+    meta: { requiresAuth: false, publicOnly: true }
+  },
+  {
+    path: '/dashboard',
     name: 'Dashboard',
     component: () => import('../views/Dashboard.vue'),
     meta: { requiresAuth: true }
@@ -18,6 +24,18 @@ const routes = [
     path: '/signup',
     name: 'Signup',
     component: () => import('../views/Signup.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('../views/ForgotPassword.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: () => import('../views/ResetPassword.vue'),
     meta: { requiresAuth: false }
   },
   {
@@ -68,6 +86,12 @@ const routes = [
     component: () => import('../views/Profile.vue'),
     meta: { requiresAuth: true }
   },
+  {
+    path: '/about',
+    name: 'About',
+    component: () => import('../views/About.vue'),
+    meta: { requiresAuth: false }
+  },
   // ── Persona Routes ─────────────────────────────────────────────
   {
     path: '/dealer',
@@ -106,11 +130,14 @@ router.beforeEach((to, from, next) => {
 
   if (to.meta.requiresAuth && !userStore.isAuthenticated) {
     next('/login')
+  } else if (to.meta.publicOnly && userStore.isAuthenticated) {
+    // Authenticated users landing on public-only pages go to dashboard
+    next('/dashboard')
   } else if ((to.name === 'Login' || to.name === 'Signup') && userStore.isAuthenticated) {
-    next('/')
+    next('/dashboard')
   } else if (to.meta.allowedRoles && !to.meta.allowedRoles.includes(userStore.userRole)) {
     // Role-based guard: redirect to dashboard if user lacks permission
-    next('/')
+    next('/dashboard')
   } else {
     next()
   }

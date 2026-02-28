@@ -213,7 +213,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useAssessmentStore } from '../stores/assessmentStore'
 
 const assessmentStore = useAssessmentStore()

@@ -42,6 +42,10 @@
         </button>
       </form>
 
+      <p class="text-center mt-3">
+        <router-link to="/forgot-password" class="text-primary text-sm">Forgot your password?</router-link>
+      </p>
+
       <p class="text-center mt-4">
         Don't have an account?
         <router-link to="/signup" class="text-primary">Sign up</router-link>
@@ -63,7 +67,7 @@ const password = ref('')
 const handleLogin = async () => {
   const success = await userStore.login(email.value, password.value)
   if (success) {
-    router.push('/')
+    router.push('/dashboard')
   }
 }
 </script>

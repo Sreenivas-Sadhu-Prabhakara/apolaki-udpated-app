@@ -105,7 +105,7 @@ const handleSignup = async () => {
   }
   const success = await userStore.signup(email.value, password.value, firstName.value, lastName.value)
   if (success) {
-    router.push('/')
+    router.push('/dashboard')
   }
 }
 </script>

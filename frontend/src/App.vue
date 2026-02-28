@@ -1,7 +1,7 @@
 <template>
   <div id="app" class="app-wrapper">
     <!-- Navigation Bar -->
-    <nav class="navbar sticky top-0 z-50 bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 shadow-lg">
+    <nav v-if="showChrome" class="navbar sticky top-0 z-50 bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 shadow-lg">
       <div class="nav-container max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         <!-- Brand -->
         <div class="nav-brand flex items-center gap-2">
@@ -11,7 +11,7 @@
 
         <!-- Main Menu -->
         <ul class="nav-menu hidden md:flex items-center gap-6">
-          <li><router-link to="/" class="nav-link text-white hover:text-yellow-100 transition">Dashboard</router-link></li>
+          <li><router-link to="/dashboard" class="nav-link text-white hover:text-yellow-100 transition">Dashboard</router-link></li>
           <li><router-link to="/installations" class="nav-link text-white hover:text-yellow-100 transition">Installations</router-link></li>
           <li><router-link to="/monitoring" class="nav-link text-white hover:text-yellow-100 transition">Monitoring</router-link></li>
           <li><router-link to="/marketplace" class="nav-link text-white hover:text-yellow-100 transition">Marketplace</router-link></li>
@@ -43,14 +43,14 @@
     </nav>
 
     <!-- Main Content Area -->
-    <main class="main-content min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <main class="main-content min-h-screen" :class="showChrome ? 'bg-gradient-to-b from-gray-50 to-gray-100' : ''">
       <transition name="fade">
         <router-view />
       </transition>
     </main>
 
     <!-- Footer -->
-    <footer class="footer bg-gray-900 text-gray-300 mt-auto">
+    <footer v-if="showChrome" class="footer bg-gray-900 text-gray-300 mt-auto">
       <div class="max-w-7xl mx-auto px-4 py-12">
         <div class="grid grid-cols-4 gap-8 mb-8">
           <div>
@@ -64,7 +64,7 @@
           <div>
             <h3 class="text-white font-bold mb-4">Company</h3>
             <ul class="space-y-2 text-sm">
-              <li><a href="#" class="hover:text-white">About</a></li>
+              <li><router-link to="/about" class="hover:text-white">About</router-link></li>
               <li><a href="#" class="hover:text-white">Blog</a></li>
               <li><a href="#" class="hover:text-white">Contact</a></li>
             </ul>
@@ -95,11 +95,19 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from './stores/userStore'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
+
+// Hide chrome (navbar/footer) on landing, login, signup pages
+const showChrome = computed(() => {
+  const hiddenRoutes = ['Landing', 'Login', 'Signup', 'AuthCallback']
+  return !hiddenRoutes.includes(route.name)
+})
 
 const logout = () => {
   userStore.logout()
