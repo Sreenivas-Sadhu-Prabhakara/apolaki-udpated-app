@@ -48,9 +48,9 @@ onMounted(async () => {
 
     loading.value = false
 
-    // Redirect to dashboard
+    // Redirect to solar potential assessment page
     setTimeout(() => {
-      router.push('/dashboard')
+      router.push('/assessment')
     }, 1000)
   } catch (err) {
     console.error('OAuth callback error:', err)

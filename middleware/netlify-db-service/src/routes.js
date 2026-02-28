@@ -841,7 +841,6 @@ router.post('/solar/lookup', authenticateToken, async (req, res) => {
         // Geocode first if we don't have coords
         let lat, lng;
         if (googleApiKey) {
-          // Try Google geocoding even if Solar API failed
           const geocodeRes = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
             params: { address: locationQuery, key: googleApiKey },
             timeout: 8000
@@ -852,7 +851,6 @@ router.post('/solar/lookup', authenticateToken, async (req, res) => {
           }
         }
 
-        // Fallback geocoding: use NREL's own address param
         const pvWattsParams = {
           api_key: nrelApiKey,
           system_capacity: 5, // 5kW reference
@@ -897,13 +895,150 @@ router.post('/solar/lookup', authenticateToken, async (req, res) => {
       }
     }
 
-    // ── Provider 3: Built-in estimate (no API key needed) ───────
+    // ── Provider 3: NASA POWER API (free, no API key needed) ────
     if (!solarData) {
-      // Rough US averages by region
+      try {
+        // Geocode via a free service or use coordinates from state lookup
+        let lat, lng;
+
+        // Try Google geocoding if key available
+        if (googleApiKey) {
+          try {
+            const geocodeRes = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
+              params: { address: locationQuery, key: googleApiKey },
+              timeout: 8000
+            });
+            if (geocodeRes.data.results?.[0]) {
+              lat = geocodeRes.data.results[0].geometry.location.lat;
+              lng = geocodeRes.data.results[0].geometry.location.lng;
+            }
+          } catch (geoErr) {
+            console.warn('Geocoding failed for NASA provider:', geoErr.message);
+          }
+        }
+
+        // Fallback: use Nominatim (OpenStreetMap) free geocoder if no Google key
+        if (!lat || !lng) {
+          try {
+            const nominatimRes = await axios.get('https://nominatim.openstreetmap.org/search', {
+              params: {
+                q: locationQuery,
+                format: 'json',
+                limit: 1
+              },
+              headers: { 'User-Agent': 'ApolakiSolarPlatform/1.0' },
+              timeout: 8000
+            });
+            if (nominatimRes.data?.[0]) {
+              lat = parseFloat(nominatimRes.data[0].lat);
+              lng = parseFloat(nominatimRes.data[0].lon);
+            }
+          } catch (nomErr) {
+            console.warn('Nominatim geocoding failed:', nomErr.message);
+          }
+        }
+
+        if (lat && lng) {
+          // NASA POWER Climatology API — All Sky Surface Shortwave Downward Irradiance
+          // Free, no API key required: https://power.larc.nasa.gov/docs/
+          const nasaRes = await axios.get(
+            'https://power.larc.nasa.gov/api/temporal/climatology/point', {
+              params: {
+                parameters: 'ALLSKY_SFC_SW_DWN,CLRSKY_SFC_SW_DWN,T2M',
+                community: 'RE',
+                longitude: lng.toFixed(4),
+                latitude: lat.toFixed(4),
+                format: 'JSON'
+              },
+              timeout: 15000
+            }
+          );
+
+          const nasaParams = nasaRes.data?.properties?.parameter;
+          if (nasaParams) {
+            const irradiance = nasaParams.ALLSKY_SFC_SW_DWN || {};
+            const clearSky = nasaParams.CLRSKY_SFC_SW_DWN || {};
+            const temp = nasaParams.T2M || {};
+
+            const annualIrradiance = irradiance.ANN || 0;
+            const annualClearSky = clearSky.ANN || 0;
+            const annualTemp = temp.ANN || 0;
+
+            // Monthly data extraction
+            const monthKeys = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+            const monthlyIrradiance = monthKeys.map(m => parseFloat((irradiance[m] || 0).toFixed(2)));
+            const monthlyClearSky = monthKeys.map(m => parseFloat((clearSky[m] || 0).toFixed(2)));
+            const monthlyTemp = monthKeys.map(m => parseFloat((temp[m] || 0).toFixed(1)));
+
+            // Calculate solar production estimates
+            // Using: Production = Irradiance (kWh/m²/day) * 365 * SystemSize(kW) * PerformanceRatio
+            const peakSunHoursPerDay = annualIrradiance; // kWh/m²/day = peak sun hours
+            const annualSunshineHours = parseFloat((peakSunHoursPerDay * 365).toFixed(0));
+            const referenceSystemKw = 5;
+            const performanceRatio = 0.80; // accounts for inverter, wiring, temperature losses
+            const annualProductionKwh = parseFloat((peakSunHoursPerDay * 365 * referenceSystemKw * performanceRatio).toFixed(0));
+            const capacityFactor = parseFloat(((annualProductionKwh / (referenceSystemKw * 8760)) * 100).toFixed(1));
+
+            // Monthly production estimate (for a 5kW system)
+            const monthlyProductionKwh = monthlyIrradiance.map((irr, i) => {
+              const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][i];
+              return parseFloat((irr * daysInMonth * referenceSystemKw * performanceRatio).toFixed(0));
+            });
+
+            // Temperature derating: panels lose ~0.4% efficiency per °C above 25°C
+            const tempDeratingFactor = annualTemp > 25
+              ? parseFloat((1 - (annualTemp - 25) * 0.004).toFixed(3))
+              : 1.0;
+
+            solarData = {
+              provider: 'nasa_power',
+              formattedAddress: locationQuery,
+              latitude: lat,
+              longitude: lng,
+              maxSunshineHoursPerYear: annualSunshineHours,
+              estimatedPeakSunHoursPerDay: parseFloat(peakSunHoursPerDay.toFixed(2)),
+              referenceSystemKw,
+              annualProductionKwh,
+              monthlyProductionKwh,
+              capacityFactor,
+              solarRadiationAnnual: parseFloat(annualIrradiance.toFixed(2)),
+              solarRadiationMonthly: monthlyIrradiance,
+              clearSkyRadiationAnnual: parseFloat(annualClearSky.toFixed(2)),
+              clearSkyRadiationMonthly: monthlyClearSky,
+              avgTemperatureC: parseFloat(annualTemp.toFixed(1)),
+              monthlyTemperatureC: monthlyTemp,
+              tempDeratingFactor,
+              tempAdjustedProductionKwh: parseFloat((annualProductionKwh * tempDeratingFactor).toFixed(0)),
+              monthLabels: monthKeys,
+              note: 'Data from NASA POWER (Prediction of Worldwide Energy Resources). Irradiance values are long-term climatological averages (22+ years of satellite data).'
+            };
+            provider = 'nasa_power';
+          }
+        }
+      } catch (nasaErr) {
+        console.warn('NASA POWER API error (falling back to built-in):', nasaErr.message);
+      }
+    }
+
+    // ── Provider 4: Built-in estimate (no API key needed) ───────
+    if (!solarData) {
+      // Regional averages for major countries/US states (peak sun hours per year)
       const sunHoursByRegion = {
+        // US States
         'AZ': 2400, 'NM': 2350, 'NV': 2300, 'CA': 2200, 'TX': 2100, 'FL': 2000,
         'CO': 2050, 'UT': 2100, 'HI': 2100, 'OR': 1600, 'WA': 1500, 'NY': 1700,
-        'MA': 1650, 'PA': 1700, 'OH': 1600, 'IL': 1700, 'MI': 1550, 'MN': 1650
+        'MA': 1650, 'PA': 1700, 'OH': 1600, 'IL': 1700, 'MI': 1550, 'MN': 1650,
+        'GA': 1950, 'NC': 1850, 'SC': 1900, 'VA': 1800, 'MD': 1750, 'NJ': 1700,
+        'CT': 1650, 'AL': 1950, 'LA': 1900, 'MS': 1950, 'TN': 1800, 'KY': 1700,
+        'IN': 1650, 'WI': 1600, 'IA': 1700, 'MO': 1750, 'AR': 1850, 'OK': 2000,
+        'KS': 1950, 'NE': 1850, 'SD': 1850, 'ND': 1750, 'MT': 1750, 'WY': 1900,
+        'ID': 1800, 'AK': 1200, 'VT': 1550, 'NH': 1600, 'ME': 1550, 'RI': 1650,
+        'DE': 1750, 'WV': 1650, 'DC': 1750,
+        // Philippines (primary target market)
+        'PH': 1900, 'PHILIPPINES': 1900, 'MANILA': 1850, 'CEBU': 1950, 'DAVAO': 1900,
+        // Other countries
+        'AU': 2100, 'IN': 1900, 'JP': 1500, 'DE': 1100, 'UK': 1000, 'FR': 1400,
+        'IT': 1700, 'ES': 1900, 'BR': 1800, 'MX': 2000, 'SA': 2400, 'AE': 2300
       };
       const defaultSunHours = 1800;
       const stateUpper = (state || '').toUpperCase().trim();
@@ -928,6 +1063,7 @@ router.post('/solar/lookup', authenticateToken, async (req, res) => {
       availableProviders: {
         google_solar: !!googleApiKey,
         nrel_pvwatts: !!nrelApiKey,
+        nasa_power: true,
         built_in_estimate: true
       }
     });
@@ -982,16 +1118,79 @@ router.post('/assessments/calculate', authenticateToken, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Roof area and annual usage are required' });
     }
 
+    // ── Optionally fetch NASA irradiance for this location ────
+    let nasaIrradiance = null;
+    let nasaTemp = null;
+    try {
+      // Try to geocode the location for NASA data
+      let lat, lng;
+      const locationQuery = address
+        ? `${address}, ${city || ''} ${state || ''} ${zipCode || ''}`.trim()
+        : zipCode
+          ? `${zipCode}, ${state || ''}`.trim()
+          : `${city}, ${state || ''}`.trim();
+
+      // Use Nominatim (free) for geocoding
+      const nominatimRes = await axios.get('https://nominatim.openstreetmap.org/search', {
+        params: { q: locationQuery, format: 'json', limit: 1 },
+        headers: { 'User-Agent': 'ApolakiSolarPlatform/1.0' },
+        timeout: 5000
+      });
+      if (nominatimRes.data?.[0]) {
+        lat = parseFloat(nominatimRes.data[0].lat);
+        lng = parseFloat(nominatimRes.data[0].lon);
+      }
+
+      if (lat && lng) {
+        const nasaRes = await axios.get(
+          'https://power.larc.nasa.gov/api/temporal/climatology/point', {
+            params: {
+              parameters: 'ALLSKY_SFC_SW_DWN,T2M',
+              community: 'RE',
+              longitude: lng.toFixed(4),
+              latitude: lat.toFixed(4),
+              format: 'JSON'
+            },
+            timeout: 10000
+          }
+        );
+        const params = nasaRes.data?.properties?.parameter;
+        if (params) {
+          nasaIrradiance = params.ALLSKY_SFC_SW_DWN?.ANN || null; // kWh/m²/day
+          nasaTemp = params.T2M?.ANN || null; // °C
+        }
+      }
+    } catch (nasaCalcErr) {
+      console.warn('NASA data unavailable for assessment calc, using defaults:', nasaCalcErr.message);
+    }
+
     // ── Solar Calculation Engine ──────────────────────────────
     const sunMultiplier = { high: 1.0, medium: 0.8, low: 0.6 }[sunExposure] || 0.8;
     const obstructionMultiplier = { none: 1.0, minimal: 0.9, moderate: 0.75 }[obstructionLevel] || 0.9;
     const roofMultiplier = { excellent: 1.0, good: 0.95, fair: 0.85, poor: 0.7 }[roofCondition] || 0.9;
 
+    // Temperature derating: panels lose ~0.4% per °C above 25°C (STC)
+    const tempDeratingFactor = nasaTemp && nasaTemp > 25
+      ? Math.max(0.8, 1 - (nasaTemp - 25) * 0.004)
+      : 1.0;
+
     // Available roof for panels (rough: 70% usable, 17.5 sqft per panel, 400W each)
     const usableRoof = roofArea * 0.7 * obstructionMultiplier;
     const panelCount = Math.floor(usableRoof / 17.5);
     const recommendedCapacity = parseFloat((panelCount * 0.4).toFixed(2)); // kW
-    const annualProduction = recommendedCapacity * 1400 * sunMultiplier * roofMultiplier; // kWh/year
+
+    // Use NASA irradiance (kWh/m²/day) if available, else estimate from sun exposure
+    // Annual production = capacity * peak_sun_hours_per_day * 365 * performance_ratio
+    let annualProduction;
+    if (nasaIrradiance) {
+      // NASA-backed accurate calculation
+      const peakSunHours = nasaIrradiance; // kWh/m²/day ≈ peak sun hours
+      const performanceRatio = 0.80 * sunMultiplier * roofMultiplier * tempDeratingFactor;
+      annualProduction = recommendedCapacity * peakSunHours * 365 * performanceRatio;
+    } else {
+      // Fallback estimate
+      annualProduction = recommendedCapacity * 1400 * sunMultiplier * roofMultiplier;
+    }
 
     const costPerWatt = 2.75;
     const estimatedCost = parseFloat((recommendedCapacity * 1000 * costPerWatt).toFixed(2));
@@ -1018,7 +1217,12 @@ router.post('/assessments/calculate', authenticateToken, async (req, res) => {
       netCost: parseFloat(netCost.toFixed(2)),
       carbonOffsetTons,
       panelCount,
-      financingOption: financingOption || 'cash'
+      financingOption: financingOption || 'cash',
+      dataSource: nasaIrradiance ? 'nasa_power' : 'estimate',
+      nasaIrradianceKwhM2Day: nasaIrradiance || null,
+      avgTemperatureC: nasaTemp || null,
+      tempDeratingFactor: parseFloat(tempDeratingFactor.toFixed(3)),
+      recommendedCapacity
     };
 
     // Financing details

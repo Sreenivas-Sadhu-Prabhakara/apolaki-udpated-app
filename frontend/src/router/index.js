@@ -131,10 +131,10 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth && !userStore.isAuthenticated) {
     next('/login')
   } else if (to.meta.publicOnly && userStore.isAuthenticated) {
-    // Authenticated users landing on public-only pages go to dashboard
-    next('/dashboard')
+    // Authenticated users landing on public-only pages go to solar assessment
+    next('/assessment')
   } else if ((to.name === 'Login' || to.name === 'Signup') && userStore.isAuthenticated) {
-    next('/dashboard')
+    next('/assessment')
   } else if (to.meta.allowedRoles && !to.meta.allowedRoles.includes(userStore.userRole)) {
     // Role-based guard: redirect to dashboard if user lacks permission
     next('/dashboard')

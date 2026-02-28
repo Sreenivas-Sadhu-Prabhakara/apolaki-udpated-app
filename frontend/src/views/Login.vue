@@ -34,6 +34,22 @@
           </svg>
           <span>Continue with Instagram</span>
         </a>
+
+        <div class="social-row">
+          <a :href="apiBase + '/auth/viber'" class="btn-social btn-viber">
+            <svg class="social-icon" viewBox="0 0 24 24" width="20" height="20">
+              <path fill="#ffffff" d="M11.398.002C9.473.028 5.331.344 3.014 2.467 1.294 4.177.518 6.77.404 9.94c-.114 3.171-.26 9.12 5.6 10.774l.012.004h.007s-.034 1.773-.036 2.457c-.004.572.26.77.594.426.253-.26 3.6-3.78 3.6-3.78 4.084.334 7.21-.56 7.565-.675.826-.272 5.5-.87 6.26-7.106.793-6.48-.37-10.575-2.442-12.428 0 0-2.134-1.862-6.366-2.283C14.446.118 12.85-.02 11.398.002zM11.6 1.593c1.31-.018 2.778.094 3.465.168 3.722.372 5.6 1.935 5.6 1.935 1.782 1.6 2.87 5.29 2.163 10.951-.66 5.4-4.6 5.86-5.318 6.095-.3.1-3.053.874-6.654.63 0 0-2.636 3.173-3.458 4.002-.13.134-.28.18-.38.155-.14-.035-.177-.2-.175-.437.004-.406.024-5.004.024-5.004C1.7 18.695 1.89 13.45 1.98 10.56 2.076 7.843 2.7 5.6 4.146 4.157c2.04-1.86 5.635-2.144 7.279-2.166l.175.002z"/>
+            </svg>
+            <span>Viber</span>
+          </a>
+
+          <a :href="apiBase + '/auth/telegram'" class="btn-social btn-telegram">
+            <svg class="social-icon" viewBox="0 0 24 24" width="20" height="20">
+              <path fill="#ffffff" d="M11.944 0A12 12 0 1 0 24 12.056A12.014 12.014 0 0 0 11.944 0Zm5.654 7.885l-1.85 8.716c-.14.62-.508.77-1.03.48l-2.84-2.09-1.37 1.32c-.15.15-.28.28-.574.28l.2-2.88 5.23-4.73c.228-.2-.05-.312-.354-.114l-6.47 4.07-2.786-.87c-.607-.19-.62-.607.126-.9l10.897-4.2c.503-.18.944.122.78.898z"/>
+            </svg>
+            <span>Telegram</span>
+          </a>
+        </div>
       </div>
 
       <div class="divider">
@@ -42,6 +58,7 @@
 
       <div v-if="userStore.error && !showOtp" class="alert alert-error">
         {{ userStore.error }}
+        <p v-if="loginAttempts >= 1" class="otp-hint">Having trouble? Try once more and we'll offer OTP verification as a backup.</p>
       </div>
 
       <form v-if="!showOtp" @submit.prevent="handleLogin">
@@ -81,7 +98,7 @@
         <div class="otp-header">
           <span class="otp-icon">🔐</span>
           <h3>Verify Your Identity</h3>
-          <p class="otp-subtitle">Enter the 6-digit OTP sent to <strong>{{ email }}</strong></p>
+          <p class="otp-subtitle">All login methods failed. Enter the 6-digit backup OTP sent to <strong>{{ email }}</strong></p>
         </div>
 
         <div v-if="otpError" class="alert alert-error">{{ otpError }}</div>
@@ -141,16 +158,20 @@ const otpCode = ref('')
 const otpError = ref(null)
 
 const apiBase = import.meta.env.VITE_API_URL || '/api'
+const loginAttempts = ref(0)
 
 const handleLogin = async () => {
   const success = await userStore.login(email.value, password.value)
   if (success) {
-    router.push('/dashboard')
+    router.push('/assessment')
   } else {
-    // Login failed — show OTP verification as fallback
-    showOtp.value = true
-    otpCode.value = ''
-    otpError.value = null
+    loginAttempts.value++
+    // Show OTP fallback only after multiple failed attempts (backup for all failures)
+    if (loginAttempts.value >= 2) {
+      showOtp.value = true
+      otpCode.value = ''
+      otpError.value = null
+    }
   }
 }
 
@@ -158,7 +179,7 @@ const handleOtpVerify = async () => {
   otpError.value = null
   const success = await userStore.verifyOtp(email.value, otpCode.value)
   if (success) {
-    router.push('/dashboard')
+    router.push('/assessment')
   } else {
     otpError.value = userStore.error || 'Invalid OTP. Please try again.'
   }
@@ -253,6 +274,33 @@ const handleOtpVerify = async () => {
 
 .btn-instagram:hover {
   opacity: 0.9;
+}
+
+.btn-viber {
+  background: #7360f2;
+  color: white;
+}
+
+.btn-viber:hover {
+  background: #6350d8;
+}
+
+.btn-telegram {
+  background: #0088cc;
+  color: white;
+}
+
+.btn-telegram:hover {
+  background: #0077b5;
+}
+
+.social-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.social-row .btn-social {
+  flex: 1;
 }
 
 .social-icon {
@@ -365,5 +413,12 @@ const handleOtpVerify = async () => {
 
 .btn-back:hover {
   color: #f97316;
+}
+
+.otp-hint {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #b45309;
+  font-style: italic;
 }
 </style>

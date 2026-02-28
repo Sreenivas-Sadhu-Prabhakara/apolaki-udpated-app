@@ -125,7 +125,46 @@
             <span class="providers-label">Available providers:</span>
             <span :class="solarApiData.availableProviders.google_solar ? 'prov-active' : 'prov-inactive'">Google Solar</span>
             <span :class="solarApiData.availableProviders.nrel_pvwatts ? 'prov-active' : 'prov-inactive'">NREL PVWatts</span>
+            <span :class="solarApiData.availableProviders.nasa_power ? 'prov-active' : 'prov-inactive'">NASA POWER</span>
             <span class="prov-active">Built-in Estimate</span>
+          </div>
+
+          <!-- Monthly Solar Chart (NASA / NREL data) -->
+          <div v-if="solarApiData.data.monthlyProductionKwh || solarApiData.data.solarRadiationMonthly" class="monthly-chart-section">
+            <h4>📊 Monthly Solar Data</h4>
+            <div class="chart-container">
+              <div class="bar-chart">
+                <div
+                  v-for="(val, i) in (solarApiData.data.monthlyProductionKwh || solarApiData.data.solarRadiationMonthly)"
+                  :key="i"
+                  class="bar-wrapper"
+                >
+                  <div class="bar-value">{{ Math.round(val) }}</div>
+                  <div
+                    class="bar"
+                    :style="{ height: getBarHeight(val, solarApiData.data.monthlyProductionKwh || solarApiData.data.solarRadiationMonthly) + '%' }"
+                    :title="`${(solarApiData.data.monthLabels || monthLabels)[i]}: ${Math.round(val)} ${solarApiData.data.monthlyProductionKwh ? 'kWh' : 'kWh/m²/day'}`"
+                  ></div>
+                  <div class="bar-label">{{ (solarApiData.data.monthLabels || monthLabels)[i] }}</div>
+                </div>
+              </div>
+              <p class="chart-caption">{{ solarApiData.data.monthlyProductionKwh ? 'Monthly Production (kWh, 5kW reference system)' : 'Monthly Solar Radiation (kWh/m²/day)' }}</p>
+            </div>
+          </div>
+
+          <!-- Temperature Data (NASA) -->
+          <div v-if="solarApiData.data.monthlyTemperatureC" class="temp-section">
+            <h4>🌡️ Average Temperature</h4>
+            <div class="temp-grid">
+              <div v-for="(t, i) in solarApiData.data.monthlyTemperatureC" :key="'t'+i" class="temp-item">
+                <span class="temp-label">{{ (solarApiData.data.monthLabels || monthLabels)[i] }}</span>
+                <span class="temp-value" :class="t > 30 ? 'temp-hot' : t < 10 ? 'temp-cold' : 'temp-mild'">{{ t }}°C</span>
+              </div>
+            </div>
+            <div v-if="solarApiData.data.tempDeratingFactor && solarApiData.data.tempDeratingFactor < 1" class="temp-derate-note">
+              ⚠️ Temperature derating: {{ ((1 - solarApiData.data.tempDeratingFactor) * 100).toFixed(1) }}% efficiency loss due to avg temp {{ solarApiData.data.avgTemperatureC }}°C (panels rated at 25°C STC).
+              Adjusted annual production: <strong>{{ Number(solarApiData.data.tempAdjustedProductionKwh).toLocaleString() }} kWh</strong>
+            </div>
           </div>
 
           <p v-if="solarApiData.data.note" class="solar-note">ℹ️ {{ solarApiData.data.note }}</p>
@@ -217,6 +256,13 @@
     <div v-if="results" class="card results-card">
       <div class="card-header">
         <h2>Assessment Results</h2>
+        <span v-if="results.dataSource" class="data-source-badge">{{ results.dataSource }}</span>
+      </div>
+
+      <div v-if="results.nasaIrradiance" class="nasa-insight">
+        <span>🛰️ NASA satellite irradiance: <strong>{{ results.nasaIrradiance }} kWh/m²/day</strong></span>
+        <span v-if="results.avgTemp"> · Avg temp: <strong>{{ results.avgTemp }}°C</strong></span>
+        <span v-if="results.tempDeratingFactor < 1"> · Temp efficiency: <strong>{{ (results.tempDeratingFactor * 100).toFixed(1) }}%</strong></span>
       </div>
 
       <div class="results-grid">
@@ -310,6 +356,8 @@ const solarLookupLoading = ref(false)
 const solarApiData = ref(null)
 const solarLookupError = ref(null)
 
+const monthLabels = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+
 const form = reactive({
   address: '',
   city: '',
@@ -326,9 +374,19 @@ const providerLabel = (provider) => {
   const labels = {
     google_solar: '🌍 Google Solar API',
     nrel_pvwatts: '🏛️ NREL PVWatts',
+    nasa_power: '🛰️ NASA POWER',
     built_in_estimate: '📊 Built-in Estimate'
   }
   return labels[provider] || provider
+}
+
+/**
+ * Calculate bar height percentage for the mini chart
+ */
+const getBarHeight = (val, arr) => {
+  const max = Math.max(...arr)
+  if (max === 0) return 0
+  return Math.max(8, (val / max) * 100)
 }
 
 const handleSolarLookup = async () => {
@@ -343,6 +401,22 @@ const handleSolarLookup = async () => {
       zipCode: form.zip_code
     })
     solarApiData.value = result
+
+    // Auto-populate form fields from API data
+    if (result?.data) {
+      const d = result.data
+      // Set sun exposure based on irradiance
+      if (d.solarRadiationAnnual || d.estimatedPeakSunHoursPerDay) {
+        const psh = d.estimatedPeakSunHoursPerDay || d.solarRadiationAnnual || 0
+        if (psh >= 5.0) form.sun_exposure = 'high'
+        else if (psh >= 3.5) form.sun_exposure = 'medium'
+        else form.sun_exposure = 'low'
+      }
+      // Set roof area from Google Solar data
+      if (d.maxArrayAreaSqFt) {
+        form.roof_area = d.maxArrayAreaSqFt
+      }
+    }
   } catch (err) {
     solarLookupError.value = err.response?.data?.error || 'Solar lookup failed. Please try again.'
   } finally {
@@ -368,6 +442,7 @@ const handleSubmit = async () => {
     })
 
     const calc = response.calculation || response.savings_estimate || {}
+    const dataSourceLabel = calc.dataSource === 'nasa_power' ? '🛰️ NASA POWER satellite data' : '📊 Regional estimates'
     results.value = {
       capacity: response.recommended_capacity || calc.recommendedCapacity || 0,
       cost: Number(response.estimated_cost || 0).toLocaleString(),
@@ -382,7 +457,11 @@ const handleSubmit = async () => {
       panelCount: calc.panelCount || 0,
       carbonOffset: calc.carbonOffsetTons || 0,
       financing: calc.financing || null,
-      summary: `Based on your property, a ${response.recommended_capacity || 0} kW solar system with ${calc.panelCount || 0} panels is recommended. Estimated annual production: ${Number(calc.annualProduction || 0).toLocaleString()} kWh. After incentives, net cost: $${Number(calc.netCost || 0).toLocaleString()} with a payback period of ${calc.paybackYears || 0} years. 20-year savings: $${Number(calc.twentyYearSavings || 0).toLocaleString()}. Carbon offset: ${calc.carbonOffsetTons || 0} tons CO₂.`
+      dataSource: dataSourceLabel,
+      nasaIrradiance: calc.nasaIrradianceKwhM2Day || null,
+      avgTemp: calc.avgTemperatureC || null,
+      tempDeratingFactor: calc.tempDeratingFactor || 1,
+      summary: `Based on your property${calc.dataSource === 'nasa_power' ? ' (powered by NASA satellite irradiance data)' : ''}, a ${response.recommended_capacity || calc.recommendedCapacity || 0} kW solar system with ${calc.panelCount || 0} panels is recommended. Estimated annual production: ${Number(calc.annualProduction || 0).toLocaleString()} kWh. After incentives, net cost: $${Number(calc.netCost || 0).toLocaleString()} with a payback period of ${calc.paybackYears || 0} years. 20-year savings: $${Number(calc.twentyYearSavings || 0).toLocaleString()}. Carbon offset: ${calc.carbonOffsetTons || 0} tons CO₂.${calc.nasaIrradianceKwhM2Day ? ` Solar irradiance: ${calc.nasaIrradianceKwhM2Day} kWh/m²/day.` : ''}`
     }
   } catch (err) {
     error.value = err.response?.data?.error || assessmentStore.error || 'Assessment calculation failed'
@@ -646,6 +725,155 @@ onMounted(async () => {
   font-size: 0.85rem;
   color: #92400e;
   font-style: italic;
+}
+
+/* Monthly Chart */
+.monthly-chart-section {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.monthly-chart-section h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  color: #92400e;
+}
+
+.chart-container {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 140px;
+  gap: 4px;
+}
+
+.bar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.bar {
+  width: 100%;
+  max-width: 36px;
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+  border-radius: 3px 3px 0 0;
+  min-height: 4px;
+  transition: height 0.4s ease;
+}
+
+.bar-value {
+  font-size: 0.6rem;
+  color: #92400e;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.bar-label {
+  font-size: 0.6rem;
+  color: #78350f;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.chart-caption {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #92400e;
+  margin: 0.5rem 0 0;
+  font-style: italic;
+}
+
+/* Temperature section */
+.temp-section {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.temp-section h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  color: #92400e;
+}
+
+.temp-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.temp-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.35rem 0.5rem;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 0.375rem;
+  min-width: 48px;
+}
+
+.temp-label {
+  font-size: 0.6rem;
+  color: #92400e;
+  font-weight: 600;
+}
+
+.temp-value {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.temp-hot { color: #dc2626; }
+.temp-mild { color: #059669; }
+.temp-cold { color: #2563eb; }
+
+.temp-derate-note {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #fef3c7;
+  border-radius: 0.375rem;
+  font-size: 0.8rem;
+  color: #92400e;
+}
+
+/* NASA Insight in Results */
+.nasa-insight {
+  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+  border: 1px solid #93c5fd;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: #1e40af;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.data-source-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* Provider badge for NASA */
+.provider-nasa_power {
+  background: #e0f2fe;
+  color: #0369a1;
 }
 
 /* Form Divider */

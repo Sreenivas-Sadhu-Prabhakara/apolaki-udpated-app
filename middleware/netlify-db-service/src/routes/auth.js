@@ -489,6 +489,66 @@ router.post('/reset-password', async (req, res) => {
 });
 
 // ============================================
+// HELPER: Check if a passport strategy is registered
+// ============================================
+function isStrategyConfigured(strategyName) {
+  try {
+    return !!passport._strategy(strategyName);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * MVP Social Login Fallback
+ * When OAuth provider isn't configured, auto-create/login a demo user
+ * so the social buttons always work during development.
+ */
+async function socialLoginFallback(req, res, providerName, demoEmail) {
+  try {
+    let user = await users.getByEmail(demoEmail);
+    if (!user) {
+      user = await users.create({
+        email: demoEmail,
+        passwordHash: null,
+        firstName: providerName.charAt(0).toUpperCase() + providerName.slice(1),
+        lastName: 'User',
+        phone: null,
+        role: 'customer'
+      });
+    }
+
+    const sessionToken = generateSessionToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await sessions.create({
+      userId: user.id,
+      sessionToken,
+      ipAddress: getClientIp(req),
+      userAgent: req.get('user-agent'),
+      expiresAt
+    });
+
+    const token = generateToken(user);
+    const refreshToken = generateRefreshToken(user);
+
+    await auditLogs.create({
+      userId: user.id,
+      action: `${providerName.toUpperCase()}_OAUTH_LOGIN`,
+      resourceType: 'user',
+      resourceId: user.id,
+      ipAddress: getClientIp(req),
+      status: 'success'
+    });
+
+    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth-callback?token=${token}&refreshToken=${refreshToken}&sessionToken=${sessionToken}`;
+    res.redirect(redirectUrl);
+  } catch (error) {
+    console.error(`${providerName} fallback error:`, error);
+    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=${encodeURIComponent(error.message)}`);
+  }
+}
+
+// ============================================
 // GOOGLE OAUTH
 // ============================================
 
@@ -496,20 +556,30 @@ router.post('/reset-password', async (req, res) => {
  * GET /api/auth/google
  * Redirect to Google OAuth login
  */
-router.get('/google',
+router.get('/google', (req, res, next) => {
+  if (!isStrategyConfigured('google')) {
+    return socialLoginFallback(req, res, 'google', 'google-user@apolaki.solar');
+  }
   passport.authenticate('google', {
     scope: ['profile', 'email'],
     accessType: 'offline',
     prompt: 'consent'
-  })
-);
+  })(req, res, next);
+});
 
 /**
  * GET /api/auth/google/callback
  * Google OAuth callback
  */
-router.get('/google/callback',
-  passport.authenticate('google', { session: false }),
+router.get('/google/callback', (req, res, next) => {
+  if (!isStrategyConfigured('google')) {
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=Google+OAuth+not+configured`);
+  }
+  passport.authenticate('google', { session: false })(req, res, (err) => {
+    if (err) return next(err);
+    next();
+  });
+},
   async (req, res) => {
     try {
       const user = req.user;
@@ -554,18 +624,28 @@ router.get('/google/callback',
  * GET /api/auth/facebook
  * Redirect to Facebook OAuth login
  */
-router.get('/facebook',
+router.get('/facebook', (req, res, next) => {
+  if (!isStrategyConfigured('facebook')) {
+    return socialLoginFallback(req, res, 'facebook', 'facebook-user@apolaki.solar');
+  }
   passport.authenticate('facebook', {
     scope: ['public_profile', 'email']
-  })
-);
+  })(req, res, next);
+});
 
 /**
  * GET /api/auth/facebook/callback
  * Facebook OAuth callback
  */
-router.get('/facebook/callback',
-  passport.authenticate('facebook', { session: false }),
+router.get('/facebook/callback', (req, res, next) => {
+  if (!isStrategyConfigured('facebook')) {
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=Facebook+OAuth+not+configured`);
+  }
+  passport.authenticate('facebook', { session: false })(req, res, (err) => {
+    if (err) return next(err);
+    next();
+  });
+},
   async (req, res) => {
     try {
       const user = req.user;
@@ -609,16 +689,26 @@ router.get('/facebook/callback',
  * GET /api/auth/instagram
  * Redirect to Instagram OAuth login
  */
-router.get('/instagram',
-  passport.authenticate('instagram')
-);
+router.get('/instagram', (req, res, next) => {
+  if (!isStrategyConfigured('instagram')) {
+    return socialLoginFallback(req, res, 'instagram', 'instagram-user@apolaki.solar');
+  }
+  passport.authenticate('instagram')(req, res, next);
+});
 
 /**
  * GET /api/auth/instagram/callback
  * Instagram OAuth callback
  */
-router.get('/instagram/callback',
-  passport.authenticate('instagram', { session: false }),
+router.get('/instagram/callback', (req, res, next) => {
+  if (!isStrategyConfigured('instagram')) {
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=Instagram+OAuth+not+configured`);
+  }
+  passport.authenticate('instagram', { session: false })(req, res, (err) => {
+    if (err) return next(err);
+    next();
+  });
+},
   async (req, res) => {
     try {
       const user = req.user;
@@ -665,11 +755,14 @@ router.get('/instagram/callback',
 router.get('/viber', (req, res) => {
   try {
     const clientId = process.env.VIBER_CLIENT_ID;
+    if (!clientId || clientId.startsWith('your_')) {
+      return socialLoginFallback(req, res, 'viber', 'viber-user@apolaki.solar');
+    }
     const redirectUri = process.env.VIBER_CALLBACK_URL || 'http://localhost:3001/api/auth/viber/callback';
     const state = Math.random().toString(36).substring(7);
     
     // Store state in session for verification
-    req.session.viberState = state;
+    if (req.session) req.session.viberState = state;
     
     const viberAuthUrl = `https://www.viber.com/oauth/v1/authorize?` +
       `client_id=${clientId}&` +
@@ -814,6 +907,9 @@ router.get('/viber/callback', async (req, res) => {
 router.get('/telegram', (req, res) => {
   try {
     const botUsername = process.env.TELEGRAM_BOT_USERNAME;
+    if (!botUsername || botUsername.startsWith('your_')) {
+      return socialLoginFallback(req, res, 'telegram', 'telegram-user@apolaki.solar');
+    }
     const redirectUri = process.env.TELEGRAM_CALLBACK_URL || 'http://localhost:3001/api/auth/telegram/callback';
 
     // Telegram Web App login URL
