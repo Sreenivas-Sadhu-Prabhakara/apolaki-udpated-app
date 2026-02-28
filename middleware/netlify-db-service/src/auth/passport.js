@@ -3,13 +3,20 @@
  * Handles OAuth strategy setup for Google, Facebook, Instagram, Viber, and Telegram
  */
 
-import passport from 'passport';
-import FacebookStrategy from 'passport-facebook';
-import GoogleStrategy from 'passport-google-oauth20';
-import InstagramStrategy from 'passport-instagram';
-import LocalStrategy from 'passport-local';
+import passportModule from 'passport';
+import FacebookStrategyModule from 'passport-facebook';
+import GoogleStrategyModule from 'passport-google-oauth20';
+import InstagramStrategyModule from 'passport-instagram';
+import LocalStrategyModule from 'passport-local';
 import { oauthProviders, users } from '../db.js';
 import { verifyPassword } from './password.js';
+
+// Handle CJS/ESM interop — esbuild on Netlify can double-wrap default exports
+const passport = passportModule.default || passportModule;
+const FacebookStrategy = FacebookStrategyModule.default || FacebookStrategyModule;
+const GoogleStrategy = GoogleStrategyModule.default || GoogleStrategyModule;
+const InstagramStrategy = InstagramStrategyModule.default || InstagramStrategyModule;
+const LocalStrategy = LocalStrategyModule.default || LocalStrategyModule;
 
 /**
  * Local Strategy (Email/Password)

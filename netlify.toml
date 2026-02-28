@@ -18,7 +18,7 @@
   base = "."
   
   # Build command - installs both frontend and backend deps, then builds
-  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend"
+  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
   
   # Frontend static files directory
   publish = "frontend/dist"
@@ -30,23 +30,33 @@
   functions = "middleware/netlify-db-service/.netlify/functions"
 
 # ============================================================================
+# Functions configuration
+# ============================================================================
+[functions]
+  # Use Node File Tracing (nft) bundler — it follows require/import chains
+  # automatically, which handles our ESM monorepo structure correctly.
+  # esbuild (default) breaks ESM default exports from deep relative imports.
+  node_bundler = "nft"
+  
+  # Include config that handler.js references via relative paths
+  included_files = [
+    "config/**",
+    "middleware/netlify-db-service/src/**",
+    "middleware/netlify-db-service/package.json"
+  ]
+
+# ============================================================================
 # Redirects and Rewrites
 # ============================================================================
 [[redirects]]
   # Proxy API requests to backend functions
   from = "/api/*"
-  to = "/.netlify/functions/handler/api/:splat"
+  to = "/.netlify/functions/handler/:splat"
   status = 200
   force = true
 
 [[redirects]]
-  # Proxy WebSocket connections
-  from = "/ws"
-  to = "/.netlify/functions/websocket"
-  status = 200
-
-[[redirects]]
-  # SPA fallback - serve index.html for all non-matching routes
+  # SPA fallback - serve index.html for all non-matching routes (must be last)
   from = "/*"
   to = "/index.html"
   status = 200
@@ -75,6 +85,11 @@
     Cache-Control = "no-cache, no-store, must-revalidate"
     Pragma = "no-cache"
     Expires = "0"
+    # CORS headers for API endpoints
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    Access-Control-Allow-Credentials = "true"
 
 [[headers]]
   for = "/static/*"
@@ -86,8 +101,8 @@
 # Environment-specific configuration (production)
 # ============================================================================
 [context.production]
-  # Production build command
-  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend"
+  # Production build command (same as main build)
+  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
   
   # Environment variables for production (set in Netlify dashboard)
   [context.production.environment]
@@ -97,7 +112,7 @@
 # Environment-specific configuration (staging)
 # ============================================================================
 [context.staging]
-  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend"
+  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
   
   [context.staging.environment]
     NODE_ENV = "staging"
@@ -106,13 +121,13 @@
 # Environment-specific configuration (development/preview)
 # ============================================================================
 [context.deploy-preview]
-  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend"
+  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
   
   [context.deploy-preview.environment]
     NODE_ENV = "development"
 
 [context.branch-deploy]
-  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend"
+  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
   
   [context.branch-deploy.environment]
     NODE_ENV = "development"

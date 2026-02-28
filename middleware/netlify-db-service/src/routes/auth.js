@@ -4,11 +4,15 @@
  */
 
 import axios from 'axios';
-import express from 'express';
-import passport from 'passport';
+import expressModule from 'express';
+import passportModule from 'passport';
 import { extractTokenFromHeader, generateRefreshToken, generateSessionToken, generateToken, verifyToken } from '../auth/jwt.js';
 import { hashPassword, verifyPassword } from '../auth/password.js';
-import { auditLogs, oauthProviders, passwordResetTokens, sessions, users } from '../db.js';
+import { auditLogs, ensureSchema, oauthProviders, passwordResetTokens, sessions, users } from '../db.js';
+
+// Handle CJS/ESM interop for bundled environments (Netlify esbuild)
+const express = expressModule.default || expressModule;
+const passport = passportModule.default || passportModule;
 
 const router = express.Router();
 
@@ -17,11 +21,18 @@ const router = express.Router();
 // ============================================
 
 /**
- * Auto-seed the default admin user (admin@apolaki.solar / admin)
+ * Auto-seed the default admin user (admin@apolaki.solar / admin123)
  * Runs once when the auth routes module loads.
+ * Wraps in setTimeout(0) so it doesn't block cold-start of serverless function.
  */
+let adminSeeded = false;
 async function seedAdminUser() {
+  if (adminSeeded) return;
+  adminSeeded = true;
   try {
+    // Ensure schema exists before seeding
+    await ensureSchema();
+    
     const adminEmail = 'admin@apolaki.solar';
     const adminPassword = 'admin123';
     const existing = await users.getByEmail(adminEmail);
@@ -40,12 +51,13 @@ async function seedAdminUser() {
       console.log('ℹ️  Admin user already exists: admin@apolaki.solar');
     }
   } catch (err) {
+    adminSeeded = false; // Allow retry on next request
     console.warn('⚠️  Could not seed admin user (DB may not be ready):', err.message);
   }
 }
 
-// Run seed on module load (non-blocking)
-seedAdminUser();
+// Run seed on module load (non-blocking via setTimeout for serverless cold start)
+setTimeout(() => seedAdminUser(), 0);
 
 /**
  * Helper function to get client IP
@@ -64,6 +76,9 @@ function getClientIp(req) {
  */
 router.post('/signup', async (req, res) => {
   try {
+    // Ensure schema exists (idempotent, runs once)
+    await ensureSchema();
+    
     const { email, password, firstName, lastName, phone } = req.body;
 
     // Validation
@@ -146,6 +161,11 @@ router.post('/signup', async (req, res) => {
  */
 router.post('/login', async (req, res) => {
   try {
+    // Ensure schema exists (idempotent, runs once)
+    await ensureSchema();
+    // Also ensure admin user is seeded
+    await seedAdminUser();
+    
     const { email, password } = req.body;
 
     if (!email || !password) {

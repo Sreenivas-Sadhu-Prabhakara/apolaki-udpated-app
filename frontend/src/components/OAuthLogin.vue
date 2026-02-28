@@ -59,29 +59,37 @@ import { ref } from 'vue'
 const isLoading = ref(false)
 const error = ref(null)
 
+// Use relative paths so OAuth works on both localhost and Netlify
+const getApiBase = () => {
+  const envUrl = import.meta.env.VITE_API_URL
+  // If VITE_API_URL is set and is an absolute URL, use it; otherwise use relative path
+  if (envUrl && envUrl.startsWith('http')) return envUrl
+  return ''  // relative to current origin
+}
+
 const loginWithGoogle = () => {
   isLoading.value = true
-  window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/google`
+  window.location.href = `${getApiBase()}/api/auth/google`
 }
 
 const loginWithFacebook = () => {
   isLoading.value = true
-  window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/facebook`
+  window.location.href = `${getApiBase()}/api/auth/facebook`
 }
 
 const loginWithInstagram = () => {
   isLoading.value = true
-  window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/instagram`
+  window.location.href = `${getApiBase()}/api/auth/instagram`
 }
 
 const loginWithViber = () => {
   isLoading.value = true
-  window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/viber`
+  window.location.href = `${getApiBase()}/api/auth/viber`
 }
 
 const loginWithTelegram = () => {
   isLoading.value = true
-  window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/telegram`
+  window.location.href = `${getApiBase()}/api/auth/telegram`
 }
 </script>
 

@@ -26,9 +26,16 @@ function initializeDatabase() {
     return;
   }
 
-  // For local development, use pg client directly
-  // For production with Netlify Neon, set NETLIFY_NEON=true in .env
-  const useNeon = process.env.NETLIFY_NEON === 'true';
+  // Auto-detect Netlify/Neon environment:
+  // - NETLIFY_NEON explicitly set to 'true'
+  // - Or running in Netlify Functions (NETLIFY env var set)
+  // - Or connection string contains 'neon.tech'
+  const isNetlifyEnv = !!process.env.NETLIFY || !!process.env.LAMBDA_TASK_ROOT || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+  const isNeonUrl = databaseUrl.includes('neon.tech') || databaseUrl.includes('neon-');
+  const useNeon = process.env.NETLIFY_NEON === 'true' || (isNetlifyEnv && isNeonUrl);
+  
+  // Determine if SSL is needed (Neon always requires SSL; also if url has sslmode=require)
+  const needsSsl = isNeonUrl || databaseUrl.includes('sslmode=require') || process.env.DB_SSL === 'true';
   
   if (useNeon) {
     try {
@@ -37,15 +44,16 @@ function initializeDatabase() {
       console.log('Using Netlify Neon database client');
     } catch (error) {
       console.log('Neon initialization failed, falling back to pg client');
-      // Fallback to pg client
+      // Fallback to pg client with SSL for Neon
       pool = new Pool({
         connectionString: databaseUrl,
+        ssl: needsSsl ? { rejectUnauthorized: false } : false,
       });
       sql = createPgSqlInterface();
     }
   } else {
-    // Use pg client for local development (default)
-    console.log('Using PostgreSQL pg client for local development');
+    // Use pg client for local development or non-Neon remote databases
+    console.log(`Using PostgreSQL pg client (ssl: ${needsSsl})`);
 
     // Clear PG* env vars that would override connectionString
     // (e.g. when Neon sets PGHOST, PGUSER, PGDATABASE, PGPASSWORD in the shell)
@@ -56,6 +64,7 @@ function initializeDatabase() {
 
     pool = new Pool({
       connectionString: databaseUrl,
+      ssl: needsSsl ? { rejectUnauthorized: false } : false,
     });
     
     // Use public schema for all queries (unified with seeds and schema.sql)
@@ -109,7 +118,291 @@ function getSqlInstance() {
   return sql;
 }
 
-export { ensureInitialized, initializeDatabase };
+/**
+ * Auto-create essential tables if they don't exist.
+ * This ensures Netlify Neon databases work on first deploy without
+ * requiring a manual schema.sql import.
+ */
+let schemaEnsured = false;
+async function ensureSchema() {
+  if (schemaEnsured) return;
+  schemaEnsured = true;
+  
+  const sqlInstance = getSqlInstance();
+  
+  try {
+    // Check if users table exists
+    const tableCheck = await sqlInstance`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'users'
+      ) AS exists
+    `;
+    
+    if (tableCheck[0]?.exists) {
+      console.log('✅ Database schema already exists');
+      return;
+    }
+
+    console.log('📦 Creating database schema (first run)...');
+    
+    // Create core tables needed for auth
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS users (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email VARCHAR(255) UNIQUE,
+        password_hash VARCHAR(255),
+        first_name VARCHAR(100),
+        last_name VARCHAR(100),
+        phone VARCHAR(20),
+        profile_picture_url VARCHAR(500),
+        role VARCHAR(50) DEFAULT 'customer',
+        active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS oauth_providers (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider VARCHAR(50) NOT NULL,
+        provider_id VARCHAR(255) NOT NULL,
+        provider_email VARCHAR(255),
+        access_token TEXT,
+        refresh_token TEXT,
+        token_expires_at TIMESTAMP,
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(provider, provider_id)
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        session_token VARCHAR(500) UNIQUE NOT NULL,
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS audit_logs (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        action VARCHAR(100) NOT NULL,
+        resource_type VARCHAR(100),
+        resource_id VARCHAR(255),
+        changes JSONB,
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        status VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token VARCHAR(500) UNIQUE NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        used BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS solar_installations (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        address VARCHAR(255),
+        city VARCHAR(100),
+        state VARCHAR(50),
+        zip_code VARCHAR(10),
+        latitude DECIMAL(10, 8),
+        longitude DECIMAL(11, 8),
+        capacity DECIMAL(10, 2),
+        panel_count INTEGER,
+        inverter_type VARCHAR(100),
+        install_date TIMESTAMP,
+        status VARCHAR(50) DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS monitoring_data (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        installation_id UUID NOT NULL REFERENCES solar_installations(id) ON DELETE CASCADE,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        power_output DECIMAL(10, 2),
+        voltage_ac DECIMAL(8, 2),
+        current_ac DECIMAL(8, 2),
+        frequency DECIMAL(6, 2),
+        temperature DECIMAL(6, 2),
+        efficiency DECIMAL(5, 2),
+        status VARCHAR(50),
+        error_code VARCHAR(100),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS performance_data (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        installation_id UUID NOT NULL REFERENCES solar_installations(id) ON DELETE CASCADE,
+        date DATE NOT NULL,
+        energy_generated DECIMAL(10, 2),
+        peak_power DECIMAL(10, 2),
+        avg_efficiency DECIMAL(5, 2),
+        downtime_minutes INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS maintenance_log (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        installation_id UUID NOT NULL REFERENCES solar_installations(id) ON DELETE CASCADE,
+        maintenance_type VARCHAR(50),
+        description TEXT,
+        performed_date TIMESTAMP,
+        completed_date TIMESTAMP,
+        cost DECIMAL(10, 2),
+        status VARCHAR(50) DEFAULT 'scheduled',
+        technician VARCHAR(255),
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS contracts (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        contract_type VARCHAR(100),
+        title VARCHAR(255) DEFAULT 'Untitled Contract',
+        provider VARCHAR(255) DEFAULT '',
+        start_date TIMESTAMP,
+        end_date TIMESTAMP,
+        term_months INTEGER,
+        amount DECIMAL(12, 2),
+        currency VARCHAR(10) DEFAULT 'USD',
+        status VARCHAR(50) DEFAULT 'pending',
+        renewal_option BOOLEAN DEFAULT false,
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS assessments (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        address VARCHAR(255),
+        city VARCHAR(100),
+        state VARCHAR(50),
+        zip_code VARCHAR(10),
+        roof_condition VARCHAR(100),
+        roof_area DECIMAL(10, 2),
+        annual_usage DECIMAL(10, 2),
+        sun_exposure VARCHAR(50),
+        obstruction_level VARCHAR(50),
+        recommended_capacity DECIMAL(10, 2),
+        estimated_cost DECIMAL(12, 2),
+        savings_estimate JSONB,
+        status VARCHAR(50) DEFAULT 'draft',
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS marketplace_products (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name VARCHAR(255) NOT NULL,
+        category VARCHAR(100),
+        manufacturer VARCHAR(255),
+        description TEXT,
+        specs JSONB DEFAULT '{}',
+        price DECIMAL(12, 2),
+        currency VARCHAR(10) DEFAULT 'USD',
+        inventory INTEGER DEFAULT 0,
+        rating DECIMAL(3, 2) DEFAULT 0,
+        review_count INTEGER DEFAULT 0,
+        image_url VARCHAR(500),
+        active BOOLEAN DEFAULT true,
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS finance (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        transaction_id VARCHAR(255) UNIQUE,
+        amount DECIMAL(12, 2),
+        currency VARCHAR(10) DEFAULT 'USD',
+        type VARCHAR(50),
+        category VARCHAR(100),
+        status VARCHAR(50) DEFAULT 'pending',
+        transaction_date TIMESTAMP,
+        description TEXT,
+        metadata JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS break_glass_sessions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        justification TEXT NOT NULL,
+        actions_taken JSONB DEFAULT '[]',
+        started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP NOT NULL,
+        ended_at TIMESTAMP,
+        status VARCHAR(50) DEFAULT 'active',
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        reviewed_by UUID REFERENCES users(id),
+        reviewed_at TIMESTAMP,
+        review_notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    // Create essential indexes
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_sessions_session_token ON sessions(session_token)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_oauth_providers_user_id ON oauth_providers(user_id)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_solar_installations_user_id ON solar_installations(user_id)`;
+
+    console.log('✅ Database schema created successfully');
+  } catch (error) {
+    schemaEnsured = false; // Allow retry
+    console.error('⚠️  Schema creation error:', error.message);
+  }
+}
+
+export { ensureInitialized, ensureSchema, initializeDatabase };
 
 /**
  * User operations

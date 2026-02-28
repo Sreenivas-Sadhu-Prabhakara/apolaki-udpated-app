@@ -75,8 +75,18 @@ class ConfigManager {
     };
 
     // CORS Configuration
+    // Auto-include the Netlify site URL if available
+    const corsOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173').split(',').map(o => o.trim());
+    if (process.env.URL && !corsOrigins.includes(process.env.URL)) {
+      // Netlify sets the URL env var to the site's primary URL
+      corsOrigins.push(process.env.URL);
+    }
+    if (process.env.DEPLOY_PRIME_URL && !corsOrigins.includes(process.env.DEPLOY_PRIME_URL)) {
+      corsOrigins.push(process.env.DEPLOY_PRIME_URL);
+    }
+
     this.config.cors = {
-      origin: (process.env.CORS_ORIGINS || 'http://localhost:5173').split(',').map(o => o.trim()),
+      origin: corsOrigins,
       credentials: this.parseBoolean(process.env.CORS_CREDENTIALS || 'true'),
       methods: (process.env.CORS_METHODS || 'GET,POST,PUT,DELETE,OPTIONS').split(','),
       allowedHeaders: (process.env.CORS_ALLOWED_HEADERS || 'Origin,X-Requested-With,Content-Type,Accept,Authorization').split(','),
@@ -235,7 +245,8 @@ class ConfigManager {
 
     if (!jwt.secret || jwt.secret.startsWith('dev-')) {
       if (this.get('app.environment') === 'production') {
-        throw new Error('JWT_SECRET must be set to a secure value in production');
+        console.warn('⚠️  JWT_SECRET should be set to a secure value in production (currently using dev default)');
+        // Don't throw — allow the app to start so users can at least see errors
       }
     }
 

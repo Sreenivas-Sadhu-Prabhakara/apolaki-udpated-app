@@ -30,29 +30,41 @@ try {
 console.log('Configuration:', configManager.logConfig());
 
 // Initialize database connection before importing routes
-import { initializeDatabase } from './db.js';
+import { ensureSchema, initializeDatabase } from './db.js';
 try {
   initializeDatabase();
+  // Auto-create schema if tables don't exist (e.g. fresh Netlify Neon database)
+  ensureSchema().catch(err => console.warn('⚠️  Schema ensure warning:', err.message));
 } catch (error) {
   console.warn('⚠️  Database initialization warning:', error.message);
 }
 
 import cors from 'cors';
 import express from 'express';
-import session from 'express-session';
-import passport from 'passport';
+import sessionModule from 'express-session';
+import passportModule from 'passport';
 import { initializePassport } from './auth/passport.js';
-import routes from './routes.js';
-import authRoutes from './routes/auth.js';
-import personaRoutes from './routes/personas.js';
+import routesModule from './routes.js';
+import authRoutesModule from './routes/auth.js';
+import personaRoutesModule from './routes/personas.js';
+
+// Handle CJS/ESM interop — esbuild bundling on Netlify can wrap default exports
+const session = sessionModule.default || sessionModule;
+const passport = passportModule.default || passportModule;
+const routes = routesModule.default || routesModule;
+const authRoutes = authRoutesModule.default || authRoutesModule;
+const personaRoutes = personaRoutesModule.default || personaRoutesModule;
 
 const app = express();
 
 // Get configuration values
 const config = configManager.getAll();
 const PORT = config.app.port;
+const isProduction = config.app.environment === 'production';
+
+// In production on Netlify, use permissive CORS since frontend & functions share the same origin
 const corsOptions = {
-  origin: config.cors.origin,
+  origin: isProduction ? true : config.cors.origin,  // true = reflect request origin
   credentials: config.cors.credentials,
   methods: config.cors.methods,
   allowedHeaders: config.cors.allowedHeaders
@@ -70,15 +82,21 @@ app.use(cors(corsOptions));
 
 // Session configuration
 const sessionConfig = config.session;
+
+// Trust proxy in production (Netlify/AWS puts a reverse proxy in front)
+if (isProduction) {
+  app.set('trust proxy', 1);
+}
+
 app.use(
   session({
     secret: sessionConfig.secret,
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: sessionConfig.secure,
+      secure: isProduction ? true : sessionConfig.secure,
       httpOnly: sessionConfig.httpOnly,
-      sameSite: sessionConfig.sameSite,
+      sameSite: isProduction ? 'lax' : sessionConfig.sameSite,
       maxAge: sessionConfig.maxAge
     }
   })
@@ -95,12 +113,27 @@ app.use((req, res, next) => {
 });
 
 // Health check endpoint (no auth required)
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
+  let dbStatus = 'unknown';
+  try {
+    const { ensureInitialized } = await import('./db.js');
+    const sqlInstance = ensureInitialized();
+    await sqlInstance`SELECT 1 AS ok`;
+    dbStatus = 'connected';
+  } catch (err) {
+    dbStatus = `error: ${err.message}`;
+  }
+
   res.json({
     status: 'ok',
     service: 'netlify-db-service',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    database: dbStatus,
+    environment: process.env.NODE_ENV || 'development',
+    hasDbUrl: !!(process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL),
+    hasJwtSecret: !!process.env.JWT_SECRET,
+    isNetlify: !!(process.env.NETLIFY || process.env.LAMBDA_TASK_ROOT)
   });
 });
 

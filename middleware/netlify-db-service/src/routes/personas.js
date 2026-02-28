@@ -8,9 +8,12 @@
  *   - Super Admin (break-glass emergency)
  */
 
-import express from 'express';
+import expressModule from 'express';
 import { authenticateToken, authorizeRole } from '../auth/middleware.js';
 import { auditLogs, breakGlassSessions, ensureInitialized, maintenanceLog, solarInstallations, users } from '../db.js';
+
+// Handle CJS/ESM interop for bundled environments (Netlify esbuild)
+const express = expressModule.default || expressModule;
 
 const router = express.Router();
 
