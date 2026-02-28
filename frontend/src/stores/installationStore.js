@@ -13,7 +13,7 @@ export const useInstallationStore = defineStore('installations', () => {
     error.value = null
     try {
       const response = await api.get('/installations')
-      installations.value = response.data
+      installations.value = response.data.data || response.data
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch installations'
     } finally {
@@ -26,7 +26,7 @@ export const useInstallationStore = defineStore('installations', () => {
     error.value = null
     try {
       const response = await api.get(`/installations/${id}`)
-      currentInstallation.value = response.data
+      currentInstallation.value = response.data.data || response.data
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch installation'
     } finally {
@@ -39,8 +39,9 @@ export const useInstallationStore = defineStore('installations', () => {
     error.value = null
     try {
       const response = await api.post('/installations', data)
-      installations.value.push(response.data)
-      return response.data
+      const created = response.data.data || response.data
+      installations.value.push(created)
+      return created
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to create installation'
       throw err
@@ -54,14 +55,15 @@ export const useInstallationStore = defineStore('installations', () => {
     error.value = null
     try {
       const response = await api.put(`/installations/${id}`, data)
+      const updated = response.data.data || response.data
       const index = installations.value.findIndex(i => i.id === id)
       if (index !== -1) {
-        installations.value[index] = response.data
+        installations.value[index] = updated
       }
       if (currentInstallation.value?.id === id) {
-        currentInstallation.value = response.data
+        currentInstallation.value = updated
       }
-      return response.data
+      return updated
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to update installation'
       throw err

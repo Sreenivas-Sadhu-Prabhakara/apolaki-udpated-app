@@ -46,11 +46,17 @@ export function setupLocalStrategy() {
  * Google OAuth Strategy
  */
 export function setupGoogleStrategy() {
+  const clientID = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientID || !clientSecret || clientID.startsWith('your_')) {
+    console.log('⚠️  Google OAuth not configured – skipping strategy');
+    return;
+  }
   passport.use(
     new GoogleStrategy.Strategy(
       {
-        clientID: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        clientID,
+        clientSecret,
         callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3001/api/auth/google/callback',
         accessType: 'offline',
         prompt: 'consent'
@@ -95,11 +101,17 @@ export function setupGoogleStrategy() {
  * Facebook OAuth Strategy
  */
 export function setupFacebookStrategy() {
+  const clientID = process.env.FACEBOOK_APP_ID;
+  const clientSecret = process.env.FACEBOOK_APP_SECRET;
+  if (!clientID || !clientSecret || clientID.startsWith('your_')) {
+    console.log('⚠️  Facebook OAuth not configured – skipping strategy');
+    return;
+  }
   passport.use(
     new FacebookStrategy.Strategy(
       {
-        clientID: process.env.FACEBOOK_APP_ID,
-        clientSecret: process.env.FACEBOOK_APP_SECRET,
+        clientID,
+        clientSecret,
         callbackURL: process.env.FACEBOOK_CALLBACK_URL || 'http://localhost:3001/api/auth/facebook/callback',
         profileFields: ['id', 'displayName', 'name', 'emails', 'picture.type(large)']
       },
@@ -148,11 +160,17 @@ export function setupFacebookStrategy() {
  * Instagram OAuth Strategy
  */
 export function setupInstagramStrategy() {
+  const clientID = process.env.INSTAGRAM_APP_ID;
+  const clientSecret = process.env.INSTAGRAM_APP_SECRET;
+  if (!clientID || !clientSecret || clientID.startsWith('your_')) {
+    console.log('⚠️  Instagram OAuth not configured – skipping strategy');
+    return;
+  }
   passport.use(
     new InstagramStrategy.Strategy(
       {
-        clientID: process.env.INSTAGRAM_APP_ID,
-        clientSecret: process.env.INSTAGRAM_APP_SECRET,
+        clientID,
+        clientSecret,
         callbackURL: process.env.INSTAGRAM_CALLBACK_URL || 'http://localhost:3001/api/auth/instagram/callback'
       },
       async (accessToken, refreshToken, profile, done) => {

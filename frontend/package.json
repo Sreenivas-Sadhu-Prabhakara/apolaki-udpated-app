@@ -17,13 +17,15 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "vue": "^3.3.4",
-    "vue-router": "^4.2.5",
+    "axios": "^1.5.0",
     "pinia": "^2.1.6",
-    "axios": "^1.5.0"
+    "vue": "^3.3.4",
+    "vue-router": "^4.2.5"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.2.1",
     "@vitejs/plugin-vue": "^4.4.0",
+    "tailwindcss": "^4.2.1",
     "vite": "^5.0.4"
   }
 }

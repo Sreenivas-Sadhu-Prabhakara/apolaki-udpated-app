@@ -115,6 +115,17 @@
           </select>
         </div>
 
+        <div>
+          <label for="financing">Financing Option</label>
+          <select id="financing" v-model="financingOption">
+            <option value="cash">Cash Purchase</option>
+            <option value="loan">Solar Loan</option>
+            <option value="lease">Solar Lease</option>
+          </select>
+        </div>
+
+        <div v-if="error" class="alert alert-error">{{ error }}</div>
+
         <button type="submit" class="btn btn-primary w-full" :disabled="loading">
           {{ loading ? 'Analyzing...' : 'Get Assessment' }}
         </button>
@@ -129,27 +140,63 @@
 
       <div class="results-grid">
         <div class="result-item">
-          <h3>Recommended Capacity</h3>
+          <h3>Recommended System</h3>
           <div class="result-value">{{ results.capacity }} kW</div>
-          <p class="result-description">Estimated system size for your needs</p>
+          <p class="result-description">{{ results.panelCount }} panels</p>
         </div>
 
         <div class="result-item">
           <h3>Estimated Cost</h3>
           <div class="result-value">${{ results.cost }}</div>
-          <p class="result-description">Before incentives and rebates</p>
+          <p class="result-description">Net after incentives: ${{ results.netCost }}</p>
         </div>
 
         <div class="result-item">
           <h3>Annual Savings</h3>
           <div class="result-value">${{ results.savings }}</div>
-          <p class="result-description">Estimated annual energy savings</p>
+          <p class="result-description">{{ results.annualProduction }} kWh/year</p>
         </div>
 
         <div class="result-item">
           <h3>Payback Period</h3>
           <div class="result-value">{{ results.payback }} years</div>
-          <p class="result-description">Time to break even</p>
+          <p class="result-description">ROI: {{ results.roi }}%</p>
+        </div>
+
+        <div class="result-item">
+          <h3>20-Year Savings</h3>
+          <div class="result-value">${{ results.twentyYearSavings }}</div>
+          <p class="result-description">Net lifetime benefit</p>
+        </div>
+
+        <div class="result-item">
+          <h3>Carbon Offset</h3>
+          <div class="result-value">{{ results.carbonOffset }} tons</div>
+          <p class="result-description">CO₂ avoided over 20 years</p>
+        </div>
+
+        <div class="result-item">
+          <h3>Federal Tax Credit (30%)</h3>
+          <div class="result-value">${{ results.federalTaxCredit }}</div>
+          <p class="result-description">Investment Tax Credit</p>
+        </div>
+
+        <div class="result-item">
+          <h3>State Tax Credit</h3>
+          <div class="result-value">${{ results.stateTaxCredit }}</div>
+          <p class="result-description">Additional state incentive</p>
+        </div>
+      </div>
+
+      <div v-if="results.financing" class="results-summary" style="margin-bottom: 1rem;">
+        <h3>Financing Details</h3>
+        <div v-if="results.financing.monthlyPayment">
+          <p>Loan: ${{ Number(results.financing.loanAmount).toLocaleString() }} at {{ results.financing.interestRate }}% for {{ results.financing.termMonths }} months</p>
+          <p><strong>Monthly Payment: ${{ results.financing.monthlyPayment }}</strong></p>
+        </div>
+        <div v-else-if="results.financing.monthlyLease">
+          <p>Lease term: {{ results.financing.termMonths }} months</p>
+          <p><strong>Monthly Lease: ${{ results.financing.monthlyLease }}</strong></p>
         </div>
       </div>
 
@@ -166,10 +213,15 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import { useAssessmentStore } from '../stores/assessmentStore'
 
+const assessmentStore = useAssessmentStore()
 const loading = ref(false)
 const results = ref(null)
+const error = ref(null)
+const financingOption = ref('cash')
+const previousAssessments = ref([])
 
 const form = reactive({
   address: '',
@@ -185,24 +237,49 @@ const form = reactive({
 
 const handleSubmit = async () => {
   loading.value = true
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
-  const capacity = Math.min(form.roof_area / 100, form.annual_usage / 1200)
-  const cost = capacity * 2500
-  const savings = form.annual_usage * 0.12
-  const payback = Math.round(cost / savings)
-  
-  results.value = {
-    capacity: capacity.toFixed(2),
-    cost: (cost * 0.8).toLocaleString(),
-    savings: savings.toLocaleString(),
-    payback,
-    summary: `Based on your property characteristics, a ${capacity.toFixed(2)} kW solar system is recommended. This system should generate approximately ${(form.annual_usage * 0.8).toLocaleString()} kWh annually, covering about 80% of your current usage.`
+  error.value = null
+  try {
+    const response = await assessmentStore.calculateAssessment({
+      address: form.address,
+      city: form.city,
+      state: form.state,
+      zipCode: form.zip_code,
+      roofCondition: form.roof_condition,
+      roofArea: form.roof_area,
+      annualUsage: form.annual_usage,
+      sunExposure: form.sun_exposure,
+      obstructionLevel: form.obstruction_level,
+      financingOption: financingOption.value
+    })
+
+    const calc = response.calculation || response.savings_estimate || {}
+    results.value = {
+      capacity: response.recommended_capacity || calc.recommendedCapacity || 0,
+      cost: Number(response.estimated_cost || 0).toLocaleString(),
+      netCost: Number(calc.netCost || 0).toLocaleString(),
+      savings: Number(calc.annualSavings || 0).toLocaleString(),
+      payback: calc.paybackYears || 0,
+      twentyYearSavings: Number(calc.twentyYearSavings || 0).toLocaleString(),
+      roi: calc.roi || 0,
+      federalTaxCredit: Number(calc.federalTaxCredit || 0).toLocaleString(),
+      stateTaxCredit: Number(calc.stateTaxCredit || 0).toLocaleString(),
+      annualProduction: Number(calc.annualProduction || 0).toLocaleString(),
+      panelCount: calc.panelCount || 0,
+      carbonOffset: calc.carbonOffsetTons || 0,
+      financing: calc.financing || null,
+      summary: `Based on your property, a ${response.recommended_capacity || 0} kW solar system with ${calc.panelCount || 0} panels is recommended. Estimated annual production: ${Number(calc.annualProduction || 0).toLocaleString()} kWh. After incentives, net cost: $${Number(calc.netCost || 0).toLocaleString()} with a payback period of ${calc.paybackYears || 0} years. 20-year savings: $${Number(calc.twentyYearSavings || 0).toLocaleString()}. Carbon offset: ${calc.carbonOffsetTons || 0} tons CO₂.`
+    }
+  } catch (err) {
+    error.value = err.response?.data?.error || assessmentStore.error || 'Assessment calculation failed'
+  } finally {
+    loading.value = false
   }
-  
-  loading.value = false
 }
+
+onMounted(async () => {
+  await assessmentStore.fetchAssessments()
+  previousAssessments.value = assessmentStore.assessments
+})
 </script>
 
 <style scoped>

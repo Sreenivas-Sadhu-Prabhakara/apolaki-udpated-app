@@ -14,12 +14,16 @@ import { configManager } from '../../../config/config.manager.js';
 // Initialize configuration from environment variables
 configManager.initialize();
 
-// Validate configuration - throws errors if invalid
+// Validate configuration - warn if invalid but don't crash in dev
 try {
   configManager.validate();
 } catch (error) {
-  console.error('❌ Configuration validation failed:', error.message);
-  process.exit(1);
+  if (configManager.isProduction()) {
+    console.error('❌ Configuration validation failed:', error.message);
+    process.exit(1);
+  } else {
+    console.warn('⚠️  Configuration warning:', error.message);
+  }
 }
 
 // Log safe configuration info (no secrets)
@@ -27,7 +31,11 @@ console.log('Configuration:', configManager.logConfig());
 
 // Initialize database connection before importing routes
 import { initializeDatabase } from './db.js';
-initializeDatabase();
+try {
+  initializeDatabase();
+} catch (error) {
+  console.warn('⚠️  Database initialization warning:', error.message);
+}
 
 import cors from 'cors';
 import express from 'express';
@@ -84,6 +92,16 @@ app.use(passport.session());
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
   next();
+});
+
+// Health check endpoint (no auth required)
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'netlify-db-service',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
 // Auth routes

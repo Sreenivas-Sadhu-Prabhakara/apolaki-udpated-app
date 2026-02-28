@@ -2,7 +2,7 @@ import axios from 'axios'
 import { useUserStore } from '../stores/userStore'
 
 const api = axios.create({
-  baseURL: process.env.VITE_API_URL || 'http://localhost:3001/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: {
     'Content-Type': 'application/json'
   }

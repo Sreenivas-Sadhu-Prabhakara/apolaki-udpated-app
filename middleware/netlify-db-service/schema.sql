@@ -128,14 +128,16 @@ CREATE TABLE IF NOT EXISTS contracts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   contract_type VARCHAR(100),
+  title VARCHAR(255) DEFAULT 'Untitled Contract',
+  provider VARCHAR(255) DEFAULT '',
   start_date TIMESTAMP,
   end_date TIMESTAMP,
   term_months INTEGER,
   amount DECIMAL(12, 2),
   currency VARCHAR(10) DEFAULT 'USD',
-  status VARCHAR(50) DEFAULT 'active',
+  status VARCHAR(50) DEFAULT 'pending',
   renewal_option BOOLEAN DEFAULT false,
-  metadata JSONB,
+  metadata JSONB DEFAULT '{}',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -167,15 +169,40 @@ CREATE TABLE IF NOT EXISTS marketplace_products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL,
   category VARCHAR(100),
+  manufacturer VARCHAR(255),
   description TEXT,
+  specs JSONB DEFAULT '{}',
   price DECIMAL(12, 2),
   currency VARCHAR(10) DEFAULT 'USD',
-  inventory INTEGER,
-  rating DECIMAL(3, 2),
+  inventory INTEGER DEFAULT 0,
+  rating DECIMAL(3, 2) DEFAULT 0,
+  review_count INTEGER DEFAULT 0,
+  image_url VARCHAR(500),
   active BOOLEAN DEFAULT true,
-  metadata JSONB,
+  metadata JSONB DEFAULT '{}',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Marketplace Reviews table
+CREATE TABLE IF NOT EXISTS marketplace_reviews (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  product_id UUID NOT NULL REFERENCES marketplace_products(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  title VARCHAR(255),
+  comment TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Wishlist table
+CREATE TABLE IF NOT EXISTS wishlist (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  product_id UUID NOT NULL REFERENCES marketplace_products(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, product_id)
 );
 
 -- Finance table
@@ -213,6 +240,10 @@ CREATE INDEX IF NOT EXISTS idx_maintenance_log_installation_id ON maintenance_lo
 CREATE INDEX IF NOT EXISTS idx_contracts_user_id ON contracts(user_id);
 CREATE INDEX IF NOT EXISTS idx_finance_user_id ON finance(user_id);
 CREATE INDEX IF NOT EXISTS idx_assessments_user_id ON assessments(user_id);
+CREATE INDEX IF NOT EXISTS idx_marketplace_products_category ON marketplace_products(category);
+CREATE INDEX IF NOT EXISTS idx_marketplace_reviews_product_id ON marketplace_reviews(product_id);
+CREATE INDEX IF NOT EXISTS idx_marketplace_reviews_user_id ON marketplace_reviews(user_id);
+CREATE INDEX IF NOT EXISTS idx_wishlist_user_id ON wishlist(user_id);
 
 -- ============================================================================
 -- Persona Roles:

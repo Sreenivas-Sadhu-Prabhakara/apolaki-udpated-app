@@ -16,6 +16,7 @@
           <li><router-link to="/monitoring" class="nav-link text-white hover:text-yellow-100 transition">Monitoring</router-link></li>
           <li><router-link to="/marketplace" class="nav-link text-white hover:text-yellow-100 transition">Marketplace</router-link></li>
           <li><router-link to="/assessment" class="nav-link text-white hover:text-yellow-100 transition">Assessment</router-link></li>
+          <li><router-link to="/contracts" class="nav-link text-white hover:text-yellow-100 transition">Contracts</router-link></li>
           <li v-if="userStore.hasRole('dealer', 'installer', 'admin', 'superadmin')">
             <router-link to="/dealer" class="nav-link text-white hover:text-yellow-100 transition">🔧 Dealer</router-link>
           </li>
@@ -33,7 +34,7 @@
         <!-- User Menu -->
         <div class="nav-user flex items-center gap-4">
           <div v-if="userStore.user" class="hidden sm:flex items-center gap-4">
-            <span class="text-white text-sm">{{ userStore.user.email }}</span>
+            <router-link to="/profile" class="text-white text-sm hover:text-yellow-100 transition">{{ userStore.user.email }}</router-link>
             <button @click="logout" class="btn-secondary px-4 py-2 rounded text-sm font-medium">Logout</button>
           </div>
           <router-link v-else to="/login" class="btn-primary px-4 py-2 rounded text-sm font-medium">Login</router-link>

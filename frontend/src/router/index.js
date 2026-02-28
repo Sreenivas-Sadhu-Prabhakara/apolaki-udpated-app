@@ -45,9 +45,27 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/marketplace',
+    name: 'Marketplace',
+    component: () => import('../views/Marketplace.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/assessment',
     name: 'Assessment',
     component: () => import('../views/Assessment.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/contracts',
+    name: 'Contracts',
+    component: () => import('../views/Contracts.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('../views/Profile.vue'),
     meta: { requiresAuth: true }
   },
   // ── Persona Routes ─────────────────────────────────────────────
