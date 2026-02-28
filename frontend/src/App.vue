@@ -105,7 +105,7 @@ const userStore = useUserStore()
 
 // Hide chrome (navbar/footer) on landing, login, signup pages
 const showChrome = computed(() => {
-  const hiddenRoutes = ['Landing', 'Login', 'Signup', 'AuthCallback']
+  const hiddenRoutes = ['Landing', 'Login', 'Signup', 'AuthCallback', 'ForgotPassword', 'ResetPassword']
   return !hiddenRoutes.includes(route.name)
 })
 

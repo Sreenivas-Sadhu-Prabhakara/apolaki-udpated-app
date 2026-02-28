@@ -143,7 +143,7 @@
               </td>
               <td>
                 <div class="performance-bar">
-                  <div class="bar" :style="{width: installation.performance_percent || '85'}%"></div>
+                  <div class="bar" :style="{width: (installation.performance_percent || 85) + '%'}"></div>
                 </div>
               </td>
               <td>
@@ -334,9 +334,9 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { useUserStore } from '../stores/userStore'
+import { computed, onMounted } from 'vue'
 import { useInstallationStore } from '../stores/installationStore'
+import { useUserStore } from '../stores/userStore'
 
 const userStore = useUserStore()
 const installationStore = useInstallationStore()

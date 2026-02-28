@@ -224,16 +224,20 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`
+// Start server only when run directly (not as serverless function)
+const isNetlifyFunction = !!process.env.LAMBDA_TASK_ROOT || !!process.env.AWS_LAMBDA_FUNCTION_NAME || !!process.env.NETLIFY;
+
+if (!isNetlifyFunction) {
+  app.listen(PORT, () => {
+    console.log(`
 ╔════════════════════════════════════════════════════════╗
 ║   Apolaki Solar Platform - Netlify DB Service          ║
 ║   Server running on http://localhost:${PORT}           ║
 ║   Database: Netlify Neon (PostgreSQL)                  ║
 ║   Status: Ready                                        ║
 ╚════════════════════════════════════════════════════════╝
-  `);
-});
+    `);
+  });
+}
 
 export default app;

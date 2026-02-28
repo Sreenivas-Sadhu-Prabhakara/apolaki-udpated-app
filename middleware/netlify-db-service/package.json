@@ -38,6 +38,7 @@
     "passport-instagram": "^1.0.0",
     "passport-local": "^1.0.0",
     "pg": "^8.19.0",
+    "serverless-http": "^4.0.0",
     "uuid": "^9.0.1",
     "zod": "^4.3.6"
   },

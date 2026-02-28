@@ -11,7 +11,7 @@ import serverless from 'serverless-http';
 dotenv.config();
 
 // Import and initialize configuration
-import { configManager } from '../../../config/config.manager.js';
+import { configManager } from '../../../../config/config.manager.js';
 
 try {
   configManager.initialize();
@@ -23,10 +23,10 @@ try {
 }
 
 // Import Express app
-import app from '../src/server.js';
+import app from '../../src/server.js';
 
 // Wrap Express app for Netlify Functions
 const handler = serverless(app);
 
 // Export handler for Netlify
-export default handler;
+export { handler };

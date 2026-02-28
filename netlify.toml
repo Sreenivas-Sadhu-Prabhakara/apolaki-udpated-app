@@ -33,24 +33,22 @@
 # Redirects and Rewrites
 # ============================================================================
 [[redirects]]
-  # SPA fallback - serve index.html for all non-matching routes
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  force = false
-  conditions = { Role = ["member"] }
-
-[[redirects]]
   # Proxy API requests to backend functions
   from = "/api/*"
-  to = "/.netlify/functions/api"
+  to = "/.netlify/functions/handler/api/:splat"
   status = 200
-  force = false
+  force = true
 
 [[redirects]]
   # Proxy WebSocket connections
   from = "/ws"
   to = "/.netlify/functions/websocket"
+  status = 200
+
+[[redirects]]
+  # SPA fallback - serve index.html for all non-matching routes
+  from = "/*"
+  to = "/index.html"
   status = 200
 
 # ============================================================================
