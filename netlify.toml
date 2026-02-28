@@ -18,7 +18,7 @@
   base = "."
   
   # Build command - installs both frontend and backend deps, then builds
-  command = "npm ci && npm ci --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend"
+  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend"
   
   # Frontend static files directory
   publish = "frontend/dist"
@@ -87,7 +87,7 @@
 # ============================================================================
 [context.production]
   # Production build command
-  command = "npm ci && npm ci --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend"
+  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend"
   
   # Environment variables for production (set in Netlify dashboard)
   [context.production.environment]
@@ -97,7 +97,7 @@
 # Environment-specific configuration (staging)
 # ============================================================================
 [context.staging]
-  command = "npm ci && npm ci --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend"
+  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend"
   
   [context.staging.environment]
     NODE_ENV = "staging"
@@ -106,13 +106,13 @@
 # Environment-specific configuration (development/preview)
 # ============================================================================
 [context.deploy-preview]
-  command = "npm ci && npm ci --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend"
+  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend"
   
   [context.deploy-preview.environment]
     NODE_ENV = "development"
 
 [context.branch-deploy]
-  command = "npm ci && npm ci --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend"
+  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend"
   
   [context.branch-deploy.environment]
     NODE_ENV = "development"

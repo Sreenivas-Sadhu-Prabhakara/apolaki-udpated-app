@@ -4,6 +4,7 @@
  */
 
 import express from 'express';
+import axios from 'axios';
 import { authenticateToken } from './auth/middleware.js';
 import {
     assessments,
@@ -731,6 +732,208 @@ router.get('/users/:userId/contracts', authenticateToken, async (req, res) => {
       success: false,
       error: error.message
     });
+  }
+});
+
+// ============================================
+// SOLAR API ROUTES (Google Solar API + Fallbacks)
+// ============================================
+
+/**
+ * POST /api/solar/lookup
+ * Look up solar potential using Google Solar API (primary),
+ * with cascading address resolution: address → zip code → city.
+ * Falls back to NREL PVWatts or built-in estimates if Google is unavailable.
+ */
+router.post('/solar/lookup', authenticateToken, async (req, res) => {
+  try {
+    const { address, city, state, zipCode } = req.body;
+
+    if (!address && !zipCode && !city) {
+      return res.status(400).json({
+        success: false,
+        error: 'At least one of address, zipCode, or city is required'
+      });
+    }
+
+    // Build location query: prefer full address > zip code > city
+    const locationQuery = address
+      ? `${address}, ${city || ''} ${state || ''} ${zipCode || ''}`.trim()
+      : zipCode
+        ? `${zipCode}, ${state || ''}`.trim()
+        : `${city}, ${state || ''}`.trim();
+
+    const googleApiKey = process.env.GOOGLE_SOLAR_API_KEY || process.env.GOOGLE_API_KEY;
+    const nrelApiKey = process.env.NREL_API_KEY;
+
+    let solarData = null;
+    let provider = 'estimate';
+
+    // ── Provider 1: Google Solar API ─────────────────────────────
+    if (googleApiKey) {
+      try {
+        // Step 1: Geocode the address
+        const geocodeRes = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
+          params: { address: locationQuery, key: googleApiKey },
+          timeout: 8000
+        });
+
+        if (geocodeRes.data.results && geocodeRes.data.results.length > 0) {
+          const location = geocodeRes.data.results[0].geometry.location;
+          const formattedAddress = geocodeRes.data.results[0].formatted_address;
+
+          // Step 2: Call Google Solar API - Building Insights
+          const solarRes = await axios.get(
+            'https://solar.googleapis.com/v1/buildingInsights:findClosest', {
+              params: {
+                'location.latitude': location.lat,
+                'location.longitude': location.lng,
+                requiredQuality: 'MEDIUM',
+                key: googleApiKey
+              },
+              timeout: 10000
+            }
+          );
+
+          const insights = solarRes.data;
+          const bestConfig = insights.solarPotential?.solarPanelConfigs?.slice(-1)[0];
+          const maxPanels = insights.solarPotential?.maxArrayPanelsCount || 0;
+          const maxArea = insights.solarPotential?.maxArrayAreaMeters2 || 0;
+          const annualSunshine = insights.solarPotential?.maxSunshineHoursPerYear || 0;
+          const carbonOffset = insights.solarPotential?.carbonOffsetFactorKgPerMwh || 0;
+
+          solarData = {
+            provider: 'google_solar',
+            formattedAddress,
+            latitude: location.lat,
+            longitude: location.lng,
+            maxPanelCount: maxPanels,
+            maxArrayAreaSqFt: parseFloat((maxArea * 10.764).toFixed(0)),
+            maxSunshineHoursPerYear: parseFloat(annualSunshine.toFixed(0)),
+            panelCapacityWatts: insights.solarPotential?.panelCapacityWatts || 400,
+            panelHeightMeters: insights.solarPotential?.panelHeightMeters || 1.65,
+            panelWidthMeters: insights.solarPotential?.panelWidthMeters || 0.99,
+            roofSegments: (insights.solarPotential?.roofSegmentStats || []).map(seg => ({
+              pitchDegrees: parseFloat((seg.pitchDegrees || 0).toFixed(1)),
+              azimuthDegrees: parseFloat((seg.azimuthDegrees || 0).toFixed(1)),
+              areaSqFt: parseFloat(((seg.stats?.areaMeters2 || 0) * 10.764).toFixed(0)),
+              sunshineHours: parseFloat((seg.stats?.sunshineQuantiles?.[5] || 0).toFixed(0))
+            })),
+            bestConfig: bestConfig ? {
+              panelsCount: bestConfig.panelsCount,
+              yearlyEnergyDcKwh: parseFloat((bestConfig.yearlyEnergyDcKwh || 0).toFixed(0)),
+              capacityKw: parseFloat(((bestConfig.panelsCount * (insights.solarPotential?.panelCapacityWatts || 400)) / 1000).toFixed(2))
+            } : null,
+            carbonOffsetFactorKgPerMwh: carbonOffset,
+            imageryDate: insights.imageryDate || null,
+            imageryQuality: insights.imageryQuality || null
+          };
+          provider = 'google_solar';
+        }
+      } catch (googleErr) {
+        console.warn('Google Solar API error (falling back):', googleErr.response?.data?.error?.message || googleErr.message);
+      }
+    }
+
+    // ── Provider 2: NREL PVWatts API (free, no credit card) ─────
+    if (!solarData && nrelApiKey) {
+      try {
+        // Geocode first if we don't have coords
+        let lat, lng;
+        if (googleApiKey) {
+          // Try Google geocoding even if Solar API failed
+          const geocodeRes = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
+            params: { address: locationQuery, key: googleApiKey },
+            timeout: 8000
+          });
+          if (geocodeRes.data.results?.[0]) {
+            lat = geocodeRes.data.results[0].geometry.location.lat;
+            lng = geocodeRes.data.results[0].geometry.location.lng;
+          }
+        }
+
+        // Fallback geocoding: use NREL's own address param
+        const pvWattsParams = {
+          api_key: nrelApiKey,
+          system_capacity: 5, // 5kW reference
+          module_type: 1,     // premium
+          losses: 14,
+          array_type: 1,      // fixed roof mount
+          tilt: 20,
+          azimuth: 180
+        };
+
+        if (lat && lng) {
+          pvWattsParams.lat = lat;
+          pvWattsParams.lon = lng;
+        } else {
+          pvWattsParams.address = locationQuery;
+        }
+
+        const pvRes = await axios.get('https://developer.nrel.gov/api/pvwatts/v8.json', {
+          params: pvWattsParams,
+          timeout: 10000
+        });
+
+        const pvData = pvRes.data.outputs;
+        if (pvData) {
+          solarData = {
+            provider: 'nrel_pvwatts',
+            formattedAddress: locationQuery,
+            latitude: pvRes.data.station_info?.lat || lat,
+            longitude: pvRes.data.station_info?.lon || lng,
+            maxSunshineHoursPerYear: parseFloat(((pvData.solrad_annual || 0) * 365).toFixed(0)),
+            referenceSystemKw: 5,
+            annualProductionKwh: parseFloat((pvData.ac_annual || 0).toFixed(0)),
+            monthlyProductionKwh: pvData.ac_monthly || [],
+            capacityFactor: parseFloat((pvData.capacity_factor || 0).toFixed(1)),
+            solarRadiationAnnual: parseFloat((pvData.solrad_annual || 0).toFixed(2)),
+            solarRadiationMonthly: pvData.solrad_monthly || []
+          };
+          provider = 'nrel_pvwatts';
+        }
+      } catch (nrelErr) {
+        console.warn('NREL PVWatts API error (falling back):', nrelErr.message);
+      }
+    }
+
+    // ── Provider 3: Built-in estimate (no API key needed) ───────
+    if (!solarData) {
+      // Rough US averages by region
+      const sunHoursByRegion = {
+        'AZ': 2400, 'NM': 2350, 'NV': 2300, 'CA': 2200, 'TX': 2100, 'FL': 2000,
+        'CO': 2050, 'UT': 2100, 'HI': 2100, 'OR': 1600, 'WA': 1500, 'NY': 1700,
+        'MA': 1650, 'PA': 1700, 'OH': 1600, 'IL': 1700, 'MI': 1550, 'MN': 1650
+      };
+      const defaultSunHours = 1800;
+      const stateUpper = (state || '').toUpperCase().trim();
+      const sunHours = sunHoursByRegion[stateUpper] || defaultSunHours;
+
+      solarData = {
+        provider: 'built_in_estimate',
+        formattedAddress: locationQuery,
+        latitude: null,
+        longitude: null,
+        maxSunshineHoursPerYear: sunHours,
+        estimatedPeakSunHoursPerDay: parseFloat((sunHours / 365).toFixed(1)),
+        note: 'Estimate based on US regional averages. For precise data, configure GOOGLE_SOLAR_API_KEY or NREL_API_KEY.'
+      };
+      provider = 'built_in_estimate';
+    }
+
+    res.json({
+      success: true,
+      provider,
+      data: solarData,
+      availableProviders: {
+        google_solar: !!googleApiKey,
+        nrel_pvwatts: !!nrelApiKey,
+        built_in_estimate: true
+      }
+    });
+  } catch (error) {
+    console.error('Solar lookup error:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
