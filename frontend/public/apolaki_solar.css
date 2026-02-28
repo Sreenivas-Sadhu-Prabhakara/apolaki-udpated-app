@@ -1,40 +1,63 @@
 /* =========================================
    APOLAKI DESIGN SYSTEM
-   Theme: Soft Slate & Azure (Trust & Clarity)
+   Theme: Solar Gold & Sky Blue (Energy & Trust)
+   Based on MVP.PRD.md Specifications
    ========================================= */
 
 :root {
-    /* --- COLOR PALETTE --- */
-    /* Primary: Trustworthy Blue */
-    --primary: #2563EB;        /* Royal Blue */
-    --primary-hover: #1D4ED8;  /* Darker Blue */
-    --primary-light: #EFF6FF;  /* Very Light Blue for backgrounds */
+    /* --- PRIMARY COLOR PALETTE --- */
+    /* Primary: Solar Gold - Brand Identity */
+    --primary: #FFB81C;              /* Solar Gold */
+    --primary-hover: #F5A700;        /* Darker Gold */
+    --primary-light: #FFF5DB;        /* Light Gold Background */
+    --primary-xlight: #FFFBF0;       /* Extra Light Gold Background */
 
-    /* Secondary: Deep Navy for Text */
-    --text-main: #0F172A;      /* Slate 900 */
-    --text-sub: #64748B;       /* Slate 500 */
-    --text-placeholder: #94A3B8;
-
-    /* Backgrounds */
-    --bg-body: #F8FAFC;        /* Slate 50 - Reduces eye strain */
-    --bg-card: #FFFFFF;        /* Pure White */
-    --bg-input: #F1F5F9;       /* Slate 100 */
+    /* Secondary: Sky Blue - Trust & Clarity */
+    --secondary: #0066CC;            /* Sky Blue */
+    --secondary-hover: #0052A3;      /* Darker Sky Blue */
+    --secondary-light: #B8DCFF;      /* Light Sky Blue */
+    --secondary-xlight: #E0F2FF;     /* Extra Light Sky Blue */
 
     /* Functional Colors */
-    --success: #10B981;        /* Emerald Green */
-    --warning: #F59E0B;        /* Amber */
-    --border: #E2E8F0;         /* Slate 200 */
+    --success: #00B050;              /* Success Green */
+    --success-light: #DCFCE7;        /* Success Light Background */
+    --warning: #FF9500;              /* Warning Orange */
+    --warning-light: #FFEDD5;        /* Warning Light Background */
+    --error: #E74C3C;                /* Error Red */
+    --error-light: #FEE2E2;          /* Error Light Background */
+    --info: #0EA5E9;                 /* Info Cyan */
+    --info-light: #CFFAFE;           /* Info Light Background */
 
-    /* --- METRICS --- */
+    /* Text Colors */
+    --text-main: #111827;            /* Gray 900 - Main Text */
+    --text-sub: #374151;             /* Gray 700 - Secondary Text */
+    --text-muted: #6B7280;           /* Gray 500 - Muted Text */
+    --text-placeholder: #9CA3AF;     /* Gray 400 - Placeholder */
+
+    /* Backgrounds */
+    --bg-body: #F9FAFB;              /* Gray 50 - Body Background */
+    --bg-card: #FFFFFF;              /* Pure White - Card Background */
+    --bg-input: #F3F4F6;             /* Gray 100 - Input Background */
+
+    /* Border Colors */
+    --border: #E5E7EB;               /* Gray 200 - Main Border */
+    --border-light: #F3F4F6;         /* Gray 100 - Light Border */
+    --border-dark: #D1D5DB;          /* Gray 300 - Dark Border */
+
+    /* --- DESIGN METRICS --- */
     --radius-sm: 8px;
+    --radius-md: 12px;
     --radius-lg: 16px;
+    --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     
     /* --- TRANSITIONS --- */
-    --trans-fast: 0.2s ease;
-    --trans-smooth: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --trans-fast: 150ms ease-in-out;
+    --trans-base: 250ms ease-in-out;
+    --trans-slow: 350ms ease-in-out;
 }
 
 /* =========================================
@@ -84,7 +107,10 @@ body {
 .brand-logo {
     font-size: 1.5rem;
     font-weight: 800;
-    color: var(--primary);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     text-decoration: none;
     display: flex;
     align-items: center;

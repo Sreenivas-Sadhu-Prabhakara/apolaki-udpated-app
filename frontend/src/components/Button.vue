@@ -55,89 +55,151 @@ const tag = defineModel('href') ? 'a' : 'button'
   justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  border: none;
+  border: 2px solid transparent;
   border-radius: 0.5rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 250ms ease-in-out;
   font-size: 0.95rem;
   text-decoration: none;
   font-family: inherit;
   outline: none;
 }
 
-/* Variants */
+/* Variants - Consistent Color System per Design Guide */
+
+/* SOLAR GOLD - Primary Variant */
 .btn-primary {
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  background: linear-gradient(135deg, #FFB81C 0%, #F5A700 100%);
   color: white;
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+  box-shadow: 0 2px 8px rgba(255, 184, 28, 0.25);
 }
 
 .btn-primary:hover:not(.btn-disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+  box-shadow: 0 4px 12px rgba(255, 184, 28, 0.35);
+  background: linear-gradient(135deg, #F5A700 0%, #E59500 100%);
 }
 
+.btn-primary:active:not(.btn-disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(255, 184, 28, 0.25);
+}
+
+/* SKY BLUE - Secondary Variant */
 .btn-secondary {
-  background: #e5e7eb;
-  color: #1f2937;
+  background: linear-gradient(135deg, #0066CC 0%, #0052A3 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.25);
 }
 
 .btn-secondary:hover:not(.btn-disabled) {
-  background: #d1d5db;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.35);
+  background: linear-gradient(135deg, #0052A3 0%, #003D7A 100%);
 }
 
+.btn-secondary:active:not(.btn-disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 102, 204, 0.25);
+}
+
+/* SUCCESS - Green Variant */
 .btn-success {
-  background: #22c55e;
+  background: linear-gradient(135deg, #00B050 0%, #00843D 100%);
   color: white;
+  box-shadow: 0 2px 8px rgba(0, 176, 80, 0.25);
 }
 
 .btn-success:hover:not(.btn-disabled) {
-  background: #16a34a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 176, 80, 0.35);
+  background: linear-gradient(135deg, #00843D 0%, #006B32 100%);
 }
 
+.btn-success:active:not(.btn-disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 176, 80, 0.25);
+}
+
+/* WARNING - Orange Variant */
 .btn-warning {
-  background: #eab308;
+  background: linear-gradient(135deg, #FF9500 0%, #EA580C 100%);
   color: white;
+  box-shadow: 0 2px 8px rgba(255, 149, 0, 0.25);
 }
 
 .btn-warning:hover:not(.btn-disabled) {
-  background: #ca8a04;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 149, 0, 0.35);
+  background: linear-gradient(135deg, #EA580C 0%, #C2410C 100%);
 }
 
+.btn-warning:active:not(.btn-disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(255, 149, 0, 0.25);
+}
+
+/* DANGER - Red Variant */
 .btn-danger {
-  background: #ef4444;
+  background: linear-gradient(135deg, #E74C3C 0%, #DC2626 100%);
   color: white;
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.25);
 }
 
 .btn-danger:hover:not(.btn-disabled) {
-  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.35);
+  background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
 }
 
+.btn-danger:active:not(.btn-disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(231, 76, 60, 0.25);
+}
+
+/* OUTLINE - Bordered Style */
 .btn-outline {
   background: transparent;
-  color: #f97316;
-  border: 2px solid #f97316;
+  color: #FFB81C;
+  border: 2px solid #FFB81C;
 }
 
 .btn-outline:hover:not(.btn-disabled) {
-  background: #f97316;
-  color: white;
+  background: #FFF5DB;
+  color: #F5A700;
+  border-color: #F5A700;
 }
 
+.btn-outline:active:not(.btn-disabled) {
+  background: #FFFBF0;
+}
+
+/* GHOST - Minimal Style */
 .btn-ghost {
   background: transparent;
   color: #374151;
+  border: 2px solid transparent;
 }
 
 .btn-ghost:hover:not(.btn-disabled) {
-  background: #f3f4f6;
+  background: #F9FAFB;
+  border-color: #E5E7EB;
+}
+
+.btn-ghost:active:not(.btn-disabled) {
+  background: #F3F4F6;
 }
 
 /* Sizes */
 .btn-sm {
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
+}
+
+.btn-md {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
 }
 
 .btn-lg {
