@@ -45,9 +45,9 @@
         <div class="nav-user flex items-center gap-4">
           <div v-if="userStore.user" class="hidden sm:flex items-center gap-4">
             <span class="text-sm font-medium" :class="isDarkMode ? 'text-slate-200' : 'text-white'">{{ userStore.user.email }}</span>
-            <button @click="logout" class="btn-nav-logout px-4 py-2 rounded text-sm font-bold transition-all" :class="isDarkMode ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'bg-white text-amber-700 hover:bg-amber-50'">Logout</button>
+            <button @click="logout" class="btn-nav-logout px-4 py-2 rounded text-sm font-bold transition-all" :class="isDarkMode ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-white text-amber-700 hover:bg-amber-50'">Logout</button>
           </div>
-          <router-link v-else to="/login" class="btn-nav-login px-4 py-2 rounded text-sm font-bold transition-all" :class="isDarkMode ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'bg-white text-amber-700 hover:bg-amber-50'">Login</router-link>
+          <router-link v-else to="/login" class="btn-nav-login px-4 py-2 rounded text-sm font-bold transition-all" :class="isDarkMode ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-white text-amber-700 hover:bg-amber-50'">Login</router-link>
         </div>
       </div>
     </nav>
@@ -65,7 +65,7 @@
         <!-- Footer Grid -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
           <div>
-            <h3 class="font-bold mb-4 text-lg" :class="isDarkMode ? 'text-orange-400' : 'text-amber-700'">☀️ Apolaki</h3>
+            <h3 class="font-bold mb-4 text-lg" :class="isDarkMode ? 'text-amber-400' : 'text-amber-700'">☀️ Apolaki</h3>
             <p class="text-sm" :class="isDarkMode ? 'text-slate-400' : 'text-gray-600'">Solar energy management platform</p>
           </div>
           <div>
@@ -158,9 +158,9 @@ const showChrome = computed(() => {
 
 const navbarClass = computed(() => {
   if (isDarkMode.value) {
-    return 'bg-gradient-to-r from-slate-800 via-orange-700 to-orange-800 shadow-lg'
+    return 'bg-gradient-to-r from-slate-800 via-amber-700 to-amber-800 shadow-lg'
   }
-  return 'bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 shadow-lg'
+  return 'bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 shadow-lg'
 })
 
 const mainBgClass = computed(() => {
@@ -172,7 +172,7 @@ const mainBgClass = computed(() => {
 
 const footerClass = computed(() => {
   if (isDarkMode.value) {
-    return 'bg-slate-900 text-slate-300 border-orange-600'
+    return 'bg-slate-900 text-slate-300 border-amber-600'
   }
   return 'bg-gray-900 text-gray-300 border-amber-600'
 })
@@ -184,14 +184,6 @@ const logout = async () => {
 </script>
 
 <style scoped>
-:root {
-  --primary: #f97316;
-  --secondary: #ea580c;
-  --accent: #fbbf24;
-  --dark: #1f2937;
-  --light: #f3f4f6;
-}
-
 .app-wrapper {
   display: flex;
   flex-direction: column;
@@ -346,7 +338,7 @@ const logout = async () => {
 
 /* Dark Theme Styles */
 .dark-theme .navbar {
-  background: linear-gradient(to right, rgb(30 27 27 / 1), rgb(124 45 18 / 1), rgb(124 45 18 / 1));
+  background: linear-gradient(to right, rgb(30 27 27 / 1), rgb(180 83 9 / 1), rgb(180 83 9 / 1));
 }
 
 .dark-theme .nav-link {
@@ -363,13 +355,13 @@ const logout = async () => {
 
 .dark-theme .btn-nav-login,
 .dark-theme .btn-nav-logout {
-  background: rgb(217 119 6 / 1);
+  background: rgb(245 167 0 / 1);
   color: white;
 }
 
 .dark-theme .btn-nav-login:hover,
 .dark-theme .btn-nav-logout:hover {
-  background: rgb(180 83 9 / 1);
+  background: rgb(214 137 0 / 1);
 }
 
 .dark-theme .main-content {
@@ -378,7 +370,7 @@ const logout = async () => {
 
 .dark-theme .footer {
   background: rgb(15 23 42 / 1);
-  border-top-color: rgb(217 119 6 / 1);
+  border-top-color: rgb(245 167 0 / 1);
 }
 
 .dark-theme .footer-link {

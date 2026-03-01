@@ -515,23 +515,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-:root {
-  --primary: #f97316;
-  --primary-dark: #ea580c;
-  --accent: #fbbf24;
-  --success: #22c55e;
-  --warning: #eab308;
-  --danger: #ef4444;
-  --info: #06b6d4;
-  --purple: #a855f7;
-  --gray-50: #f9fafb;
-  --gray-100: #f3f4f6;
-  --gray-200: #e5e7eb;
-  --gray-300: #d1d5db;
-  --gray-600: #4b5563;
-  --gray-700: #374151;
-  --gray-900: #111827;
-}
+/* Uses global design tokens from main.css — no local :root overrides */
 
 .dashboard {
   width: 100%;
@@ -542,11 +526,11 @@ onMounted(async () => {
 
 /* Hero Section */
 .hero-section {
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  background: linear-gradient(135deg, var(--solar-gold) 0%, var(--solar-gold-dark) 100%);
   border-radius: 1rem;
   padding: 3rem;
-  color: white;
-  box-shadow: 0 10px 30px rgba(249, 115, 22, 0.2);
+  color: #1a1a2e;
+  box-shadow: 0 10px 30px rgba(255, 184, 28, 0.25);
 }
 
 .hero-content {
@@ -632,7 +616,7 @@ onMounted(async () => {
   border-radius: 1rem;
   padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border-top: 4px solid var(--primary);
+  border-top: 4px solid var(--solar-gold);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -645,7 +629,7 @@ onMounted(async () => {
   right: 0;
   width: 100px;
   height: 100px;
-  background: radial-gradient(circle, rgba(249, 115, 22, 0.05) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 184, 28, 0.06) 0%, transparent 70%);
   border-radius: 50%;
   transform: translate(20%, -20%);
 }
@@ -656,15 +640,15 @@ onMounted(async () => {
 }
 
 .card-accent-blue {
-  border-top-color: #3b82f6;
+  border-top-color: var(--sky-blue);
 }
 
 .card-accent-green {
-  border-top-color: #22c55e;
+  border-top-color: var(--success);
 }
 
 .card-accent-amber {
-  border-top-color: #f59e0b;
+  border-top-color: var(--solar-gold);
 }
 
 .card-accent-purple {
@@ -827,19 +811,20 @@ onMounted(async () => {
 }
 
 .btn-icon:hover {
-  background: var(--primary);
-  color: white;
+  background: var(--solar-gold);
+  color: #1a1a2e;
 }
 
 .btn-icon.btn-danger:hover {
   background: var(--danger);
+  color: white;
 }
 
 .checkbox {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  accent-color: var(--primary);
+  accent-color: var(--solar-gold);
 }
 
 /* Loading & Empty States */
@@ -857,7 +842,7 @@ onMounted(async () => {
   width: 40px;
   height: 40px;
   border: 4px solid var(--gray-200);
-  border-top-color: var(--primary);
+  border-top-color: var(--solar-gold);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -931,7 +916,7 @@ onMounted(async () => {
   right: -50%;
   width: 200px;
   height: 200px;
-  background: radial-gradient(circle, rgba(249, 115, 22, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 184, 28, 0.1) 0%, transparent 70%);
   border-radius: 50%;
   transition: all 0.3s ease;
 }
@@ -939,7 +924,7 @@ onMounted(async () => {
 .action-card:hover {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   transform: translateY(-4px);
-  border-color: var(--primary);
+  border-color: var(--solar-gold);
 }
 
 .action-card:hover::before {
@@ -965,7 +950,7 @@ onMounted(async () => {
 }
 
 .action-card .arrow {
-  color: var(--primary);
+  color: var(--solar-gold-dark);
   font-weight: 700;
   font-size: 1.25rem;
   margin-top: auto;
@@ -1012,7 +997,7 @@ onMounted(async () => {
 
 .chart-bar {
   flex: 1;
-  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(180deg, var(--solar-gold) 0%, var(--solar-gold-dark) 100%);
   border-radius: 0.5rem 0.5rem 0 0;
   min-height: 20px;
   transition: all 0.3s ease;
@@ -1107,7 +1092,7 @@ onMounted(async () => {
 
 .range-tab.active {
   background: white;
-  color: var(--primary);
+  color: var(--solar-gold-dark);
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -1343,79 +1328,7 @@ onMounted(async () => {
   border-left: 4px solid #06b6d4;
 }
 
-/* Button Styles */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.95rem;
-  text-decoration: none;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-  color: white;
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
-}
-
-.btn-secondary {
-  background: var(--gray-200);
-  color: var(--gray-900);
-}
-
-.btn-secondary:hover {
-  background: var(--gray-300);
-}
-
-.btn-success {
-  background: var(--success);
-  color: white;
-}
-
-.btn-success:hover {
-  opacity: 0.9;
-}
-
-.btn-danger {
-  background: var(--danger);
-  color: white;
-}
-
-.btn-danger:hover {
-  opacity: 0.9;
-}
-
-.btn-outline {
-  background: transparent;
-  color: var(--primary);
-  border: 2px solid var(--primary);
-}
-
-.btn-outline:hover {
-  background: var(--primary);
-  color: white;
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--gray-700);
-}
-
-.btn-ghost:hover {
-  background: var(--gray-100);
-}
+/* Button Styles — uses global .btn classes from main.css */
 
 /* Responsive Design */
 @media (max-width: 768px) {

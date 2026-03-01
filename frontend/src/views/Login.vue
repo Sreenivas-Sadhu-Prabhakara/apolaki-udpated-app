@@ -192,7 +192,7 @@ const handleOtpVerify = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%);
+  background: linear-gradient(135deg, #FFB81C 0%, #F5A700 50%, #D68900 100%);
   padding: 1rem;
 }
 
@@ -356,7 +356,7 @@ const handleOtpVerify = async () => {
 }
 
 .text-primary {
-  color: var(--primary-color, #f97316);
+  color: var(--primary-color, #FFB81C);
   text-decoration: none;
   font-weight: 600;
 }
@@ -412,7 +412,7 @@ const handleOtpVerify = async () => {
 }
 
 .btn-back:hover {
-  color: #f97316;
+  color: #FFB81C;
 }
 
 .otp-hint {

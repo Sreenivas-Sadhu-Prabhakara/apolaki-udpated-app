@@ -28,12 +28,12 @@ defineProps({
 }
 
 .card-default {
-  border-top: 4px solid #f97316;
+  border-top: 4px solid var(--solar-gold, #FFB81C);
 }
 
 .card-primary {
-  border-top: 4px solid #f97316;
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.02) 0%, transparent 100%);
+  border-top: 4px solid var(--solar-gold, #FFB81C);
+  background: linear-gradient(135deg, rgba(255, 184, 28, 0.02) 0%, transparent 100%);
 }
 
 .card-success {
@@ -64,6 +64,6 @@ defineProps({
 .card-clickable:hover {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   transform: translateY(-4px);
-  border-color: #f97316;
+  border-color: var(--solar-gold, #FFB81C);
 }
 </style>
