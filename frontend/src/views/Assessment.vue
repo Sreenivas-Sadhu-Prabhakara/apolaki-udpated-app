@@ -930,4 +930,131 @@ onMounted(async () => {
     align-items: stretch;
   }
 }
+
+/* ── Dark Theme Overrides ── */
+:global(.dark-theme) .assessment h1 {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .form-card,
+:global(.dark-theme) .results-card {
+  background-color: #1E293B;
+  border-color: #334155;
+}
+
+:global(.dark-theme) .result-item {
+  background-color: #0F172A;
+}
+
+:global(.dark-theme) .result-item h3 {
+  color: #CBD5E1;
+}
+
+:global(.dark-theme) .result-value {
+  color: #FFCA4F;
+}
+
+:global(.dark-theme) .result-description {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .results-summary {
+  background-color: #0C2D4F;
+  border-left-color: #FFCA4F;
+}
+
+:global(.dark-theme) .results-summary h3 {
+  color: #E2E8F0;
+}
+
+:global(.dark-theme) .solar-api-panel {
+  background: linear-gradient(135deg, #2A1F00 0%, #1E293B 100%);
+  border-color: #FFCA4F;
+}
+
+:global(.dark-theme) .solar-api-header h3,
+:global(.dark-theme) .solar-label,
+:global(.dark-theme) .solar-note,
+:global(.dark-theme) .bar-value,
+:global(.dark-theme) .bar-label,
+:global(.dark-theme) .chart-caption,
+:global(.dark-theme) .temp-label,
+:global(.dark-theme) .temp-derate-note,
+:global(.dark-theme) .roof-segments h4,
+:global(.dark-theme) .monthly-chart-section h4,
+:global(.dark-theme) .temp-section h4,
+:global(.dark-theme) .providers-label,
+:global(.dark-theme) .segment-label {
+  color: #FCD34D;
+}
+
+:global(.dark-theme) .solar-value {
+  color: #FFECA1;
+}
+
+:global(.dark-theme) .solar-api-item,
+:global(.dark-theme) .segment-card,
+:global(.dark-theme) .chart-container,
+:global(.dark-theme) .temp-item {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:global(.dark-theme) .provider-google_solar {
+  background: #1E3A5F;
+  color: #93C5FD;
+}
+
+:global(.dark-theme) .provider-nrel_pvwatts {
+  background: #064E3B;
+  color: #6EE7B7;
+}
+
+:global(.dark-theme) .provider-nasa_power {
+  background: #0C4A6E;
+  color: #7DD3FC;
+}
+
+:global(.dark-theme) .provider-built_in_estimate {
+  background: #334155;
+  color: #CBD5E1;
+}
+
+:global(.dark-theme) .prov-active {
+  background: #064E3B;
+  color: #6EE7B7;
+}
+
+:global(.dark-theme) .prov-inactive {
+  background: #334155;
+  color: #64748B;
+}
+
+:global(.dark-theme) .nasa-insight {
+  background: linear-gradient(135deg, #0C2D4F 0%, #1E293B 100%);
+  border-color: #3B9AFF;
+  color: #93C5FD;
+}
+
+:global(.dark-theme) .data-source-badge {
+  background: #0C2D4F;
+  color: #93C5FD;
+}
+
+:global(.dark-theme) .temp-derate-note {
+  background: #2A1F00;
+}
+
+:global(.dark-theme) .form-divider {
+  border-color: #334155;
+}
+
+:global(.dark-theme) .form-section-title {
+  color: #CBD5E1;
+}
+
+:global(.dark-theme) .alert-error {
+  background: #450A0A;
+  border-left-color: #F87171;
+  color: #FCA5A5;
+}
 </style>

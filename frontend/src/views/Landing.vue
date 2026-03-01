@@ -698,4 +698,81 @@
     align-items: center;
   }
 }
+
+/* ── Dark Theme Overrides ── */
+:global(.dark-theme) .features-section {
+  background: #0F172A;
+}
+
+:global(.dark-theme) .section-header-center h2 {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .section-header-center p {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .feature-card {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+:global(.dark-theme) .feature-card:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+:global(.dark-theme) .feature-card.featured {
+  border-color: #FFCA4F;
+  box-shadow: 0 0 0 1px #FFCA4F;
+}
+
+:global(.dark-theme) .feature-card h3 {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .feature-card > p {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .feature-list li {
+  color: #CBD5E1;
+}
+
+:global(.dark-theme) .how-it-works {
+  background: #1E293B;
+}
+
+:global(.dark-theme) .step-card {
+  background: #0F172A;
+  border-color: #334155;
+}
+
+:global(.dark-theme) .step-card h3 {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .step-card p {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .testimonials-section {
+  background: #0F172A;
+}
+
+:global(.dark-theme) .testimonial-card {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+:global(.dark-theme) .testimonial-text {
+  color: #CBD5E1;
+}
+
+:global(.dark-theme) .testimonial-name {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .testimonial-role {
+  color: #64748B;
+}
 </style>

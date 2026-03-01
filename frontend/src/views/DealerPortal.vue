@@ -144,4 +144,10 @@ onMounted(fetchInstallations)
 .input-field {
   @apply border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500;
 }
+
+:global(.dark-theme) .input-field {
+  background-color: #0F172A;
+  border-color: #475569;
+  color: #E2E8F0;
+}
 </style>

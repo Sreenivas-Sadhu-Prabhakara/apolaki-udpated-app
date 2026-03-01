@@ -207,4 +207,15 @@ onMounted(async () => {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Dark Theme Overrides ── */
+:global(.dark-theme) .status-active {
+  background-color: #064E3B;
+  color: #6EE7B7;
+}
+
+:global(.dark-theme) .status-inactive {
+  background-color: #450A0A;
+  color: #FCA5A5;
+}
 </style>

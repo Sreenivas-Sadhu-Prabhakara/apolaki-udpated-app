@@ -345,4 +345,21 @@ onMounted(async () => {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Dark Theme Overrides ── */
+:global(.dark-theme) .mini-metric {
+  background-color: #0F172A;
+}
+
+:global(.dark-theme) .status-item {
+  background-color: #0F172A;
+}
+
+:global(.dark-theme) .trend-up {
+  color: #34D399;
+}
+
+:global(.dark-theme) .trend-down {
+  color: #F87171;
+}
 </style>

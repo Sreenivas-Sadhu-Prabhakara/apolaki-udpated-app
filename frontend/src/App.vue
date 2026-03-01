@@ -1,7 +1,8 @@
 <template>
-  <div id="app" class="app-wrapper" :class="{ 'dark-theme': isDarkMode }">
-    <!-- Theme Toggle Button -->
+  <div id="app" class="app-wrapper">
+    <!-- Floating theme toggle on auth pages (no navbar) -->
     <button 
+      v-if="!showChrome"
       @click="toggleTheme" 
       class="theme-toggle fixed top-4 right-4 z-40 p-2 rounded-full transition-all"
       :class="isDarkMode ? 'bg-amber-600 text-white' : 'bg-slate-800 text-amber-400'"
@@ -12,11 +13,11 @@
 
     <!-- Navigation Bar -->
     <nav v-if="showChrome" class="navbar sticky top-0 z-50 transition-colors duration-300" :class="navbarClass">
-      <div class="nav-container max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="nav-container max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
         <!-- Brand -->
-        <div class="nav-brand flex items-center gap-2">
-          <div class="text-3xl">☀️</div>
-          <h1 class="text-2xl font-bold" :class="isDarkMode ? 'text-slate-100' : 'text-white'">Apolaki Solar</h1>
+        <div class="nav-brand flex items-center gap-1.5 shrink-0">
+          <div class="text-2xl">☀️</div>
+          <h1 class="text-lg font-bold hidden lg:block" :class="isDarkMode ? 'text-slate-100' : 'text-white'">Apolaki</h1>
         </div>
 
         <!-- Mobile Hamburger Button -->
@@ -26,34 +27,57 @@
         </button>
 
         <!-- Main Menu -->
-        <ul class="nav-menu hidden md:flex items-center gap-6">
+        <ul class="nav-menu hidden md:flex items-center gap-0.5">
           <li><router-link to="/dashboard" class="nav-link transition">Dashboard</router-link></li>
           <li><router-link to="/installations" class="nav-link transition">Installations</router-link></li>
           <li><router-link to="/monitoring" class="nav-link transition">Monitoring</router-link></li>
           <li><router-link to="/marketplace" class="nav-link transition">Marketplace</router-link></li>
           <li><router-link to="/assessment" class="nav-link transition">Assessment</router-link></li>
           <li><router-link to="/contracts" class="nav-link transition">Contracts</router-link></li>
-          <li v-if="userStore.hasRole('dealer', 'installer', 'admin', 'superadmin')">
-            <router-link to="/dealer" class="nav-link transition">🔧 Dealer</router-link>
-          </li>
-          <li v-if="userStore.hasRole('operations', 'admin', 'superadmin')">
-            <router-link to="/operations" class="nav-link transition">🛠️ Operations</router-link>
-          </li>
-          <li v-if="userStore.hasRole('admin', 'superadmin')">
-            <router-link to="/admin" class="nav-link transition">👤 Admin</router-link>
-          </li>
-          <li v-if="userStore.hasRole('superadmin')">
-            <router-link to="/superadmin" class="nav-link-emergency transition font-bold">🚨 Break-Glass</router-link>
+
+          <!-- "More" dropdown for role-specific links -->
+          <li v-if="hasAdminLinks" class="nav-more-wrapper">
+            <button @click="moreMenuOpen = !moreMenuOpen" class="nav-link nav-more-btn transition">
+              More ▾
+            </button>
+            <transition name="dropdown">
+              <ul v-if="moreMenuOpen" class="nav-dropdown" @mouseleave="moreMenuOpen = false">
+                <li v-if="userStore.hasRole('dealer', 'installer', 'admin', 'superadmin')">
+                  <router-link to="/dealer" class="dropdown-link" @click="moreMenuOpen = false">🔧 Dealer</router-link>
+                </li>
+                <li v-if="userStore.hasRole('operations', 'admin', 'superadmin')">
+                  <router-link to="/operations" class="dropdown-link" @click="moreMenuOpen = false">🛠️ Operations</router-link>
+                </li>
+                <li v-if="userStore.hasRole('admin', 'superadmin')">
+                  <router-link to="/admin" class="dropdown-link" @click="moreMenuOpen = false">👤 Admin</router-link>
+                </li>
+                <li v-if="userStore.hasRole('superadmin')">
+                  <router-link to="/superadmin" class="dropdown-link dropdown-link--emergency" @click="moreMenuOpen = false">🚨 Break-Glass</router-link>
+                </li>
+              </ul>
+            </transition>
           </li>
         </ul>
 
-        <!-- User Menu -->
-        <div class="nav-user flex items-center gap-4">
-          <div v-if="userStore.user" class="hidden sm:flex items-center gap-4">
-            <span class="text-sm font-medium" :class="isDarkMode ? 'text-slate-200' : 'text-white'">{{ userStore.user.email }}</span>
-            <button @click="logout" class="btn-nav-logout px-4 py-2 rounded text-sm font-bold transition-all" :class="isDarkMode ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-white text-amber-700 hover:bg-amber-50'">Logout</button>
+        <!-- Right-side actions: theme toggle, user -->
+        <div class="nav-user flex items-center gap-2 shrink-0">
+          <!-- Theme toggle inside navbar -->
+          <button 
+            @click="toggleTheme" 
+            class="theme-toggle-inline"
+            :class="isDarkMode ? 'theme-toggle-dark' : 'theme-toggle-light'"
+            title="Toggle dark/light theme"
+          >
+            {{ isDarkMode ? '☀️' : '🌙' }}
+          </button>
+
+          <div v-if="userStore.user" class="hidden sm:flex items-center gap-2">
+            <router-link to="/profile" class="nav-avatar" :title="userStore.user.email">
+              {{ userInitials }}
+            </router-link>
+            <button @click="logout" class="btn-nav-logout" :class="isDarkMode ? 'btn-nav-logout--dark' : ''">Logout</button>
           </div>
-          <router-link v-else to="/login" class="btn-nav-login px-4 py-2 rounded text-sm font-bold transition-all" :class="isDarkMode ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-white text-amber-700 hover:bg-amber-50'">Login</router-link>
+          <router-link v-else to="/login" class="btn-nav-login" :class="isDarkMode ? 'btn-nav-login--dark' : ''">Login</router-link>
         </div>
       </div>
 
@@ -148,38 +172,39 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useThemeStore } from './stores/themeStore'
 import { useUserStore } from './stores/userStore'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
-const isDarkMode = ref(false)
+const themeStore = useThemeStore()
 const mobileMenuOpen = ref(false)
+const moreMenuOpen = ref(false)
 
-// Load theme preference from localStorage
+// Computed so templates can use it reactively
+const isDarkMode = computed(() => themeStore.isDarkMode)
+
+// User initials for the avatar circle
+const userInitials = computed(() => {
+  const u = userStore.user
+  if (!u) return '?'
+  const first = (u.first_name || u.firstName || u.email || '?')[0]
+  const last = (u.last_name || u.lastName || '')[0] || ''
+  return (first + last).toUpperCase()
+})
+
+// Whether to show the "More" dropdown
+const hasAdminLinks = computed(() => {
+  return userStore.hasRole('dealer', 'installer', 'operations', 'admin', 'superadmin')
+})
+
 onMounted(() => {
-  const savedTheme = localStorage.getItem('theme-preference')
-  if (savedTheme) {
-    isDarkMode.value = savedTheme === 'dark'
-  } else {
-    // Check system preference
-    isDarkMode.value = window.matchMedia('(prefers-color-scheme: dark)').matches
-  }
-  applyTheme()
+  themeStore.init()
 })
 
 const toggleTheme = () => {
-  isDarkMode.value = !isDarkMode.value
-  localStorage.setItem('theme-preference', isDarkMode.value ? 'dark' : 'light')
-  applyTheme()
-}
-
-const applyTheme = () => {
-  if (isDarkMode.value) {
-    document.documentElement.classList.add('dark-theme')
-  } else {
-    document.documentElement.classList.remove('dark-theme')
-  }
+  themeStore.toggle()
 }
 
 const showChrome = computed(() => {
@@ -367,51 +392,6 @@ const logout = async () => {
 
 .theme-toggle:hover {
   transform: scale(1.1);
-}
-
-/* Dark Theme Styles */
-.dark-theme .navbar {
-  background: linear-gradient(to right, rgb(30 27 27 / 1), rgb(180 83 9 / 1), rgb(180 83 9 / 1));
-}
-
-.dark-theme .nav-link {
-  color: rgb(226 232 240 / 1);
-}
-
-.dark-theme .nav-link:hover {
-  color: rgb(253 230 138 / 1);
-}
-
-.dark-theme .nav-link-emergency {
-  color: rgb(248 113 113 / 1);
-}
-
-.dark-theme .btn-nav-login,
-.dark-theme .btn-nav-logout {
-  background: rgb(245 167 0 / 1);
-  color: white;
-}
-
-.dark-theme .btn-nav-login:hover,
-.dark-theme .btn-nav-logout:hover {
-  background: rgb(214 137 0 / 1);
-}
-
-.dark-theme .main-content {
-  background: linear-gradient(to bottom, rgb(15 23 42 / 1), rgb(30 41 59 / 1));
-}
-
-.dark-theme .footer {
-  background: rgb(15 23 42 / 1);
-  border-top-color: rgb(245 167 0 / 1);
-}
-
-.dark-theme .footer-link {
-  color: rgb(148 163 184 / 1);
-}
-
-.dark-theme .footer-link:hover {
-  color: rgb(226 232 240 / 1);
 }
 
 /* Footer Link Styles */

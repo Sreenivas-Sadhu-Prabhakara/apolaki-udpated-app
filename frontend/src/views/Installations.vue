@@ -139,7 +139,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useInstallationStore } from '../stores/installationStore'
 
 const installationStore = useInstallationStore()
@@ -316,5 +316,39 @@ onMounted(async () => {
 
 .mt-4 {
   margin-top: 1rem;
+}
+
+/* ── Dark Theme Overrides ── */
+:global(.dark-theme) .installation-card {
+  background-color: #1E293B;
+  border-color: #334155;
+}
+
+:global(.dark-theme) .installation-header {
+  border-bottom-color: #334155;
+}
+
+:global(.dark-theme) .detail {
+  border-bottom-color: #1E293B;
+}
+
+:global(.dark-theme) .status-active {
+  background-color: #064E3B;
+  color: #6EE7B7;
+}
+
+:global(.dark-theme) .status-inactive {
+  background-color: #450A0A;
+  color: #FCA5A5;
+}
+
+:global(.dark-theme) .status-maintenance {
+  background-color: #451A03;
+  color: #FCD34D;
+}
+
+:global(.dark-theme) .form-card {
+  background-color: #1E293B;
+  border-color: #334155;
 }
 </style>

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Enable dark: variant via .dark-theme class on <html> */
+@custom-variant dark (&:where(.dark-theme, .dark-theme *));
+
 /* 
   ========================================
   APOLAKI SOLAR PLATFORM - COLOR DESIGN SYSTEM
@@ -999,4 +1002,308 @@ label {
 .dark-theme .spinner {
   border-color: #334155;
   border-top-color: #FFCA4F;
+}
+
+/* ========================================
+   DARK THEME - App Layout Overrides
+   (navbar, footer, main-content, links)
+   ======================================== */
+
+.dark-theme .navbar {
+  background: linear-gradient(to right, #1E1B1B, #B45309, #B45309) !important;
+}
+
+.dark-theme .nav-link {
+  color: #E2E8F0;
+}
+
+.dark-theme .nav-link:hover {
+  color: #FDE68A;
+}
+
+.dark-theme .nav-link.router-link-active {
+  color: #FBBF24;
+}
+
+.dark-theme .nav-link-emergency {
+  color: #F87171;
+}
+
+.dark-theme .btn-nav-login,
+.dark-theme .btn-nav-logout {
+  background: #F5A700 !important;
+  color: white !important;
+}
+
+.dark-theme .btn-nav-login:hover,
+.dark-theme .btn-nav-logout:hover {
+  background: #D68900 !important;
+}
+
+.dark-theme .main-content {
+  background: linear-gradient(to bottom, #0F172A, #1E293B) !important;
+}
+
+.dark-theme .footer {
+  background: #0F172A !important;
+  border-top-color: #F5A700 !important;
+}
+
+.dark-theme .footer-link {
+  color: #94A3B8;
+}
+
+.dark-theme .footer-link:hover {
+  color: #E2E8F0;
+}
+
+/* Dark theme: Override common Tailwind utility bg-white / text colors */
+.dark-theme .bg-white {
+  background-color: #1E293B !important;
+}
+
+.dark-theme .bg-gray-50 {
+  background-color: #0F172A !important;
+}
+
+.dark-theme .bg-gray-100 {
+  background-color: #1E293B !important;
+}
+
+.dark-theme .text-gray-900 {
+  color: #F1F5F9 !important;
+}
+
+.dark-theme .text-gray-800 {
+  color: #E2E8F0 !important;
+}
+
+.dark-theme .text-gray-700 {
+  color: #CBD5E1 !important;
+}
+
+.dark-theme .text-gray-600 {
+  color: #94A3B8 !important;
+}
+
+.dark-theme .text-gray-500 {
+  color: #94A3B8 !important;
+}
+
+.dark-theme .text-gray-400 {
+  color: #64748B !important;
+}
+
+.dark-theme .border-gray-200 {
+  border-color: #334155 !important;
+}
+
+.dark-theme .border-gray-300 {
+  border-color: #475569 !important;
+}
+
+.dark-theme .border-gray-100 {
+  border-color: #1E293B !important;
+}
+
+.dark-theme .shadow-sm {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark-theme .shadow {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark-theme .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Dark theme: Table overrides for Tailwind-styled tables */
+.dark-theme table th {
+  background-color: #1E293B;
+  color: #CBD5E1;
+  border-color: #334155;
+}
+
+.dark-theme table td {
+  color: #E2E8F0;
+  border-color: #334155;
+}
+
+.dark-theme table tbody tr:hover {
+  background-color: #334155;
+}
+
+/* Dark theme: Mobile menu */
+.dark-theme .mobile-menu {
+  background-color: #1E293B !important;
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-theme .mobile-link {
+  color: #E2E8F0;
+}
+
+.dark-theme .mobile-link:hover,
+.dark-theme .mobile-link.router-link-active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Dark theme: Theme toggle button refinements */
+.dark-theme .theme-toggle {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Dark theme: Additional Tailwind color class overrides */
+.dark-theme .text-green-600 {
+  color: #34D399 !important;
+}
+
+.dark-theme .text-red-600 {
+  color: #F87171 !important;
+}
+
+.dark-theme .text-blue-600 {
+  color: #60A5FA !important;
+}
+
+.dark-theme .text-orange-600 {
+  color: #FB923C !important;
+}
+
+.dark-theme .text-purple-600 {
+  color: #A78BFA !important;
+}
+
+.dark-theme .text-indigo-600 {
+  color: #818CF8 !important;
+}
+
+.dark-theme .bg-green-100 {
+  background-color: #064E3B !important;
+}
+
+.dark-theme .bg-red-100 {
+  background-color: #450A0A !important;
+}
+
+.dark-theme .bg-blue-100 {
+  background-color: #0C2D4F !important;
+}
+
+.dark-theme .bg-orange-100 {
+  background-color: #451A03 !important;
+}
+
+.dark-theme .bg-yellow-100 {
+  background-color: #451A03 !important;
+}
+
+.dark-theme .bg-green-50 {
+  background-color: #022C22 !important;
+}
+
+.dark-theme .bg-red-50 {
+  background-color: #2D0A0A !important;
+}
+
+.dark-theme .bg-blue-50 {
+  background-color: #0A1929 !important;
+}
+
+.dark-theme .bg-orange-50 {
+  background-color: #2D1503 !important;
+}
+
+.dark-theme .bg-yellow-50 {
+  background-color: #2D1503 !important;
+}
+
+/* Dark theme: Focus ring overrides */
+.dark-theme .focus\:ring-orange-500:focus,
+.dark-theme .focus\:ring-blue-500:focus {
+  box-shadow: 0 0 0 3px rgba(255, 202, 79, 0.3) !important;
+}
+
+.dark-theme .focus\:border-orange-500:focus,
+.dark-theme .focus\:border-blue-500:focus {
+  border-color: #FFCA4F !important;
+}
+
+/* Dark theme: Tailwind bg button overrides */
+.dark-theme .bg-orange-600 {
+  background-color: #EA580C !important;
+}
+
+.dark-theme .bg-orange-600:hover,
+.dark-theme .hover\:bg-orange-700:hover {
+  background-color: #C2410C !important;
+}
+
+/* Dark theme: Select and form elements in Tailwind */
+.dark-theme select,
+.dark-theme .border-gray-300 {
+  border-color: #475569 !important;
+}
+
+.dark-theme select {
+  background-color: #0F172A;
+  color: #E2E8F0;
+}
+
+/* Dark theme: More Tailwind text color overrides */
+.dark-theme .text-yellow-600 {
+  color: #FBBF24 !important;
+}
+
+.dark-theme .text-yellow-800 {
+  color: #FCD34D !important;
+}
+
+.dark-theme .text-green-800 {
+  color: #6EE7B7 !important;
+}
+
+.dark-theme .text-red-800 {
+  color: #FCA5A5 !important;
+}
+
+.dark-theme .text-blue-800 {
+  color: #93C5FD !important;
+}
+
+.dark-theme .text-gray-800 {
+  color: #E2E8F0 !important;
+}
+
+.dark-theme .text-gray-500 {
+  color: #94A3B8 !important;
+}
+
+.dark-theme .text-gray-400 {
+  color: #64748B !important;
+}
+
+.dark-theme .bg-yellow-100 {
+  background-color: #451A03 !important;
+}
+
+.dark-theme .bg-gray-100 {
+  background-color: #1E293B !important;
+}
+
+/* Dark theme: Hover on table rows */
+.dark-theme .hover\:bg-gray-50:hover {
+  background-color: #334155 !important;
+}
+
+/* Dark theme: Ring/focus for forms */
+.dark-theme input,
+.dark-theme textarea {
+  caret-color: #FFCA4F;
+}
+
+/* Dark theme: Placeholder text for Tailwind */
+.dark-theme .placeholder-gray-400::placeholder {
+  color: #64748B !important;
 }
