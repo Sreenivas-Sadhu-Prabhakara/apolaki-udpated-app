@@ -656,3 +656,347 @@ label {
     padding: 1rem;
   }
 }
+
+/* ========================================
+   DARK THEME - Global Variable Overrides
+   Applied when .dark-theme class is on <html>
+   ======================================== */
+
+.dark-theme {
+  /* Text Colors */
+  --text-main: #E2E8F0;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --text-placeholder: #64748B;
+
+  /* Backgrounds */
+  --bg-primary: #1E293B;
+  --bg-secondary: #0F172A;
+  --bg-tertiary: #334155;
+
+  /* Gray Scale (inverted feel) */
+  --gray-50: #1E293B;
+  --gray-100: #334155;
+  --gray-200: #475569;
+  --gray-300: #64748B;
+  --gray-400: #94A3B8;
+  --gray-500: #CBD5E1;
+  --gray-600: #E2E8F0;
+  --gray-700: #F1F5F9;
+  --gray-800: #F8FAFC;
+  --gray-900: #FFFFFF;
+
+  /* Borders & Shadows */
+  --border-color: #334155;
+  --border-color-light: #1E293B;
+  --border-color-dark: #475569;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+
+  /* Functional Colors - Slightly brighter in dark mode */
+  --solar-gold: #FFCA4F;
+  --solar-gold-dark: #FFB81C;
+  --solar-gold-light: #3D2E00;
+  --solar-gold-xlight: #2A1F00;
+
+  --sky-blue: #3B9AFF;
+  --sky-blue-dark: #0066CC;
+  --sky-blue-light: #0C2D4F;
+  --sky-blue-xlight: #0A1F36;
+
+  --success-green: #34D399;
+  --success-light: #064E3B;
+  --success-dark: #6EE7B7;
+
+  --warning-orange: #FBBF24;
+  --warning-light: #451A03;
+  --warning-dark: #FCD34D;
+
+  --error-red: #F87171;
+  --error-light: #450A0A;
+  --error-dark: #FCA5A5;
+
+  --info-cyan: #38BDF8;
+  --info-light: #0C4A6E;
+  --info-dark: #7DD3FC;
+}
+
+/* Dark theme: html/body background */
+.dark-theme,
+.dark-theme body {
+  background-color: #0F172A;
+  color: #E2E8F0;
+}
+
+/* Dark theme: Cards */
+.dark-theme .card {
+  background-color: #1E293B;
+  border-color: #334155;
+}
+
+.dark-theme .card:hover {
+  border-color: #475569;
+}
+
+.dark-theme .card-header {
+  border-bottom-color: #334155;
+}
+
+/* Dark theme: Form inputs */
+.dark-theme input,
+.dark-theme select,
+.dark-theme textarea {
+  background-color: #0F172A;
+  border-color: #334155;
+  color: #E2E8F0;
+}
+
+.dark-theme input::placeholder,
+.dark-theme textarea::placeholder {
+  color: #64748B;
+}
+
+.dark-theme input:focus,
+.dark-theme select:focus,
+.dark-theme textarea:focus {
+  border-color: #FFCA4F;
+  box-shadow: 0 0 0 3px rgba(255, 202, 79, 0.15);
+  background-color: #1E293B;
+}
+
+.dark-theme label {
+  color: #CBD5E1;
+}
+
+/* Dark theme: Buttons */
+.dark-theme .btn-primary {
+  background-color: #FFB81C;
+  color: #1E293B;
+}
+
+.dark-theme .btn-primary:hover:not(:disabled) {
+  background-color: #FFCA4F;
+}
+
+.dark-theme .btn-outline {
+  border-color: #FFCA4F;
+  color: #FFCA4F;
+}
+
+.dark-theme .btn-outline:hover:not(:disabled) {
+  background-color: rgba(255, 202, 79, 0.1);
+}
+
+.dark-theme .btn-ghost {
+  color: #E2E8F0;
+  border-color: #475569;
+}
+
+.dark-theme .btn-ghost:hover:not(:disabled) {
+  background-color: #334155;
+}
+
+/* Dark theme: Alerts */
+.dark-theme .alert-success {
+  background-color: #064E3B;
+  border-color: #34D399;
+  color: #6EE7B7;
+}
+
+.dark-theme .alert-error {
+  background-color: #450A0A;
+  border-color: #F87171;
+  color: #FCA5A5;
+}
+
+.dark-theme .alert-warning {
+  background-color: #451A03;
+  border-color: #FBBF24;
+  color: #FCD34D;
+}
+
+.dark-theme .alert-info {
+  background-color: #0C4A6E;
+  border-color: #38BDF8;
+  color: #7DD3FC;
+}
+
+/* Dark theme: Results summary (Assessment) */
+.dark-theme .results-summary {
+  background-color: #0C2D4F;
+  border-left-color: #FFCA4F;
+}
+
+/* Dark theme: Solar API panel (Assessment) */
+.dark-theme .solar-api-panel {
+  background: linear-gradient(135deg, #2A1F00 0%, #1E293B 100%);
+  border-color: #FFCA4F;
+}
+
+.dark-theme .solar-api-header h3,
+.dark-theme .solar-label,
+.dark-theme .solar-note,
+.dark-theme .bar-value,
+.dark-theme .bar-label,
+.dark-theme .chart-caption,
+.dark-theme .temp-label,
+.dark-theme .temp-derate-note,
+.dark-theme .roof-segments h4,
+.dark-theme .monthly-chart-section h4,
+.dark-theme .temp-section h4,
+.dark-theme .providers-label,
+.dark-theme .segment-label {
+  color: #FCD34D;
+}
+
+.dark-theme .solar-value {
+  color: #FFECA1;
+}
+
+.dark-theme .solar-api-item,
+.dark-theme .segment-card,
+.dark-theme .chart-container,
+.dark-theme .temp-item {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark-theme .bar {
+  background: linear-gradient(180deg, #FFB81C 0%, #F5A700 100%);
+}
+
+/* Dark theme: NASA insight */
+.dark-theme .nasa-insight {
+  background: linear-gradient(135deg, #0C2D4F 0%, #1E293B 100%);
+  border-color: #3B9AFF;
+  color: #93C5FD;
+}
+
+/* Dark theme: Data source badge */
+.dark-theme .data-source-badge {
+  background: #0C2D4F;
+  color: #93C5FD;
+}
+
+/* Dark theme: Provider badges */
+.dark-theme .provider-google_solar {
+  background: #1E3A5F;
+  color: #93C5FD;
+}
+
+.dark-theme .provider-nrel_pvwatts {
+  background: #064E3B;
+  color: #6EE7B7;
+}
+
+.dark-theme .provider-nasa_power {
+  background: #0C4A6E;
+  color: #7DD3FC;
+}
+
+.dark-theme .provider-built_in_estimate {
+  background: #334155;
+  color: #CBD5E1;
+}
+
+.dark-theme .prov-active {
+  background: #064E3B;
+  color: #6EE7B7;
+}
+
+.dark-theme .prov-inactive {
+  background: #334155;
+  color: #64748B;
+}
+
+/* Dark theme: Dashboard specifics */
+.dark-theme .hero-section {
+  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+}
+
+.dark-theme .kpi-card {
+  background-color: #1E293B;
+  border-color: #334155;
+}
+
+/* Dark theme: Tables */
+.dark-theme table {
+  color: #E2E8F0;
+}
+
+.dark-theme thead tr {
+  background-color: #1E293B;
+  border-color: #334155;
+}
+
+.dark-theme tbody tr {
+  border-color: #334155;
+}
+
+.dark-theme tbody tr:hover {
+  background-color: #334155;
+}
+
+/* Dark theme: Dividers */
+.dark-theme .form-divider,
+.dark-theme hr {
+  border-color: #334155;
+}
+
+/* Dark theme: Text helpers */
+.dark-theme .text-gray-600,
+.dark-theme .text-gray-500 {
+  color: #94A3B8;
+}
+
+.dark-theme .text-gray-700,
+.dark-theme .text-gray-800,
+.dark-theme .text-gray-900 {
+  color: #E2E8F0;
+}
+
+/* Dark theme: Backgrounds used inline in views */
+.dark-theme .bg-white {
+  background-color: #1E293B;
+}
+
+.dark-theme .bg-gray-50 {
+  background-color: #0F172A;
+}
+
+.dark-theme .bg-gray-100 {
+  background-color: #1E293B;
+}
+
+/* Dark theme: Borders */
+.dark-theme .border-gray-200,
+.dark-theme .border-gray-300 {
+  border-color: #334155;
+}
+
+/* Dark theme: Scrollbar */
+.dark-theme ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dark-theme ::-webkit-scrollbar-track {
+  background: #0F172A;
+}
+
+.dark-theme ::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+.dark-theme ::-webkit-scrollbar-thumb:hover {
+  background: #64748B;
+}
+
+/* Dark theme: Spinner */
+.dark-theme .spinner {
+  border-color: #334155;
+  border-top-color: #FFCA4F;
+}

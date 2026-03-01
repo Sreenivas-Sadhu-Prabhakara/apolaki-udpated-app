@@ -19,6 +19,12 @@
           <h1 class="text-2xl font-bold" :class="isDarkMode ? 'text-slate-100' : 'text-white'">Apolaki Solar</h1>
         </div>
 
+        <!-- Mobile Hamburger Button -->
+        <button @click="mobileMenuOpen = !mobileMenuOpen" class="hamburger-btn md:hidden p-2 rounded-lg transition" :class="isDarkMode ? 'text-white hover:bg-white/10' : 'text-white hover:bg-black/10'" aria-label="Toggle menu">
+          <svg v-if="!mobileMenuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+
         <!-- Main Menu -->
         <ul class="nav-menu hidden md:flex items-center gap-6">
           <li><router-link to="/dashboard" class="nav-link transition">Dashboard</router-link></li>
@@ -50,6 +56,32 @@
           <router-link v-else to="/login" class="btn-nav-login px-4 py-2 rounded text-sm font-bold transition-all" :class="isDarkMode ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-white text-amber-700 hover:bg-amber-50'">Login</router-link>
         </div>
       </div>
+
+      <!-- Mobile Menu Dropdown -->
+      <transition name="slide-down">
+        <div v-if="mobileMenuOpen" class="mobile-menu md:hidden" :class="isDarkMode ? 'bg-slate-800' : 'bg-amber-700'">
+          <ul class="flex flex-col py-3 px-4 gap-1">
+            <li><router-link to="/dashboard" class="mobile-link" @click="mobileMenuOpen = false">📊 Dashboard</router-link></li>
+            <li><router-link to="/installations" class="mobile-link" @click="mobileMenuOpen = false">🏠 Installations</router-link></li>
+            <li><router-link to="/monitoring" class="mobile-link" @click="mobileMenuOpen = false">📡 Monitoring</router-link></li>
+            <li><router-link to="/marketplace" class="mobile-link" @click="mobileMenuOpen = false">🛒 Marketplace</router-link></li>
+            <li><router-link to="/assessment" class="mobile-link" @click="mobileMenuOpen = false">☀️ Assessment</router-link></li>
+            <li><router-link to="/contracts" class="mobile-link" @click="mobileMenuOpen = false">📄 Contracts</router-link></li>
+            <li v-if="userStore.hasRole('dealer', 'installer', 'admin', 'superadmin')">
+              <router-link to="/dealer" class="mobile-link" @click="mobileMenuOpen = false">🔧 Dealer</router-link>
+            </li>
+            <li v-if="userStore.hasRole('operations', 'admin', 'superadmin')">
+              <router-link to="/operations" class="mobile-link" @click="mobileMenuOpen = false">🛠️ Operations</router-link>
+            </li>
+            <li v-if="userStore.hasRole('admin', 'superadmin')">
+              <router-link to="/admin" class="mobile-link" @click="mobileMenuOpen = false">👤 Admin</router-link>
+            </li>
+            <li v-if="userStore.user" class="mt-2 pt-2 border-t border-white/20">
+              <button @click="logout; mobileMenuOpen = false" class="mobile-link w-full text-left">🚪 Logout</button>
+            </li>
+          </ul>
+        </div>
+      </transition>
     </nav>
 
     <!-- Main Content Area -->
@@ -69,7 +101,7 @@
             <p class="text-sm" :class="isDarkMode ? 'text-slate-400' : 'text-gray-600'">Solar energy management platform</p>
           </div>
           <div>
-            <h3 class="font-bold mb-4" :class="isDarkMode ? 'text-orange-400' : 'text-amber-700'">Product</h3>
+            <h3 class="font-bold mb-4" :class="isDarkMode ? 'text-amber-400' : 'text-amber-700'">Product</h3>
             <ul class="space-y-2 text-sm">
               <li><a href="#" class="footer-link transition">Features</a></li>
               <li><a href="#" class="footer-link transition">Pricing</a></li>
@@ -77,7 +109,7 @@
             </ul>
           </div>
           <div>
-            <h3 class="font-bold mb-4" :class="isDarkMode ? 'text-orange-400' : 'text-amber-700'">Company</h3>
+            <h3 class="font-bold mb-4" :class="isDarkMode ? 'text-amber-400' : 'text-amber-700'">Company</h3>
             <ul class="space-y-2 text-sm">
               <li><router-link to="/about" class="footer-link transition">About</router-link></li>
               <li><a href="#" class="footer-link transition">Blog</a></li>
@@ -85,7 +117,7 @@
             </ul>
           </div>
           <div>
-            <h3 class="font-bold mb-4" :class="isDarkMode ? 'text-orange-400' : 'text-amber-700'">Legal</h3>
+            <h3 class="font-bold mb-4" :class="isDarkMode ? 'text-amber-400' : 'text-amber-700'">Legal</h3>
             <ul class="space-y-2 text-sm">
               <li><a href="#" class="footer-link transition">Privacy</a></li>
               <li><a href="#" class="footer-link transition">Terms</a></li>
@@ -93,7 +125,7 @@
             </ul>
           </div>
           <div>
-            <h3 class="font-bold mb-4" :class="isDarkMode ? 'text-orange-400' : 'text-amber-700'">Connect</h3>
+            <h3 class="font-bold mb-4" :class="isDarkMode ? 'text-amber-400' : 'text-amber-700'">Connect</h3>
             <ul class="space-y-2 text-sm">
               <li><a href="#" class="footer-link transition">Twitter</a></li>
               <li><a href="#" class="footer-link transition">GitHub</a></li>
@@ -122,6 +154,7 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const isDarkMode = ref(false)
+const mobileMenuOpen = ref(false)
 
 // Load theme preference from localStorage
 onMounted(() => {
@@ -389,5 +422,66 @@ const logout = async () => {
 
 .footer-link:hover {
   color: rgb(17 24 39 / 1);
+}
+
+/* Mobile Menu */
+.hamburger-btn {
+  border: none;
+  cursor: pointer;
+  background: none;
+}
+
+.w-6 {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.mobile-menu {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.mobile-menu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0.75rem 1rem;
+}
+
+.mobile-link {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: background 0.2s ease;
+  font-size: 0.95rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.mobile-link:hover,
+.mobile-link.router-link-active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Slide-down transition */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+.slide-down-enter-to,
+.slide-down-leave-from {
+  max-height: 600px;
+  opacity: 1;
 }
 </style>

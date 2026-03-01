@@ -851,6 +851,23 @@ router.post('/solar/lookup', authenticateToken, async (req, res) => {
           }
         }
 
+        // Fallback: use Nominatim (OpenStreetMap) free geocoder if no Google key
+        if (!lat || !lng) {
+          try {
+            const nominatimRes = await axios.get('https://nominatim.openstreetmap.org/search', {
+              params: { q: locationQuery, format: 'json', limit: 1 },
+              headers: { 'User-Agent': 'ApolakiSolarPlatform/1.0' },
+              timeout: 8000
+            });
+            if (nominatimRes.data?.[0]) {
+              lat = parseFloat(nominatimRes.data[0].lat);
+              lng = parseFloat(nominatimRes.data[0].lon);
+            }
+          } catch (nomErr) {
+            console.warn('Nominatim geocoding failed for NREL:', nomErr.message);
+          }
+        }
+
         const pvWattsParams = {
           api_key: nrelApiKey,
           system_capacity: 5, // 5kW reference
@@ -875,18 +892,24 @@ router.post('/solar/lookup', authenticateToken, async (req, res) => {
 
         const pvData = pvRes.data.outputs;
         if (pvData) {
+          const monthKeys = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
           solarData = {
             provider: 'nrel_pvwatts',
-            formattedAddress: locationQuery,
+            formattedAddress: pvRes.data.station_info?.city
+              ? `${pvRes.data.station_info.city}, ${pvRes.data.station_info.state}`
+              : locationQuery,
             latitude: pvRes.data.station_info?.lat || lat,
             longitude: pvRes.data.station_info?.lon || lng,
             maxSunshineHoursPerYear: parseFloat(((pvData.solrad_annual || 0) * 365).toFixed(0)),
+            estimatedPeakSunHoursPerDay: parseFloat((pvData.solrad_annual || 0).toFixed(2)),
             referenceSystemKw: 5,
             annualProductionKwh: parseFloat((pvData.ac_annual || 0).toFixed(0)),
-            monthlyProductionKwh: pvData.ac_monthly || [],
+            monthlyProductionKwh: (pvData.ac_monthly || []).map(v => parseFloat((v || 0).toFixed(0))),
             capacityFactor: parseFloat((pvData.capacity_factor || 0).toFixed(1)),
             solarRadiationAnnual: parseFloat((pvData.solrad_annual || 0).toFixed(2)),
-            solarRadiationMonthly: pvData.solrad_monthly || []
+            solarRadiationMonthly: (pvData.solrad_monthly || []).map(v => parseFloat((v || 0).toFixed(2))),
+            monthLabels: monthKeys,
+            note: `Data from NREL PVWatts v8. Station: ${pvRes.data.station_info?.city || 'N/A'}, ${pvRes.data.station_info?.state || 'N/A'} (${pvRes.data.station_info?.distance ? pvRes.data.station_info.distance + ' km away' : 'nearest TMY station'}).`
           };
           provider = 'nrel_pvwatts';
         }

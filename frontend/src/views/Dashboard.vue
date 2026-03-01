@@ -1446,4 +1446,54 @@ onMounted(async () => {
 .text-gray-600 {
   color: var(--gray-600);
 }
+
+/* ── Dark Theme Overrides ── */
+:global(.dark-theme) .hero-section {
+  background: linear-gradient(135deg, #2A1F00 0%, #1E293B 100%);
+  color: #E2E8F0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+:global(.dark-theme) .hero-text h1 {
+  color: #FFB81C;
+}
+
+:global(.dark-theme) .kpi-card {
+  background: #1E293B;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+:global(.dark-theme) .kpi-card:hover {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+:global(.dark-theme) .kpi-value {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .kpi-title {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .kpi-meta {
+  color: #64748B;
+}
+
+:global(.dark-theme) .trend-up {
+  background-color: #064E3B;
+  color: #6EE7B7;
+}
+
+:global(.dark-theme) .trend-neutral {
+  background-color: #334155;
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .section-header h2 {
+  color: #E2E8F0;
+}
+
+:global(.dark-theme) .section-header .text-gray-600 {
+  color: #94A3B8;
+}
 </style>

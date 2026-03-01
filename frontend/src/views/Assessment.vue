@@ -479,6 +479,14 @@ onMounted(async () => {
 <style scoped>
 .assessment {
   width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.assessment h1 {
+  color: var(--text-main);
+  margin-bottom: 1.5rem;
 }
 
 .form-card,
@@ -561,7 +569,7 @@ onMounted(async () => {
 }
 
 .btn-solar-lookup {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: linear-gradient(135deg, #FFB81C 0%, #F5A700 100%);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -574,7 +582,7 @@ onMounted(async () => {
 
 .btn-solar-lookup:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 184, 28, 0.3);
 }
 
 .btn-solar-lookup:disabled {
