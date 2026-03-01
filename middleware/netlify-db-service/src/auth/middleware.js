@@ -171,6 +171,56 @@ export function validateRequest(schema) {
   };
 }
 
+/**
+ * Helper: Verify installation ownership or admin access
+ */
+export async function verifyInstallationOwnershipOrAdmin(req, res, installation) {
+  const userId = req.user.id;
+  const userRole = req.user.role;
+  
+  // Admin/superadmin can access any installation
+  if (userRole === 'admin' || userRole === 'superadmin') {
+    return true;
+  }
+  
+  // Regular users can only access their own installations
+  if (installation.user_id !== userId) {
+    res.status(403).json({
+      success: false,
+      error: 'Forbidden: You do not have access to this installation',
+      code: 'FORBIDDEN_INSTALLATION_ACCESS'
+    });
+    return false;
+  }
+  
+  return true;
+}
+
+/**
+ * Helper: Verify self or admin access for user data
+ */
+export function verifySelfOrAdmin(req, res, targetUserId) {
+  const userId = req.user.id;
+  const userRole = req.user.role;
+  
+  // Admin/superadmin can access any user's data
+  if (userRole === 'admin' || userRole === 'superadmin') {
+    return true;
+  }
+  
+  // Regular users can only access their own data
+  if (targetUserId !== userId) {
+    res.status(403).json({
+      success: false,
+      error: 'Forbidden: You can only access your own data',
+      code: 'FORBIDDEN_USER_ACCESS'
+    });
+    return false;
+  }
+  
+  return true;
+}
+
 export default {
   authenticateToken,
   authorizeRole,

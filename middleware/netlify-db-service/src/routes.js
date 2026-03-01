@@ -5,7 +5,7 @@
 
 import axios from 'axios';
 import express from 'express';
-import { authenticateToken } from './auth/middleware.js';
+import { authenticateToken, authorizeRole, verifyInstallationOwnershipOrAdmin, verifySelfOrAdmin } from './auth/middleware.js';
 import {
     assessments,
     contracts,
@@ -27,8 +27,10 @@ const router = express.Router();
 /**
  * POST /api/users
  * Create a new user
+ * 🔒 SECURED: Admin/superadmin only (ISSUE #5 FIX)
+ * NOTE: Public signup should use POST /api/auth/signup instead
  */
-router.post('/users', async (req, res) => {
+router.post('/users', authenticateToken, authorizeRole('admin', 'superadmin'), async (req, res) => {
   try {
     const { email, passwordHash, firstName, lastName, role } = req.body;
 
@@ -61,8 +63,9 @@ router.post('/users', async (req, res) => {
 /**
  * GET /api/users
  * Get all users
+ * 🔒 SECURED: Admin/superadmin only (ISSUE #2 FIX)
  */
-router.get('/users', async (req, res) => {
+router.get('/users', authenticateToken, authorizeRole('admin', 'superadmin'), async (req, res) => {
   try {
     const allUsers = await users.getAll();
     res.json({
@@ -82,10 +85,18 @@ router.get('/users', async (req, res) => {
 /**
  * GET /api/users/:id
  * Get user by ID
+ * 🔒 SECURED: Self or admin/superadmin only (ISSUE #3 FIX)
  */
-router.get('/users/:id', async (req, res) => {
+router.get('/users/:id', authenticateToken, async (req, res) => {
   try {
-    const user = await users.getById(req.params.id);
+    const targetUserId = req.params.id;
+    
+    // Verify user can only access their own profile or is admin
+    if (!verifySelfOrAdmin(req, res, targetUserId)) {
+      return; // verifySelfOrAdmin already sent error response
+    }
+    
+    const user = await users.getById(targetUserId);
 
     if (!user) {
       return res.status(404).json({
@@ -202,17 +213,31 @@ router.post('/installations', authenticateToken, async (req, res) => {
 /**
  * GET /api/installations
  * Get all installations (for authenticated user or all)
+ * 🔒 SECURED: Validate userId param matches authenticated user or user is admin (ISSUE #7 FIX)
  */
 router.get('/installations', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.query;
     let installations;
+    
     // Admin/superadmin can see all; regular users see their own
     if ((req.user.role === 'admin' || req.user.role === 'superadmin') && !userId) {
       installations = await solarInstallations.getAll();
+    } else if (userId) {
+      // Validate userId param matches authenticated user or user is admin
+      if (userId !== req.user.id && !(req.user.role === 'admin' || req.user.role === 'superadmin')) {
+        return res.status(403).json({
+          success: false,
+          error: 'Forbidden: You can only access your own installations',
+          code: 'FORBIDDEN_ACCESS'
+        });
+      }
+      installations = await solarInstallations.getByUserId(userId);
     } else {
-      installations = await solarInstallations.getByUserId(userId || req.user.id);
+      // No userId param, use authenticated user's ID
+      installations = await solarInstallations.getByUserId(req.user.id);
     }
+    
     res.json({
       success: true,
       count: installations.length,
@@ -229,10 +254,11 @@ router.get('/installations', authenticateToken, async (req, res) => {
 
 /**
  * GET /api/installations/:id
- * Get installation by ID
+ * Get installation by ID (requires auth + ownership)
  */
-router.get('/installations/:id', async (req, res) => {
+router.get('/installations/:id', authenticateToken, async (req, res) => {
   try {
+    const { verifyInstallationOwnershipOrAdmin } = await import('./auth/middleware.js');
     const installation = await solarInstallations.getById(req.params.id);
 
     if (!installation) {
@@ -240,6 +266,12 @@ router.get('/installations/:id', async (req, res) => {
         success: false,
         error: 'Installation not found'
       });
+    }
+
+    // ✅ FIX ISSUE #1: Verify user owns this installation or is admin
+    const hasAccess = await verifyInstallationOwnershipOrAdmin(req, res, installation);
+    if (!hasAccess) {
+      return; // Response already sent by verifyInstallationOwnershipOrAdmin
     }
 
     res.json({
@@ -258,10 +290,18 @@ router.get('/installations/:id', async (req, res) => {
 /**
  * GET /api/users/:userId/installations
  * Get all installations for a user
+ * 🔒 SECURED: Self or admin/superadmin only (ISSUE #4 FIX)
  */
-router.get('/users/:userId/installations', async (req, res) => {
+router.get('/users/:userId/installations', authenticateToken, async (req, res) => {
   try {
-    const installations = await solarInstallations.getByUserId(req.params.userId);
+    const targetUserId = req.params.userId;
+    
+    // Verify user can only access their own installations or is admin
+    if (!verifySelfOrAdmin(req, res, targetUserId)) {
+      return; // verifySelfOrAdmin already sent error response
+    }
+    
+    const installations = await solarInstallations.getByUserId(targetUserId);
 
     res.json({
       success: true,
@@ -390,11 +430,28 @@ router.post('/installations/:installationId/monitoring', async (req, res) => {
 /**
  * GET /api/installations/:installationId/monitoring
  * Get latest monitoring data
+ * 🔒 SECURED: User must own installation or be admin (ISSUE #6 FIX)
  */
-router.get('/installations/:installationId/monitoring', async (req, res) => {
+router.get('/installations/:installationId/monitoring', authenticateToken, async (req, res) => {
   try {
+    const installationId = req.params.installationId;
+    
+    // Fetch installation to verify ownership
+    const installation = await solarInstallations.getById(installationId);
+    if (!installation) {
+      return res.status(404).json({
+        success: false,
+        error: 'Installation not found'
+      });
+    }
+    
+    // Verify user owns the installation or is admin
+    if (!await verifyInstallationOwnershipOrAdmin(req, res, installation)) {
+      return; // verifyInstallationOwnershipOrAdmin already sent error response
+    }
+    
     const limit = req.query.limit || 100;
-    const data = await monitoringData.getLatest(req.params.installationId, limit);
+    const data = await monitoringData.getLatest(installationId, limit);
 
     res.json({
       success: true,
@@ -454,14 +511,28 @@ router.post('/installations/:installationId/performance', async (req, res) => {
 /**
  * GET /api/installations/:installationId/performance
  * Get performance data for installation
+ * 🔒 SECURED: User must own installation or be admin (ISSUE #6 FIX)
  */
-router.get('/installations/:installationId/performance', async (req, res) => {
+router.get('/installations/:installationId/performance', authenticateToken, async (req, res) => {
   try {
+    const installationId = req.params.installationId;
+    
+    // Fetch installation to verify ownership
+    const installation = await solarInstallations.getById(installationId);
+    if (!installation) {
+      return res.status(404).json({
+        success: false,
+        error: 'Installation not found'
+      });
+    }
+    
+    // Verify user owns the installation or is admin
+    if (!await verifyInstallationOwnershipOrAdmin(req, res, installation)) {
+      return; // verifyInstallationOwnershipOrAdmin already sent error response
+    }
+    
     const limit = req.query.limit || 30;
-    const data = await performanceData.getByInstallation(
-      req.params.installationId,
-      limit
-    );
+    const data = await performanceData.getByInstallation(installationId, limit);
 
     res.json({
       success: true,
@@ -523,10 +594,27 @@ router.post('/installations/:installationId/maintenance', async (req, res) => {
 /**
  * GET /api/installations/:installationId/maintenance
  * Get maintenance logs
+ * 🔒 SECURED: User must own installation or be admin (ISSUE #6 FIX)
  */
-router.get('/installations/:installationId/maintenance', async (req, res) => {
+router.get('/installations/:installationId/maintenance', authenticateToken, async (req, res) => {
   try {
-    const logs = await maintenanceLog.getByInstallation(req.params.installationId);
+    const installationId = req.params.installationId;
+    
+    // Fetch installation to verify ownership
+    const installation = await solarInstallations.getById(installationId);
+    if (!installation) {
+      return res.status(404).json({
+        success: false,
+        error: 'Installation not found'
+      });
+    }
+    
+    // Verify user owns the installation or is admin
+    if (!await verifyInstallationOwnershipOrAdmin(req, res, installation)) {
+      return; // verifyInstallationOwnershipOrAdmin already sent error response
+    }
+    
+    const logs = await maintenanceLog.getByInstallation(installationId);
 
     res.json({
       success: true,
