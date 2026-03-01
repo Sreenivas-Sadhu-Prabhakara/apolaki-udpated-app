@@ -701,9 +701,17 @@ const systemAlerts = computed(() => {
   return alerts
 })
 
-// Lifecycle
+// Lifecycle — only fetch installations if user is logged in; otherwise show defaults
 onMounted(async () => {
-  await installationStore.fetchInstallations()
+  if (userStore.isAuthenticated) {
+    try {
+      await installationStore.fetchInstallations()
+    } catch (err) {
+      // API may be unavailable — dashboard will show Metro Manila defaults
+      console.warn('Dashboard: Could not fetch installations, showing defaults.', err?.message || err)
+    }
+  }
+  // If not authenticated, dashboard renders with Metro Manila sample data
 })
 </script>
 

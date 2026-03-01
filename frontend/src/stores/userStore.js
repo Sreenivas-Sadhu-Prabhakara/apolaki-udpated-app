@@ -160,6 +160,37 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  const sendWhatsAppOtp = async (phone) => {
+    loading.value = true
+    error.value = null
+    try {
+      await api.post('/auth/whatsapp/send-otp', { phone })
+      return true
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Failed to send WhatsApp OTP'
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const verifyWhatsAppOtp = async (phone, otp) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await api.post('/auth/whatsapp/verify-otp', { phone, otp })
+      setAuthTokens(response.data)
+      user.value = response.data.user
+      connectedProviders.value = response.data.user?.providers || []
+      return true
+    } catch (err) {
+      error.value = err.response?.data?.error || 'WhatsApp OTP verification failed'
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     user,
     token,
@@ -180,7 +211,9 @@ export const useUserStore = defineStore('user', () => {
     setAuthTokens,
     restoreSession,
     handleOAuthCallback,
-    verifyOtp
+    verifyOtp,
+    sendWhatsAppOtp,
+    verifyWhatsAppOtp
   }
 })
 
