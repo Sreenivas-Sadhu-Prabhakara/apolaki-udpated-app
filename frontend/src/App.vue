@@ -116,53 +116,29 @@
     </main>
 
     <!-- Footer -->
-    <footer v-if="showChrome" class="footer transition-colors duration-300 mt-12 border-t-4" :class="footerClass">
-      <div class="max-w-7xl mx-auto px-4 py-16">
-        <!-- Footer Grid -->
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
-          <div>
-            <h3 class="font-bold mb-4 text-lg" :class="isDarkMode ? 'text-amber-400' : 'text-amber-700'">☀️ Apolaki</h3>
-            <p class="text-sm" :class="isDarkMode ? 'text-slate-400' : 'text-gray-600'">Solar energy management platform</p>
-          </div>
-          <div>
-            <h3 class="font-bold mb-4" :class="isDarkMode ? 'text-amber-400' : 'text-amber-700'">Product</h3>
-            <ul class="space-y-2 text-sm">
-              <li><a href="#" class="footer-link transition">Features</a></li>
-              <li><a href="#" class="footer-link transition">Pricing</a></li>
-              <li><a href="#" class="footer-link transition">Documentation</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 class="font-bold mb-4" :class="isDarkMode ? 'text-amber-400' : 'text-amber-700'">Company</h3>
-            <ul class="space-y-2 text-sm">
-              <li><router-link to="/about" class="footer-link transition">About</router-link></li>
-              <li><a href="#" class="footer-link transition">Blog</a></li>
-              <li><a href="#" class="footer-link transition">Contact</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 class="font-bold mb-4" :class="isDarkMode ? 'text-amber-400' : 'text-amber-700'">Legal</h3>
-            <ul class="space-y-2 text-sm">
-              <li><a href="#" class="footer-link transition">Privacy</a></li>
-              <li><a href="#" class="footer-link transition">Terms</a></li>
-              <li><a href="#" class="footer-link transition">Security</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 class="font-bold mb-4" :class="isDarkMode ? 'text-amber-400' : 'text-amber-700'">Connect</h3>
-            <ul class="space-y-2 text-sm">
-              <li><a href="#" class="footer-link transition">Twitter</a></li>
-              <li><a href="#" class="footer-link transition">GitHub</a></li>
-              <li><a href="#" class="footer-link transition">LinkedIn</a></li>
-            </ul>
-          </div>
+    <footer v-if="showChrome" class="site-footer transition-colors duration-300" :class="isDarkMode ? 'site-footer--dark' : 'site-footer--light'">
+      <div class="footer-inner">
+        <!-- Left: brand + copyright -->
+        <div class="footer-left">
+          <span class="footer-brand">☀️ Apolaki Solar</span>
+          <span class="footer-copy">&copy; {{ new Date().getFullYear() }} All rights reserved.</span>
         </div>
-        
-        <!-- Footer Divider -->
-        <div class="border-t-2 pt-8 text-center text-sm" :class="isDarkMode ? 'border-slate-700' : 'border-gray-300'">
-          <p :class="isDarkMode ? 'text-slate-500' : 'text-gray-600'">
-            &copy; 2026 Apolaki Solar Platform. All rights reserved.
-          </p>
+
+        <!-- Center: nav links -->
+        <nav class="footer-nav">
+          <router-link to="/about" class="footer-nav-link">About</router-link>
+          <a href="#" class="footer-nav-link">Features</a>
+          <a href="#" class="footer-nav-link">Pricing</a>
+          <a href="#" class="footer-nav-link">Privacy</a>
+          <a href="#" class="footer-nav-link">Terms</a>
+          <a href="#" class="footer-nav-link">Docs</a>
+        </nav>
+
+        <!-- Right: social icons (text-based for now) -->
+        <div class="footer-social">
+          <a href="#" class="footer-social-link" title="Twitter">𝕏</a>
+          <a href="#" class="footer-social-link" title="GitHub">⌘</a>
+          <a href="#" class="footer-social-link" title="LinkedIn">in</a>
         </div>
       </div>
     </footer>
@@ -228,13 +204,6 @@ const mainBgClass = computed(() => {
   return 'min-h-screen bg-gradient-to-b from-gray-50 to-gray-100'
 })
 
-const footerClass = computed(() => {
-  if (isDarkMode.value) {
-    return 'bg-slate-900 text-slate-300 border-amber-600'
-  }
-  return 'bg-gray-900 text-gray-300 border-amber-600'
-})
-
 const logout = async () => {
   await userStore.logout()
   router.push('/login')
@@ -249,23 +218,25 @@ const logout = async () => {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* ── Navbar ─────────────────────────────────────────── */
 .navbar {
   position: sticky;
   top: 0;
   z-index: 50;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .nav-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
 }
 
 .nav-brand {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
   font-weight: bold;
   color: white;
 }
@@ -273,114 +244,195 @@ const logout = async () => {
 .nav-menu {
   list-style: none;
   display: flex;
-  gap: 1.5rem;
+  align-items: center;
+  gap: 2px;
   margin: 0;
   padding: 0;
 }
 
 .nav-link {
-  color: white;
+  display: block;
+  color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
   font-weight: 500;
-  transition: all 0.3s ease;
-  position: relative;
+  font-size: 0.8125rem;
+  padding: 0.375rem 0.625rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .nav-link:hover {
-  color: #fef3c7;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .nav-link.router-link-active {
   color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
   font-weight: 600;
 }
 
+/* "More" dropdown ─────────────────────────────────── */
+.nav-more-wrapper {
+  position: relative;
+}
+
+.nav-more-btn {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+.nav-dropdown {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  right: 0;
+  min-width: 180px;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  list-style: none;
+  margin: 0;
+  padding: 0.375rem;
+  z-index: 100;
+}
+
+.dropdown-link {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  color: #374151;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  transition: background 0.15s;
+}
+
+.dropdown-link:hover {
+  background: #f3f4f6;
+}
+
+.dropdown-link.router-link-active {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.dropdown-link--emergency {
+  color: #dc2626;
+}
+
+/* Dropdown transitions */
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: all 0.15s ease;
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+/* Nav-link-emergency (kept for mobile fallback) */
 .nav-link-emergency {
   color: white;
   text-decoration: none;
   font-weight: 600;
 }
 
+/* ── Right-side: theme toggle + user ────────────────── */
 .nav-user {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
-.btn-primary {
-  background: white;
-  color: #b45309;
-  font-weight: 600;
+.theme-toggle-inline {
+  width: 32px;
+  height: 32px;
+  font-size: 1rem;
   border: none;
+  border-radius: 50%;
   cursor: pointer;
-  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  line-height: 1;
 }
 
-.btn-primary:hover {
-  background: #fef3c7;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+.theme-toggle-light {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
 }
 
-.btn-secondary {
+.theme-toggle-light:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.theme-toggle-dark {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.theme-toggle-dark:hover {
+  background: rgba(251, 191, 36, 0.35);
+}
+
+/* Avatar circle */
+.nav-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   background: rgba(255, 255, 255, 0.2);
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: background 0.2s;
+  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
-.btn-secondary:hover {
+.nav-avatar:hover {
   background: rgba(255, 255, 255, 0.3);
-  border-color: white;
 }
 
 .btn-nav-login,
 .btn-nav-logout {
-  background: white;
-  color: #b45309;
+  padding: 0.3125rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   border: none;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.9);
+  color: #b45309;
 }
 
-.main-content {
-  flex: 1;
-  padding: 0;
+.btn-nav-login:hover,
+.btn-nav-logout:hover {
+  background: white;
 }
 
-.footer {
-  margin-top: auto;
-  border-top: 1px solid #374151;
+.btn-nav-login--dark,
+.btn-nav-logout--dark {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
 }
 
-/* Transition animations */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s ease;
+.btn-nav-login--dark:hover,
+.btn-nav-logout--dark:hover {
+  background: rgba(251, 191, 36, 0.35);
 }
 
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
-}
-
-@media (max-width: 768px) {
-  .nav-menu {
-    display: none;
-  }
-
-  .nav-user {
-    gap: 0.5rem;
-  }
-
-  .btn-primary, .btn-secondary {
-    padding: 0.5rem 1rem !important;
-    font-size: 0.875rem;
-  }
-}
-
-/* Theme Toggle Button */
+/* ── Floating theme toggle (auth pages only) ────────── */
 .theme-toggle {
   width: 44px;
   height: 44px;
@@ -394,17 +446,153 @@ const logout = async () => {
   transform: scale(1.1);
 }
 
-/* Footer Link Styles */
-.footer-link {
-  color: rgb(75 85 99 / 1);
+/* ── Main & Footer ──────────────────────────────────── */
+.main-content {
+  flex: 1;
+  padding: 0;
+}
+
+/* Compact sticky-bottom footer */
+.site-footer {
+  margin-top: auto;
+  border-top: 1px solid;
+  padding: 0.625rem 0;
+  font-size: 0.75rem;
+}
+
+.site-footer--light {
+  background: #111827;
+  border-color: #1f2937;
+  color: #9ca3af;
+}
+
+.site-footer--dark {
+  background: #0F172A;
+  border-color: #1E293B;
+  color: #64748B;
+}
+
+.footer-inner {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.footer-brand {
+  font-weight: 700;
+  font-size: 0.8125rem;
+  color: #d1d5db;
+}
+
+.site-footer--dark .footer-brand {
+  color: #CBD5E1;
+}
+
+.footer-copy {
+  opacity: 0.7;
+}
+
+/* Footer nav links */
+.footer-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.footer-nav-link {
+  color: inherit;
   text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  transition: color 0.15s, background 0.15s;
 }
 
-.footer-link:hover {
-  color: rgb(17 24 39 / 1);
+.footer-nav-link:hover {
+  color: #f9fafb;
+  background: rgba(255, 255, 255, 0.06);
 }
 
-/* Mobile Menu */
+.site-footer--dark .footer-nav-link:hover {
+  color: #F1F5F9;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Social links */
+.footer-social {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.footer-social-link {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #9ca3af;
+  text-decoration: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: color 0.15s, background 0.15s;
+}
+
+.footer-social-link:hover {
+  color: #f9fafb;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.site-footer--dark .footer-social-link {
+  color: #64748B;
+}
+
+.site-footer--dark .footer-social-link:hover {
+  color: #E2E8F0;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* On small screens, stack footer sections */
+@media (max-width: 640px) {
+  .footer-inner {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+    padding: 0.25rem 1rem;
+  }
+
+  .footer-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .footer-left {
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+}
+
+/* ── Transitions ────────────────────────────────────── */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+/* ── Mobile ─────────────────────────────────────────── */
 .hamburger-btn {
   border: none;
   cursor: pointer;
@@ -423,18 +611,18 @@ const logout = async () => {
 .mobile-menu ul {
   list-style: none;
   margin: 0;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.75rem;
 }
 
 .mobile-link {
   display: block;
-  padding: 0.75rem 1rem;
+  padding: 0.625rem 0.75rem;
   color: white;
   text-decoration: none;
   font-weight: 500;
   border-radius: 0.5rem;
   transition: background 0.2s ease;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   background: none;
   border: none;
   cursor: pointer;
@@ -444,6 +632,28 @@ const logout = async () => {
 .mobile-link:hover,
 .mobile-link.router-link-active {
   background: rgba(255, 255, 255, 0.15);
+}
+
+@media (max-width: 768px) {
+  .nav-menu {
+    display: none;
+  }
+
+  .nav-user {
+    gap: 0.375rem;
+  }
+}
+
+/* Large screens: open up link gaps a touch */
+@media (min-width: 1280px) {
+  .nav-menu {
+    gap: 4px;
+  }
+
+  .nav-link {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+  }
 }
 
 /* Slide-down transition */
