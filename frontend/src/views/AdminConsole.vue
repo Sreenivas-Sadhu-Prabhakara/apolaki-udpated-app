@@ -133,3 +133,20 @@ async function changeRole(u) {
 
 onMounted(() => { fetchUsers(); fetchAuditLogs() })
 </script>
+
+<style scoped>
+/* ── Dark Theme Overrides ── */
+:global(.dark-theme) .border-b {
+  border-color: #334155;
+}
+
+:global(.dark-theme) select {
+  background-color: #0F172A;
+  color: #E2E8F0;
+  border-color: #475569;
+}
+
+:global(.dark-theme) .border-l-4 {
+  /* keep colored left border visible on dark cards */
+}
+</style>

@@ -131,4 +131,33 @@ onMounted(async () => {
 .btn-primary:hover {
   background-color: #5568d3;
 }
+
+/* ── Dark Theme Overrides ── */
+:global(.dark-theme) .auth-callback {
+  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+}
+
+:global(.dark-theme) .loading,
+:global(.dark-theme) .error {
+  background-color: #1E293B;
+  color: #E2E8F0;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+:global(.dark-theme) .loading p {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .error p {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .error h2 {
+  color: #F87171;
+}
+
+:global(.dark-theme) .spinner {
+  border-color: #334155;
+  border-top-color: #FFCA4F;
+}
 </style>

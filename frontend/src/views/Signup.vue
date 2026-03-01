@@ -352,4 +352,44 @@ const handleSignup = async () => {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Dark Theme Overrides ── */
+:global(.dark-theme) .signup-container {
+  background: linear-gradient(135deg, #1E1B1B 0%, #B45309 50%, #7A3F00 100%);
+}
+
+:global(.dark-theme) .signup-card {
+  background-color: #1E293B;
+  color: #E2E8F0;
+}
+
+:global(.dark-theme) .signup-card .card-header h2,
+:global(.dark-theme) .logo-section h2 {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .signup-card .text-gray-600 {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .btn-google {
+  background: #0F172A;
+  color: #E2E8F0;
+  border-color: #475569;
+}
+
+:global(.dark-theme) .divider {
+  color: #64748B;
+}
+
+:global(.dark-theme) .divider::before,
+:global(.dark-theme) .divider::after {
+  background: #334155;
+}
+
+:global(.dark-theme) .alert-error {
+  background: #450A0A;
+  color: #FCA5A5;
+  border-left-color: #F87171;
+}
 </style>

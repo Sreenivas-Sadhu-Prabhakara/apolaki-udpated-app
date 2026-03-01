@@ -1,11 +1,11 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+  <div class="min-h-screen py-8 px-4 sm:px-6 lg:px-8" :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
     <div class="max-w-7xl mx-auto">
       <!-- Header -->
       <div class="flex justify-between items-start mb-8">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">☀️ Solar Marketplace</h1>
-          <p class="mt-2 text-gray-600">Browse panels, inverters, batteries, and more.</p>
+          <h1 class="text-3xl font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">☀️ Solar Marketplace</h1>
+          <p class="mt-2" :class="isDark ? 'text-slate-400' : 'text-gray-600'">Browse panels, inverters, batteries, and more.</p>
         </div>
         <div class="flex gap-3">
           <button @click="viewMode = 'grid'" :class="viewMode === 'grid' ? 'bg-orange-600 text-white' : 'bg-white text-gray-700 border border-gray-300'" class="px-3 py-2 rounded-lg text-sm font-medium transition">🔲 Grid</button>
@@ -26,7 +26,8 @@
             @input="debouncedSearch"
             type="text"
             placeholder="Search products by name, manufacturer, or description..."
-            class="w-full border border-gray-300 rounded-xl px-5 py-3 pl-12 text-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            class="w-full rounded-xl px-5 py-3 pl-12 text-lg focus:ring-2 focus:ring-orange-500"
+            :class="isDark ? 'bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400' : 'border border-gray-300'"
           />
           <span class="absolute left-4 top-4 text-gray-400">🔍</span>
           <button v-if="searchQuery" @click="clearSearch" class="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600">✕</button>
@@ -43,7 +44,7 @@
             'px-4 py-2 rounded-full text-sm font-medium transition',
             activeCategory === cat.value
               ? 'bg-orange-600 text-white'
-              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
+              : isDark ? 'bg-slate-800 text-slate-300 border border-slate-600 hover:bg-slate-700' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
           ]"
         >
           {{ cat.label }}
@@ -64,7 +65,7 @@
             <div class="text-3xl">{{ categoryIcon(item.category) }}</div>
             <div class="flex-1">
               <h4 class="font-bold text-gray-900">{{ item.name }}</h4>
-              <p class="text-sm text-gray-500">${{ Number(item.price).toLocaleString() }}</p>
+              <p class="text-sm text-gray-500">{{ formatCurrency(item.price) }}</p>
             </div>
             <button @click="removeFromWishlist(item.id)" class="text-red-500 hover:text-red-700 text-sm">Remove</button>
           </div>
@@ -93,7 +94,7 @@
           <tbody>
             <tr class="border-b"><td class="py-2 pr-4 text-gray-500">Category</td><td v-for="p in compareList" :key="p.id + '-cat'" class="py-2 px-4 capitalize">{{ p.category }}</td></tr>
             <tr class="border-b"><td class="py-2 pr-4 text-gray-500">Manufacturer</td><td v-for="p in compareList" :key="p.id + '-mfg'" class="py-2 px-4">{{ p.manufacturer || '—' }}</td></tr>
-            <tr class="border-b"><td class="py-2 pr-4 text-gray-500">Price</td><td v-for="p in compareList" :key="p.id + '-price'" class="py-2 px-4 font-bold">${{ Number(p.price).toLocaleString() }}</td></tr>
+            <tr class="border-b"><td class="py-2 pr-4 text-gray-500">Price</td><td v-for="p in compareList" :key="p.id + '-price'" class="py-2 px-4 font-bold">{{ formatCurrency(p.price) }}</td></tr>
             <tr class="border-b"><td class="py-2 pr-4 text-gray-500">Rating</td><td v-for="p in compareList" :key="p.id + '-rating'" class="py-2 px-4">{{ p.rating ? `★ ${Number(p.rating).toFixed(1)} (${p.review_count || 0})` : 'No reviews' }}</td></tr>
             <tr class="border-b"><td class="py-2 pr-4 text-gray-500">Availability</td><td v-for="p in compareList" :key="p.id + '-inv'" class="py-2 px-4" :class="p.inventory > 0 ? 'text-green-600' : 'text-red-500'">{{ p.inventory > 0 ? `In Stock (${p.inventory})` : 'Out of Stock' }}</td></tr>
           </tbody>
@@ -112,7 +113,7 @@
       <div v-else-if="selectedProduct" class="bg-white rounded-xl shadow-lg border border-gray-200 p-8 mb-8">
         <button @click="selectedProduct = null" class="text-gray-400 hover:text-gray-600 text-sm mb-4 flex items-center gap-1">← Back to products</button>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div class="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-xl h-64 flex items-center justify-center text-7xl">
+          <div class="bg-linear-to-br from-orange-50 to-yellow-50 rounded-xl h-64 flex items-center justify-center text-7xl">
             {{ categoryIcon(selectedProduct.category) }}
           </div>
           <div>
@@ -121,7 +122,7 @@
             <p v-if="selectedProduct.manufacturer" class="text-sm text-gray-500 mt-1">by {{ selectedProduct.manufacturer }}</p>
             <p class="mt-3 text-gray-600">{{ selectedProduct.description || 'High-quality solar equipment.' }}</p>
             <div class="mt-4">
-              <span class="text-3xl font-bold text-gray-900">${{ Number(selectedProduct.price).toLocaleString() }}</span>
+              <span class="text-3xl font-bold text-gray-900">{{ formatCurrency(selectedProduct.price) }}</span>
               <span class="ml-3 text-sm" :class="selectedProduct.inventory > 0 ? 'text-green-600' : 'text-red-500'">
                 {{ selectedProduct.inventory > 0 ? `In Stock (${selectedProduct.inventory})` : 'Out of Stock' }}
               </span>
@@ -205,9 +206,10 @@
         <div
           v-for="product in filteredProducts"
           :key="product.id"
-          class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition cursor-pointer group"
+          class="rounded-xl shadow-sm border overflow-hidden hover:shadow-lg transition cursor-pointer group"
+          :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'"
         >
-          <div @click="selectProduct(product)" class="bg-gradient-to-br from-orange-50 to-yellow-50 h-40 flex items-center justify-center text-5xl relative">
+          <div @click="selectProduct(product)" class="h-40 flex items-center justify-center text-5xl relative" :class="isDark ? 'bg-slate-700' : 'bg-linear-to-br from-orange-50 to-yellow-50'">
             {{ categoryIcon(product.category) }}
             <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition">
               <button @click.stop="toggleWishlist(product)" class="bg-white rounded-full w-8 h-8 flex items-center justify-center shadow text-sm hover:bg-red-50">
@@ -221,19 +223,19 @@
           <div @click="selectProduct(product)" class="p-5">
             <div class="flex items-center justify-between">
               <span class="text-xs font-semibold uppercase tracking-wide text-orange-600">{{ product.category }}</span>
-              <span v-if="product.manufacturer" class="text-xs text-gray-400">{{ product.manufacturer }}</span>
+              <span v-if="product.manufacturer" class="text-xs" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ product.manufacturer }}</span>
             </div>
-            <h3 class="mt-1 text-lg font-bold text-gray-900">{{ product.name }}</h3>
-            <p class="mt-1 text-sm text-gray-500 line-clamp-2">{{ product.description || 'High-quality solar equipment.' }}</p>
+            <h3 class="mt-1 text-lg font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">{{ product.name }}</h3>
+            <p class="mt-1 text-sm line-clamp-2" :class="isDark ? 'text-slate-400' : 'text-gray-500'">{{ product.description || 'High-quality solar equipment.' }}</p>
             <div class="mt-4 flex items-center justify-between">
-              <span class="text-xl font-bold text-gray-900">${{ Number(product.price).toLocaleString() }}</span>
-              <span v-if="product.inventory > 0" class="text-xs text-green-600 font-medium">In Stock</span>
+              <span class="text-xl font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">{{ formatCurrency(product.price) }}</span>
+              <span v-if="product.inventory > 0" class="text-xs text-green-500 font-medium">In Stock</span>
               <span v-else class="text-xs text-red-500 font-medium">Out of Stock</span>
             </div>
             <div v-if="product.rating" class="mt-2 flex items-center gap-1">
               <span class="text-yellow-500">★</span>
-              <span class="text-sm text-gray-600">{{ Number(product.rating).toFixed(1) }}</span>
-              <span class="text-xs text-gray-400">({{ product.review_count || 0 }})</span>
+              <span class="text-sm" :class="isDark ? 'text-slate-300' : 'text-gray-600'">{{ Number(product.rating).toFixed(1) }}</span>
+              <span class="text-xs" :class="isDark ? 'text-slate-500' : 'text-gray-400'">({{ product.review_count || 0 }})</span>
             </div>
           </div>
         </div>
@@ -249,8 +251,12 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useMarketplaceStore } from '../stores/marketplaceStore'
+import { useThemeStore } from '../stores/themeStore'
+import { formatCurrency } from '../utils/currency'
 
 const marketplaceStore = useMarketplaceStore()
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDarkMode)
 const activeCategory = ref('all')
 const searchQuery = ref('')
 const viewMode = ref('grid')

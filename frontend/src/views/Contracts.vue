@@ -1,11 +1,11 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+  <div class="min-h-screen py-8 px-4 sm:px-6 lg:px-8" :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
     <div class="max-w-7xl mx-auto">
       <!-- Header -->
       <div class="flex justify-between items-center mb-8">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">📄 Contract Management</h1>
-          <p class="mt-2 text-gray-600">View, sign, and manage your solar contracts</p>
+          <h1 class="text-3xl font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">📄 Contract Management</h1>
+          <p class="mt-2" :class="isDark ? 'text-slate-400' : 'text-gray-600'">View, sign, and manage your solar contracts</p>
         </div>
         <button @click="showCreateForm = true" class="bg-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-700 transition">
           + New Contract
@@ -14,21 +14,21 @@
 
       <!-- Stats Cards -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <p class="text-sm font-medium text-gray-500">Total Contracts</p>
-          <p class="text-3xl font-bold text-gray-900">{{ contractStore.contracts.length }}</p>
+        <div class="rounded-xl shadow-sm border p-6" :class="cardClass">
+          <p class="text-sm font-medium" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Total Contracts</p>
+          <p class="text-3xl font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">{{ contractStore.contracts.length }}</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <p class="text-sm font-medium text-gray-500">Pending Signature</p>
-          <p class="text-3xl font-bold text-yellow-600">{{ pendingCount }}</p>
+        <div class="rounded-xl shadow-sm border p-6" :class="cardClass">
+          <p class="text-sm font-medium" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Pending Signature</p>
+          <p class="text-3xl font-bold text-yellow-500">{{ pendingCount }}</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <p class="text-sm font-medium text-gray-500">Signed</p>
-          <p class="text-3xl font-bold text-green-600">{{ signedCount }}</p>
+        <div class="rounded-xl shadow-sm border p-6" :class="cardClass">
+          <p class="text-sm font-medium" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Signed</p>
+          <p class="text-3xl font-bold text-green-500">{{ signedCount }}</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <p class="text-sm font-medium text-gray-500">Total Value</p>
-          <p class="text-3xl font-bold text-blue-600">${{ totalValue.toLocaleString() }}</p>
+        <div class="rounded-xl shadow-sm border p-6" :class="cardClass">
+          <p class="text-sm font-medium" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Total Value</p>
+          <p class="text-3xl font-bold" :class="isDark ? 'text-blue-400' : 'text-blue-600'">{{ formatCurrency(totalValue) }}</p>
         </div>
       </div>
 
@@ -42,7 +42,7 @@
             'px-4 py-2 rounded-full text-sm font-medium transition',
             activeFilter === filter.value
               ? 'bg-orange-600 text-white'
-              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
+              : isDark ? 'bg-slate-800 text-slate-300 border border-slate-600 hover:bg-slate-700' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
           ]"
         >
           {{ filter.label }}
@@ -50,23 +50,23 @@
       </div>
 
       <!-- Create Contract Modal -->
-      <div v-if="showCreateForm" class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
+      <div v-if="showCreateForm" class="rounded-xl shadow-lg border p-6 mb-8" :class="cardClass">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-bold">Create New Contract</h2>
-          <button @click="showCreateForm = false" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+          <h2 class="text-xl font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">Create New Contract</h2>
+          <button @click="showCreateForm = false" class="text-2xl" :class="isDark ? 'text-slate-500 hover:text-slate-300' : 'text-gray-400 hover:text-gray-600'">&times;</button>
         </div>
         <form @submit.prevent="handleCreate" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Contract Title</label>
-            <input v-model="form.title" type="text" placeholder="Solar Installation Agreement" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+            <label class="block text-sm font-medium mb-1" :class="isDark ? 'text-slate-300' : 'text-gray-700'">Contract Title</label>
+            <input v-model="form.title" type="text" placeholder="Solar Installation Agreement" required class="w-full rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500" :class="inputClass" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Provider</label>
-            <input v-model="form.provider" type="text" placeholder="SolarCo Inc" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+            <label class="block text-sm font-medium mb-1" :class="isDark ? 'text-slate-300' : 'text-gray-700'">Provider</label>
+            <input v-model="form.provider" type="text" placeholder="SolarCo Inc" required class="w-full rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500" :class="inputClass" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Contract Type</label>
-            <select v-model="form.contractType" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+            <label class="block text-sm font-medium mb-1" :class="isDark ? 'text-slate-300' : 'text-gray-700'">Contract Type</label>
+            <select v-model="form.contractType" required class="w-full rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500" :class="inputClass">
               <option value="">Select type...</option>
               <option value="purchase">Purchase Agreement</option>
               <option value="lease">Lease Agreement</option>
@@ -76,73 +76,74 @@
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
-            <input v-model.number="form.amount" type="number" step="0.01" placeholder="25000" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+            <label class="block text-sm font-medium mb-1" :class="isDark ? 'text-slate-300' : 'text-gray-700'">Amount ({{ currencySymbol }})</label>
+            <input v-model.number="form.amount" type="number" step="0.01" placeholder="25000" required class="w-full rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500" :class="inputClass" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <input v-model="form.startDate" type="date" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+            <label class="block text-sm font-medium mb-1" :class="isDark ? 'text-slate-300' : 'text-gray-700'">Start Date</label>
+            <input v-model="form.startDate" type="date" required class="w-full rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500" :class="inputClass" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Term (months)</label>
-            <input v-model.number="form.termMonths" type="number" placeholder="12" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+            <label class="block text-sm font-medium mb-1" :class="isDark ? 'text-slate-300' : 'text-gray-700'">Term (months)</label>
+            <input v-model.number="form.termMonths" type="number" placeholder="12" required class="w-full rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500" :class="inputClass" />
           </div>
           <div class="md:col-span-2 flex gap-3">
             <button type="submit" :disabled="contractStore.loading" class="bg-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-700 disabled:opacity-50 transition">
               {{ contractStore.loading ? 'Creating...' : 'Create Contract' }}
             </button>
-            <button type="button" @click="showCreateForm = false" class="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition">
+            <button type="button" @click="showCreateForm = false" class="border px-6 py-3 rounded-lg font-medium transition" :class="isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-gray-300 text-gray-700 hover:bg-gray-100'">
               Cancel
             </button>
           </div>
-          <p v-if="contractStore.error" class="md:col-span-2 text-red-600 text-sm">{{ contractStore.error }}</p>
+          <p v-if="contractStore.error" class="md:col-span-2 text-red-500 text-sm">{{ contractStore.error }}</p>
         </form>
       </div>
 
       <!-- Contracts List -->
-      <div v-if="contractStore.loading && !contractStore.contracts.length" class="text-center py-20 text-gray-500">
+      <div v-if="contractStore.loading && !contractStore.contracts.length" class="text-center py-20" :class="isDark ? 'text-slate-400' : 'text-gray-500'">
         Loading contracts...
       </div>
 
-      <div v-else-if="filteredContracts.length === 0" class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+      <div v-else-if="filteredContracts.length === 0" class="rounded-xl shadow-sm border p-12 text-center" :class="cardClass">
         <div class="text-5xl mb-4">📋</div>
-        <h3 class="text-lg font-semibold text-gray-700">No contracts found</h3>
-        <p class="text-gray-500 mt-2">Create your first contract to get started</p>
+        <h3 class="text-lg font-semibold" :class="isDark ? 'text-slate-200' : 'text-gray-700'">No contracts found</h3>
+        <p class="mt-2" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Create your first contract to get started</p>
       </div>
 
       <div v-else class="space-y-4">
         <div
           v-for="contract in filteredContracts"
           :key="contract.id"
-          class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition"
+          class="rounded-xl shadow-sm border p-6 hover:shadow-md transition"
+          :class="cardClass"
         >
           <div class="flex justify-between items-start">
             <div class="flex-1">
               <div class="flex items-center gap-3 mb-2">
-                <h3 class="text-lg font-bold text-gray-900">{{ contract.title || 'Untitled Contract' }}</h3>
+                <h3 class="text-lg font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">{{ contract.title || 'Untitled Contract' }}</h3>
                 <span :class="statusBadgeClass(contract.status)" class="px-3 py-1 rounded-full text-xs font-medium">
                   {{ contract.status }}
                 </span>
               </div>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mt-3">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-3" :class="isDark ? 'text-slate-400' : 'text-gray-600'">
                 <div>
-                  <span class="text-gray-400">Provider:</span>
-                  <p class="font-medium text-gray-900">{{ contract.provider || '—' }}</p>
+                  <span :class="isDark ? 'text-slate-500' : 'text-gray-400'">Provider:</span>
+                  <p class="font-medium" :class="isDark ? 'text-slate-200' : 'text-gray-900'">{{ contract.provider || '—' }}</p>
                 </div>
                 <div>
-                  <span class="text-gray-400">Type:</span>
-                  <p class="font-medium text-gray-900 capitalize">{{ contract.contract_type || '—' }}</p>
+                  <span :class="isDark ? 'text-slate-500' : 'text-gray-400'">Type:</span>
+                  <p class="font-medium capitalize" :class="isDark ? 'text-slate-200' : 'text-gray-900'">{{ contract.contract_type || '—' }}</p>
                 </div>
                 <div>
-                  <span class="text-gray-400">Amount:</span>
-                  <p class="font-medium text-gray-900">${{ Number(contract.amount || 0).toLocaleString() }}</p>
+                  <span :class="isDark ? 'text-slate-500' : 'text-gray-400'">Amount:</span>
+                  <p class="font-medium" :class="isDark ? 'text-slate-200' : 'text-gray-900'">{{ formatCurrency(contract.amount || 0) }}</p>
                 </div>
                 <div>
-                  <span class="text-gray-400">Term:</span>
-                  <p class="font-medium text-gray-900">{{ contract.term_months || '—' }} months</p>
+                  <span :class="isDark ? 'text-slate-500' : 'text-gray-400'">Term:</span>
+                  <p class="font-medium" :class="isDark ? 'text-slate-200' : 'text-gray-900'">{{ contract.term_months || '—' }} months</p>
                 </div>
               </div>
-              <div class="flex gap-2 text-xs text-gray-400 mt-3">
+              <div class="flex gap-2 text-xs mt-3" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
                 <span>Created: {{ new Date(contract.created_at).toLocaleDateString() }}</span>
                 <span v-if="contract.start_date">• Starts: {{ new Date(contract.start_date).toLocaleDateString() }}</span>
               </div>
@@ -158,7 +159,8 @@
               <button
                 v-if="contract.status === 'pending'"
                 @click="handleCancel(contract.id)"
-                class="border border-red-300 text-red-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-50 transition"
+                class="border text-sm font-medium px-4 py-2 rounded-lg transition"
+                :class="isDark ? 'border-red-600 text-red-400 hover:bg-red-900/30' : 'border-red-300 text-red-600 hover:bg-red-50'"
               >
                 Cancel
               </button>
@@ -173,10 +175,28 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useContractStore } from '../stores/contractStore'
+import { useThemeStore } from '../stores/themeStore'
+import { formatCurrency, getCurrencySymbol } from '../utils/currency'
 
 const contractStore = useContractStore()
+const themeStore = useThemeStore()
 const showCreateForm = ref(false)
 const activeFilter = ref('all')
+
+const isDark = computed(() => themeStore.isDarkMode)
+const currencySymbol = computed(() => getCurrencySymbol())
+
+const cardClass = computed(() =>
+  isDark.value
+    ? 'bg-slate-800 border-slate-700'
+    : 'bg-white border-gray-200'
+)
+
+const inputClass = computed(() =>
+  isDark.value
+    ? 'bg-slate-900 border-slate-600 text-slate-100 placeholder-slate-500'
+    : 'border-gray-300 text-gray-900'
+)
 
 const form = reactive({
   title: '',

@@ -1320,7 +1320,60 @@ label {
   caret-color: #FFCA4F;
 }
 
+/* Ensure selects/dropdowns always render above footer */
+select,
+.assessment select,
+[class*="dropdown"],
+[role="listbox"] {
+  position: relative;
+  z-index: 10;
+}
+
+/* Prevent footer from overlapping any interactive elements */
+.site-footer,
+footer {
+  z-index: 1 !important;
+}
+
 /* Dark theme: Placeholder text for Tailwind */
 .dark-theme .placeholder-gray-400::placeholder {
   color: #64748B !important;
+}
+
+/* Dark theme: Border color overrides */
+.dark-theme .border-red-200 {
+  border-color: #7F1D1D !important;
+}
+
+.dark-theme .border-red-300 {
+  border-color: #991B1B !important;
+}
+
+/* Dark theme: Hover states for danger zone */
+.dark-theme .hover\:bg-red-50:hover {
+  background-color: #450A0A !important;
+}
+
+/* Dark theme: font-mono and text overrides */
+.dark-theme .font-mono {
+  color: #E2E8F0;
+}
+
+/* Dark theme: Monitoring table enhancements */
+.dark-theme .table thead {
+  background-color: #1E293B;
+}
+
+.dark-theme .table th {
+  color: #CBD5E1;
+  border-bottom-color: #334155;
+}
+
+.dark-theme .table td {
+  color: #E2E8F0;
+  border-bottom-color: #334155;
+}
+
+.dark-theme .table tbody tr:hover {
+  background-color: #334155;
 }

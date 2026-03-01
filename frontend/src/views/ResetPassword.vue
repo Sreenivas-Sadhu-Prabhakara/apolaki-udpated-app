@@ -142,4 +142,28 @@ const handleSubmit = async () => {
   border-radius: 0.5rem;
   margin-bottom: 1rem;
 }
+
+/* ── Dark Theme Overrides ── */
+:global(.dark-theme) .reset-container {
+  background: linear-gradient(135deg, #1E293B 0%, #3B1F6E 100%);
+}
+
+:global(.dark-theme) .reset-card {
+  background-color: #1E293B;
+  color: #E2E8F0;
+}
+
+:global(.dark-theme) .reset-card h2 {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .reset-card .text-gray-600 {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .alert-success {
+  background-color: #022C22;
+  border-color: #064E3B;
+  color: #6EE7B7;
+}
 </style>

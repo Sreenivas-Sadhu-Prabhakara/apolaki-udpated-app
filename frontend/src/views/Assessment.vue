@@ -274,13 +274,13 @@
 
         <div class="result-item">
           <h3>Estimated Cost</h3>
-          <div class="result-value">${{ results.cost }}</div>
-          <p class="result-description">Net after incentives: ${{ results.netCost }}</p>
+          <div class="result-value">{{ results.cost }}</div>
+          <p class="result-description">Net after incentives: {{ results.netCost }}</p>
         </div>
 
         <div class="result-item">
           <h3>Annual Savings</h3>
-          <div class="result-value">${{ results.savings }}</div>
+          <div class="result-value">{{ results.savings }}</div>
           <p class="result-description">{{ results.annualProduction }} kWh/year</p>
         </div>
 
@@ -292,7 +292,7 @@
 
         <div class="result-item">
           <h3>20-Year Savings</h3>
-          <div class="result-value">${{ results.twentyYearSavings }}</div>
+          <div class="result-value">{{ results.twentyYearSavings }}</div>
           <p class="result-description">Net lifetime benefit</p>
         </div>
 
@@ -304,31 +304,36 @@
 
         <div class="result-item">
           <h3>Federal Tax Credit (30%)</h3>
-          <div class="result-value">${{ results.federalTaxCredit }}</div>
+          <div class="result-value">{{ results.federalTaxCredit }}</div>
           <p class="result-description">Investment Tax Credit</p>
         </div>
 
         <div class="result-item">
           <h3>State Tax Credit</h3>
-          <div class="result-value">${{ results.stateTaxCredit }}</div>
+          <div class="result-value">{{ results.stateTaxCredit }}</div>
           <p class="result-description">Additional state incentive</p>
         </div>
       </div>
 
-      <div v-if="results.financing" class="results-summary" style="margin-bottom: 1rem;">
-        <h3>Financing Details</h3>
-        <div v-if="results.financing.monthlyPayment">
-          <p>Loan: ${{ Number(results.financing.loanAmount).toLocaleString() }} at {{ results.financing.interestRate }}% for {{ results.financing.termMonths }} months</p>
-          <p><strong>Monthly Payment: ${{ results.financing.monthlyPayment }}</strong></p>
+      <div v-if="results.financing" class="results-summary financing-details" style="margin-bottom: 1rem;">
+        <h3>💳 Financing Details</h3>
+        <div v-if="results.financing.monthlyPayment" class="financing-grid">
+          <p><strong>Loan Amount:</strong> {{ formatCurrency(results.financing.loanAmount || 0) }}</p>
+          <p><strong>Interest Rate:</strong> {{ results.financing.interestRate }}%</p>
+          <p><strong>Term:</strong> {{ results.financing.termMonths }} months</p>
+          <p class="financing-highlight"><strong>Monthly Payment: {{ formatCurrency(results.financing.monthlyPayment || 0) }}</strong></p>
         </div>
-        <div v-else-if="results.financing.monthlyLease">
-          <p>Lease term: {{ results.financing.termMonths }} months</p>
-          <p><strong>Monthly Lease: ${{ results.financing.monthlyLease }}</strong></p>
+        <div v-else-if="results.financing.monthlyLease" class="financing-grid">
+          <p><strong>Lease Term:</strong> {{ results.financing.termMonths }} months</p>
+          <p class="financing-highlight"><strong>Monthly Lease: {{ formatCurrency(results.financing.monthlyLease || 0) }}</strong></p>
+        </div>
+        <div v-else>
+          <p><strong>Cash Purchase</strong> — No monthly payments. Full savings from day one.</p>
         </div>
       </div>
 
       <div class="results-summary">
-        <h3>Summary</h3>
+        <h3>📋 Summary</h3>
         <p>{{ results.summary }}</p>
       </div>
 
@@ -343,6 +348,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { lookupSolarPotential } from '../services/solarApi'
 import { useAssessmentStore } from '../stores/assessmentStore'
+import { formatCurrency } from '../utils/currency'
 
 const assessmentStore = useAssessmentStore()
 const loading = ref(false)
@@ -360,9 +366,9 @@ const monthLabels = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SE
 
 const form = reactive({
   address: '',
-  city: '',
-  state: '',
-  zip_code: '',
+  city: 'Manila',
+  state: 'Metro Manila',
+  zip_code: '1000',
   roof_area: 2000,
   annual_usage: 8000,
   roof_condition: '',
@@ -445,14 +451,14 @@ const handleSubmit = async () => {
     const dataSourceLabel = calc.dataSource === 'nasa_power' ? '🛰️ NASA POWER satellite data' : '📊 Regional estimates'
     results.value = {
       capacity: response.recommended_capacity || calc.recommendedCapacity || 0,
-      cost: Number(response.estimated_cost || 0).toLocaleString(),
-      netCost: Number(calc.netCost || 0).toLocaleString(),
-      savings: Number(calc.annualSavings || 0).toLocaleString(),
+      cost: formatCurrency(response.estimated_cost || 0),
+      netCost: formatCurrency(calc.netCost || 0),
+      savings: formatCurrency(calc.annualSavings || 0),
       payback: calc.paybackYears || 0,
-      twentyYearSavings: Number(calc.twentyYearSavings || 0).toLocaleString(),
+      twentyYearSavings: formatCurrency(calc.twentyYearSavings || 0),
       roi: calc.roi || 0,
-      federalTaxCredit: Number(calc.federalTaxCredit || 0).toLocaleString(),
-      stateTaxCredit: Number(calc.stateTaxCredit || 0).toLocaleString(),
+      federalTaxCredit: formatCurrency(calc.federalTaxCredit || 0),
+      stateTaxCredit: formatCurrency(calc.stateTaxCredit || 0),
       annualProduction: Number(calc.annualProduction || 0).toLocaleString(),
       panelCount: calc.panelCount || 0,
       carbonOffset: calc.carbonOffsetTons || 0,
@@ -461,7 +467,7 @@ const handleSubmit = async () => {
       nasaIrradiance: calc.nasaIrradianceKwhM2Day || null,
       avgTemp: calc.avgTemperatureC || null,
       tempDeratingFactor: calc.tempDeratingFactor || 1,
-      summary: `Based on your property${calc.dataSource === 'nasa_power' ? ' (powered by NASA satellite irradiance data)' : ''}, a ${response.recommended_capacity || calc.recommendedCapacity || 0} kW solar system with ${calc.panelCount || 0} panels is recommended. Estimated annual production: ${Number(calc.annualProduction || 0).toLocaleString()} kWh. After incentives, net cost: $${Number(calc.netCost || 0).toLocaleString()} with a payback period of ${calc.paybackYears || 0} years. 20-year savings: $${Number(calc.twentyYearSavings || 0).toLocaleString()}. Carbon offset: ${calc.carbonOffsetTons || 0} tons CO₂.${calc.nasaIrradianceKwhM2Day ? ` Solar irradiance: ${calc.nasaIrradianceKwhM2Day} kWh/m²/day.` : ''}`
+      summary: `Based on your property${calc.dataSource === 'nasa_power' ? ' (powered by NASA satellite irradiance data)' : ''}, a ${response.recommended_capacity || calc.recommendedCapacity || 0} kW solar system with ${calc.panelCount || 0} panels is recommended. Estimated annual production: ${Number(calc.annualProduction || 0).toLocaleString()} kWh. After incentives, net cost: ${formatCurrency(calc.netCost || 0)} with a payback period of ${calc.paybackYears || 0} years. 20-year savings: ${formatCurrency(calc.twentyYearSavings || 0)}. Carbon offset: ${calc.carbonOffsetTons || 0} tons CO₂.${calc.nasaIrradianceKwhM2Day ? ` Solar irradiance: ${calc.nasaIrradianceKwhM2Day} kWh/m²/day.` : ''}`
     }
   } catch (err) {
     error.value = err.response?.data?.error || assessmentStore.error || 'Assessment calculation failed'
@@ -554,6 +560,26 @@ onMounted(async () => {
 
 .results-summary h3 {
   margin-top: 0;
+}
+
+.financing-details {
+  background-color: #fefce8;
+  border-left-color: #f59e0b;
+}
+
+.financing-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.financing-highlight {
+  grid-column: 1 / -1;
+  font-size: 1.125rem;
+  color: var(--solar-gold-dark);
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .mt-4 {
@@ -965,6 +991,20 @@ onMounted(async () => {
 
 :global(.dark-theme) .results-summary h3 {
   color: #E2E8F0;
+}
+
+:global(.dark-theme) .results-summary p {
+  color: #CBD5E1;
+}
+
+:global(.dark-theme) .financing-details {
+  background-color: #2A1F00;
+  border-left-color: #FFCA4F;
+}
+
+:global(.dark-theme) .financing-highlight {
+  color: #FCD34D;
+  border-top-color: rgba(255, 202, 79, 0.3);
 }
 
 :global(.dark-theme) .solar-api-panel {

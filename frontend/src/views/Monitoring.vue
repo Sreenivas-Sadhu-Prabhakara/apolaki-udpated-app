@@ -1,12 +1,14 @@
 <template>
   <div class="monitoring">
-    <h1>Live Monitoring</h1>
+    <h1 :class="isDark ? 'text-slate-100' : ''">Live Monitoring</h1>
 
     <!-- Installation Selector -->
     <div class="card mb-4" v-if="installationStore.installations.length > 0">
       <div class="flex items-center gap-4">
-        <label class="font-medium text-gray-700">Select Installation:</label>
-        <select v-model="selectedInstallation" @change="loadData" class="border border-gray-300 rounded-lg px-4 py-2 flex-1 max-w-md">
+        <label class="font-medium" :class="isDark ? 'text-slate-300' : 'text-gray-700'">Select Installation:</label>
+        <select v-model="selectedInstallation" @change="loadData"
+          class="border rounded-lg px-4 py-2 flex-1 max-w-md"
+          :class="isDark ? 'bg-slate-800 border-slate-600 text-slate-200' : 'border-gray-300'">
           <option v-for="inst in installationStore.installations" :key="inst.id" :value="inst.id">
             {{ inst.name }} ({{ inst.capacity }} kW)
           </option>
@@ -17,8 +19,8 @@
     <div v-if="!selectedInstallation" class="card">
       <div class="empty-state text-center py-12">
         <div class="text-5xl mb-4">📊</div>
-        <h3 class="text-lg font-semibold text-gray-700">No Installation Selected</h3>
-        <p class="text-gray-500 mt-2">Select an installation above to view monitoring data, or <router-link to="/installations" class="text-blue-600 hover:underline">create one first</router-link>.</p>
+        <h3 class="text-lg font-semibold" :class="isDark ? 'text-slate-300' : 'text-gray-700'">No Installation Selected</h3>
+        <p class="mt-2" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Select an installation above to view monitoring data, or <router-link to="/installations" class="text-blue-600 hover:underline">create one first</router-link>.</p>
       </div>
     </div>
 
@@ -26,7 +28,7 @@
       <!-- Real-time Metrics -->
       <div class="grid grid-cols-2">
         <div class="card">
-          <h2>Current Power Output</h2>
+          <h2 :class="isDark ? 'text-slate-100' : ''">Current Power Output</h2>
           <div class="metric-large">
             <div class="metric-value">{{ latestPower }} kW</div>
             <div class="metric-status" :class="powerTrend >= 0 ? 'trend-up' : 'trend-down'">
@@ -36,7 +38,7 @@
         </div>
 
         <div class="card">
-          <h2>Voltage & Frequency</h2>
+          <h2 :class="isDark ? 'text-slate-100' : ''">Voltage & Frequency</h2>
           <div class="metrics-row">
             <div class="mini-metric">
               <div class="label">AC Voltage</div>
@@ -53,58 +55,58 @@
       <!-- KPI Cards -->
       <div class="grid grid-cols-4 mb-4">
         <div class="card text-center">
-          <h3 class="text-sm text-gray-500 mb-1">Temperature</h3>
+          <h3 class="text-sm mb-1" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Temperature</h3>
           <p class="text-2xl font-bold" :class="latestTemp > 50 ? 'text-red-600' : 'text-green-600'">{{ latestTemp }}°C</p>
         </div>
         <div class="card text-center">
-          <h3 class="text-sm text-gray-500 mb-1">Efficiency</h3>
+          <h3 class="text-sm mb-1" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Efficiency</h3>
           <p class="text-2xl font-bold text-blue-600">{{ latestEfficiency }}%</p>
         </div>
         <div class="card text-center">
-          <h3 class="text-sm text-gray-500 mb-1">Current (AC)</h3>
+          <h3 class="text-sm mb-1" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Current (AC)</h3>
           <p class="text-2xl font-bold text-purple-600">{{ latestCurrent }} A</p>
         </div>
         <div class="card text-center">
-          <h3 class="text-sm text-gray-500 mb-1">Readings</h3>
-          <p class="text-2xl font-bold text-gray-700">{{ monitoringStore.monitoringData.length }}</p>
+          <h3 class="text-sm mb-1" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Readings</h3>
+          <p class="text-2xl font-bold" :class="isDark ? 'text-slate-200' : 'text-gray-700'">{{ monitoringStore.monitoringData.length }}</p>
         </div>
       </div>
 
       <div class="card">
-        <h2>System Status</h2>
+        <h2 :class="isDark ? 'text-slate-100' : ''">System Status</h2>
         <div class="status-grid">
           <div class="status-item">
-            <div class="status-icon" :style="{ backgroundColor: latestStatus === 'normal' || latestStatus === 'operating' ? '#dcfce7' : '#fef3c7' }">
+            <div class="status-icon" :style="{ backgroundColor: (latestStatus === 'normal' || latestStatus === 'operating') ? (isDark ? '#064E3B' : '#dcfce7') : (isDark ? '#451A03' : '#fef3c7') }">
               {{ latestStatus === 'normal' || latestStatus === 'operating' ? '✓' : '!' }}
             </div>
-            <div class="status-label">{{ latestStatus === 'normal' || latestStatus === 'operating' ? 'All Systems Operating' : 'Status: ' + latestStatus }}</div>
+            <div class="status-label" :class="isDark ? 'text-slate-200' : ''">{{ latestStatus === 'normal' || latestStatus === 'operating' ? 'All Systems Operating' : 'Status: ' + latestStatus }}</div>
           </div>
           <div class="status-item">
-            <div class="status-icon" :style="{ backgroundColor: latestError ? '#fee2e2' : '#dcfce7' }">
+            <div class="status-icon" :style="{ backgroundColor: latestError ? (isDark ? '#450A0A' : '#fee2e2') : (isDark ? '#064E3B' : '#dcfce7') }">
               {{ latestError ? '✕' : '✓' }}
             </div>
-            <div class="status-label">{{ latestError || 'No Faults Detected' }}</div>
+            <div class="status-label" :class="isDark ? 'text-slate-200' : ''">{{ latestError || 'No Faults Detected' }}</div>
           </div>
           <div class="status-item">
-            <div class="status-icon" :style="{ backgroundColor: latestTemp > 50 ? '#fef3c7' : '#dcfce7' }">
+            <div class="status-icon" :style="{ backgroundColor: latestTemp > 50 ? (isDark ? '#451A03' : '#fef3c7') : (isDark ? '#064E3B' : '#dcfce7') }">
               {{ latestTemp > 50 ? '!' : '✓' }}
             </div>
-            <div class="status-label">Panel Temperature: {{ latestTemp }}°C</div>
+            <div class="status-label" :class="isDark ? 'text-slate-200' : ''">Panel Temperature: {{ latestTemp }}°C</div>
           </div>
           <div class="status-item">
-            <div class="status-icon" style="background-color: #dcfce7">✓</div>
-            <div class="status-label">Grid Connected</div>
+            <div class="status-icon" :style="{ backgroundColor: isDark ? '#064E3B' : '#dcfce7' }">✓</div>
+            <div class="status-label" :class="isDark ? 'text-slate-200' : ''">Grid Connected</div>
           </div>
         </div>
       </div>
 
       <div class="card">
         <div class="flex justify-between items-center mb-4">
-          <h2>Monitoring Data History</h2>
+          <h2 :class="isDark ? 'text-slate-100' : ''">Monitoring Data History</h2>
           <button @click="loadData" class="btn btn-sm btn-outline">🔄 Refresh</button>
         </div>
-        <div v-if="monitoringStore.loading" class="text-center py-8 text-gray-500">Loading monitoring data...</div>
-        <div v-else-if="monitoringStore.monitoringData.length === 0" class="text-center py-8 text-gray-400">
+        <div v-if="monitoringStore.loading" class="text-center py-8" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Loading monitoring data...</div>
+        <div v-else-if="monitoringStore.monitoringData.length === 0" class="text-center py-8" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
           No monitoring data recorded yet. Data will appear as your system reports metrics.
         </div>
         <table v-else class="table">
@@ -139,7 +141,7 @@
 
       <!-- Performance Summary -->
       <div v-if="monitoringStore.performanceData.length > 0" class="card">
-        <h2>Daily Performance Summary</h2>
+        <h2 :class="isDark ? 'text-slate-100' : ''">Daily Performance Summary</h2>
         <table class="table">
           <thead>
             <tr>
@@ -169,10 +171,14 @@
 import { computed, onMounted, ref } from 'vue'
 import { useInstallationStore } from '../stores/installationStore'
 import { useMonitoringStore } from '../stores/monitoringStore'
+import { useThemeStore } from '../stores/themeStore'
 
 const installationStore = useInstallationStore()
 const monitoringStore = useMonitoringStore()
+const themeStore = useThemeStore()
 const selectedInstallation = ref(null)
+
+const isDark = computed(() => themeStore.isDarkMode)
 
 const latestReading = computed(() => monitoringStore.monitoringData[0] || {})
 const latestPower = computed(() => Number(latestReading.value.power_output || 0).toFixed(2))
@@ -361,5 +367,61 @@ onMounted(async () => {
 
 :global(.dark-theme) .trend-down {
   color: #F87171;
+}
+
+:global(.dark-theme) .monitoring {
+  background-color: #111827;
+  color: #E5E7EB;
+}
+
+:global(.dark-theme) h1,
+:global(.dark-theme) h2,
+:global(.dark-theme) h3 {
+  color: #E5E7EB;
+}
+
+:global(.dark-theme) .text-slate-100 {
+  color: #F3F4F6;
+}
+
+:global(.dark-theme) .text-slate-200 {
+  color: #E5E7EB;
+}
+
+:global(.dark-theme) .text-slate-300 {
+  color: #D1D5DB;
+}
+
+:global(.dark-theme) .bg-slate-800 {
+  background-color: #1E293B;
+}
+
+:global(.dark-theme) .border-slate-600 {
+  border-color: #334155;
+}
+
+:global(.dark-theme) .btn-outline {
+  background-color: #1E293B;
+  color: #F3F4F6;
+  border: 1px solid #334155;
+}
+
+:global(.dark-theme) .card {
+  background-color: #1F2937;
+  border: 1px solid #334155;
+}
+
+:global(.dark-theme) .table {
+  background-color: #1F2937;
+  color: #E5E7EB;
+}
+
+:global(.dark-theme) .table th {
+  background-color: #111827;
+  color: #E5E7EB;
+}
+
+:global(.dark-theme) .table tbody tr:hover {
+  background-color: #374151;
 }
 </style>

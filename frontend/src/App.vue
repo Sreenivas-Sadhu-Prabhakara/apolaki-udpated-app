@@ -452,12 +452,14 @@ const logout = async () => {
   padding: 0;
 }
 
-/* Compact sticky-bottom footer */
+/* Compact sticky-bottom footer — NEVER overlaps content or dropdowns */
 .site-footer {
   margin-top: auto;
   border-top: 1px solid;
   padding: 0.625rem 0;
   font-size: 0.75rem;
+  position: relative;
+  z-index: 1; /* low z-index so dropdowns/selects always float above */
 }
 
 .site-footer--light {

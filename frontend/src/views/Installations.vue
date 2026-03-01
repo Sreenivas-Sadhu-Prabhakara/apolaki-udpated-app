@@ -319,6 +319,12 @@ onMounted(async () => {
 }
 
 /* ── Dark Theme Overrides ── */
+:global(.dark-theme) .installations h1,
+:global(.dark-theme) .installations h2,
+:global(.dark-theme) .installations h3 {
+  color: #F1F5F9;
+}
+
 :global(.dark-theme) .installation-card {
   background-color: #1E293B;
   border-color: #334155;
@@ -350,5 +356,25 @@ onMounted(async () => {
 :global(.dark-theme) .form-card {
   background-color: #1E293B;
   border-color: #334155;
+}
+
+:global(.dark-theme) .label {
+  color: #CBD5E1;
+}
+
+:global(.dark-theme) .value {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .close-btn {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .empty-state {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .loading {
+  color: #94A3B8;
 }
 </style>

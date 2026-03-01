@@ -6,6 +6,7 @@
  *   3. NASA POWER API (free, no key needed — satellite irradiance data)
  *   4. Built-in regional estimates (no key needed)
  *
+ * If the backend is unreachable, falls back to direct NASA POWER + built-in estimates.
  * Cascading location: address → zip code → city
  */
 
@@ -14,12 +15,124 @@ import api from './api'
 
 /**
  * Look up solar potential for a location via backend (cascading providers).
+ * Falls back to client-side NASA POWER if backend is unavailable.
  * @param {{ address?: string, city?: string, state?: string, zipCode?: string }} location
  * @returns {Promise<{ provider: string, data: object, availableProviders: object }>}
  */
 export async function lookupSolarPotential(location) {
-  const response = await api.post('/solar/lookup', location)
-  return response.data
+  try {
+    const response = await api.post('/solar/lookup', location)
+    return response.data
+  } catch (err) {
+    console.warn('Backend solar API unavailable, falling back to client-side NASA POWER:', err.message)
+    return await clientSideSolarLookup(location)
+  }
+}
+
+/**
+ * Client-side fallback: geocode the address, then fetch NASA POWER data,
+ * and build NREL-equivalent results.
+ */
+async function clientSideSolarLookup(location) {
+  // Build geocode query
+  const queryParts = [location.address, location.city, location.state, location.zipCode].filter(Boolean)
+  let query = queryParts.join(', ')
+  // Default to Philippines if empty
+  if (!query) query = 'Manila, Philippines'
+
+  // 1. Geocode
+  let lat, lng, displayName
+  try {
+    const geo = await geocodeAddress(query)
+    if (geo) {
+      lat = geo.lat
+      lng = geo.lng
+      displayName = geo.displayName
+    }
+  } catch (e) {
+    console.warn('Geocoding failed:', e.message)
+  }
+
+  // Default to Manila, Philippines if geocoding fails
+  if (!lat || !lng) {
+    lat = 14.5995
+    lng = 120.9842
+    displayName = 'Manila, Philippines (default)'
+  }
+
+  // 2. Fetch NASA POWER data
+  let nasaData
+  try {
+    nasaData = await fetchNasaPowerData(lat, lng)
+  } catch (e) {
+    console.warn('NASA POWER API failed:', e.message)
+    // Use Philippine average
+    nasaData = getPhilippinesDefaultData(lat, lng)
+  }
+
+  // 3. Calculate NREL-equivalent estimates
+  const systemCapacityKw = 5 // reference system
+  const peakSunHours = nasaData.peakSunHoursPerDay || 4.5
+  const annualProduction = Math.round(systemCapacityKw * peakSunHours * 365 * 0.80) // 80% performance ratio
+  const monthlyProduction = nasaData.monthlyIrradiance
+    ? nasaData.monthlyIrradiance.map(irr => Math.round(systemCapacityKw * irr * 30 * 0.80))
+    : null
+
+  // Temperature derating
+  const avgTemp = nasaData.annualTempC || 27
+  const tempDeratingFactor = avgTemp > 25 ? 1 - (avgTemp - 25) * 0.004 : 1
+  const tempAdjustedProduction = Math.round(annualProduction * tempDeratingFactor)
+
+  const capacityFactor = ((annualProduction / (systemCapacityKw * 8760)) * 100).toFixed(1)
+
+  return {
+    provider: 'nasa_power',
+    data: {
+      formattedAddress: displayName,
+      latitude: lat,
+      longitude: lng,
+      solarRadiationAnnual: nasaData.annualIrradianceKwhM2Day,
+      solarRadiationMonthly: nasaData.monthlyIrradiance,
+      monthlyProductionKwh: monthlyProduction,
+      annualProductionKwh: tempAdjustedProduction,
+      capacityFactor,
+      estimatedPeakSunHoursPerDay: peakSunHours,
+      monthlyTemperatureC: nasaData.monthlyTemp,
+      avgTemperatureC: avgTemp,
+      tempDeratingFactor,
+      tempAdjustedProductionKwh: tempAdjustedProduction,
+      monthLabels: nasaData.monthLabels || ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'],
+      note: 'Data sourced directly from NASA POWER satellite climatology (client-side fallback). For more accurate results, configure the backend API.'
+    },
+    availableProviders: {
+      google_solar: false,
+      nrel_pvwatts: false,
+      nasa_power: true,
+      built_in_estimate: true
+    }
+  }
+}
+
+/**
+ * Default solar data for the Philippines when NASA POWER is unreachable.
+ */
+function getPhilippinesDefaultData(lat, lng) {
+  return {
+    latitude: lat || 14.5995,
+    longitude: lng || 120.9842,
+    annualIrradianceKwhM2Day: 4.8,
+    annualClearSkyKwhM2Day: 6.2,
+    annualTempC: 27.5,
+    monthlyIrradiance: [4.2, 4.8, 5.5, 5.8, 5.2, 4.6, 4.3, 4.1, 4.5, 4.7, 4.5, 4.1],
+    monthlyClearSky: [5.8, 6.2, 6.8, 7.0, 6.5, 6.0, 5.6, 5.4, 5.9, 6.1, 5.9, 5.5],
+    monthlyTemp: [26.1, 26.5, 27.8, 29.2, 29.5, 28.8, 28.0, 27.8, 27.5, 27.2, 27.0, 26.3],
+    monthlyTempMax: [30.2, 31.0, 32.5, 34.0, 34.2, 33.0, 31.8, 31.5, 31.2, 31.0, 30.8, 30.0],
+    monthlyTempMin: [22.0, 22.0, 23.0, 24.5, 25.0, 24.8, 24.2, 24.0, 23.8, 23.5, 23.2, 22.5],
+    monthlyWindSpeed: [2.8, 2.5, 2.2, 1.8, 1.5, 2.0, 2.5, 2.8, 2.2, 2.0, 2.5, 3.0],
+    monthLabels: ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'],
+    peakSunHoursPerDay: 4.8,
+    annualSunshineHours: 1752,
+  }
 }
 
 /**

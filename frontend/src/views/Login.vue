@@ -421,4 +421,71 @@ const handleOtpVerify = async () => {
   color: #b45309;
   font-style: italic;
 }
+
+/* ── Dark Theme Overrides ── */
+:global(.dark-theme) .login-container {
+  background: linear-gradient(135deg, #1E1B1B 0%, #B45309 50%, #7A3F00 100%);
+}
+
+:global(.dark-theme) .login-card {
+  background-color: #1E293B;
+  color: #E2E8F0;
+}
+
+:global(.dark-theme) .login-card .card-header h2,
+:global(.dark-theme) .logo-section h2 {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .login-card .text-gray-600 {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .btn-google {
+  background: #0F172A;
+  color: #E2E8F0;
+  border-color: #475569;
+}
+
+:global(.dark-theme) .btn-google:hover {
+  background: #1E293B;
+  border-color: #64748B;
+}
+
+:global(.dark-theme) .divider {
+  color: #64748B;
+}
+
+:global(.dark-theme) .divider::before,
+:global(.dark-theme) .divider::after {
+  background: #334155;
+}
+
+:global(.dark-theme) .alert-error {
+  background: #450A0A;
+  color: #FCA5A5;
+  border-left-color: #F87171;
+}
+
+:global(.dark-theme) .otp-header h3 {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .otp-subtitle {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .otp-input {
+  background-color: #0F172A;
+  color: #F1F5F9;
+  border-color: #475569;
+}
+
+:global(.dark-theme) .btn-back {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .btn-back:hover {
+  color: #FFCA4F;
+}
 </style>

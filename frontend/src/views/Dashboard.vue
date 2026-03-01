@@ -84,7 +84,7 @@
             <span class="kpi-trend trend-up">↑ 5%</span>
           </div>
           <h3 class="kpi-title">Monthly Savings</h3>
-          <p class="kpi-value">${{ estimatedMonthlySavings }}</p>
+          <p class="kpi-value">{{ formatCurrency(estimatedMonthlySavings) }}</p>
           <p class="kpi-meta">Estimated utility savings</p>
         </div>
 
@@ -301,14 +301,14 @@
           <div class="savings-item">
             <span class="savings-icon">💵</span>
             <div>
-              <p class="savings-value">${{ estimatedMonthlySavings }}</p>
+              <p class="savings-value">{{ formatCurrency(estimatedMonthlySavings) }}</p>
               <p class="savings-label">Monthly Savings</p>
             </div>
           </div>
           <div class="savings-item">
             <span class="savings-icon">💰</span>
             <div>
-              <p class="savings-value">${{ estimatedYearlySavings }}</p>
+              <p class="savings-value">{{ formatCurrency(estimatedYearlySavingsRaw) }}</p>
               <p class="savings-label">Yearly Savings</p>
             </div>
           </div>
@@ -357,6 +357,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useInstallationStore } from '../stores/installationStore'
 import { useUserStore } from '../stores/userStore'
+import { formatCurrency } from '../utils/currency'
 
 const userStore = useUserStore()
 const installationStore = useInstallationStore()
@@ -395,8 +396,11 @@ const monthlyEnergyKwh = computed(() => (parseFloat(dailyEnergyKwh.value) * 30).
 const estimatedMonthlySavings = computed(() =>
   (parseFloat(monthlyEnergyKwh.value) * 0.12).toFixed(0)
 )
+const estimatedYearlySavingsRaw = computed(() =>
+  parseFloat(estimatedMonthlySavings.value) * 12
+)
 const estimatedYearlySavings = computed(() =>
-  (parseFloat(estimatedMonthlySavings.value) * 12).toLocaleString()
+  estimatedYearlySavingsRaw.value.toLocaleString()
 )
 const carbonOffsetMonthly = computed(() =>
   (parseFloat(monthlyEnergyKwh.value) * 0.42).toFixed(0)
@@ -612,10 +616,10 @@ onMounted(async () => {
 }
 
 .kpi-card {
-  background: white;
+  background: var(--bg-primary);
   border-radius: 1rem;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   border-top: 4px solid var(--solar-gold);
   transition: all 0.3s ease;
   position: relative;
@@ -717,7 +721,7 @@ onMounted(async () => {
 }
 
 .table-wrapper {
-  background: white;
+  background: var(--bg-primary);
   border-radius: 1rem;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -749,7 +753,7 @@ onMounted(async () => {
 }
 
 .table-row:hover {
-  background-color: #fafafa;
+  background-color: var(--bg-tertiary);
 }
 
 .modern-table td {
@@ -894,7 +898,7 @@ onMounted(async () => {
 }
 
 .action-card {
-  background: white;
+  background: var(--bg-primary);
   border-radius: 1rem;
   padding: 2rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -973,10 +977,10 @@ onMounted(async () => {
 }
 
 .chart-card {
-  background: white;
+  background: var(--bg-primary);
   border-radius: 1rem;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .chart-card h3 {
@@ -1091,10 +1095,10 @@ onMounted(async () => {
 }
 
 .range-tab.active {
-  background: white;
+  background: var(--bg-primary);
   color: var(--solar-gold-dark);
   font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Chart Summary */
@@ -1120,10 +1124,10 @@ onMounted(async () => {
 }
 
 .insight-card {
-  background: white;
+  background: var(--bg-primary);
   border-radius: 1rem;
   padding: 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .insight-card h3 {
@@ -1495,5 +1499,203 @@ onMounted(async () => {
 
 :global(.dark-theme) .section-header .text-gray-600 {
   color: #94A3B8;
+}
+
+:global(.dark-theme) .table-wrapper {
+  background: #1E293B;
+}
+
+:global(.dark-theme) .modern-table thead {
+  background: linear-gradient(90deg, #1E293B 0%, #334155 100%);
+  border-bottom-color: #475569;
+}
+
+:global(.dark-theme) .modern-table th {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .modern-table td {
+  color: #CBD5E1;
+  border-color: #334155;
+}
+
+:global(.dark-theme) .name-content .font-semibold {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .action-card {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+:global(.dark-theme) .action-card:hover {
+  border-color: #FFCA4F;
+}
+
+:global(.dark-theme) .action-card h3 {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .action-card p {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .chart-card {
+  background: #1E293B;
+}
+
+:global(.dark-theme) .chart-card h3 {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .chart-labels {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .chart-summary {
+  border-top-color: #334155;
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .chart-summary strong {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .insight-card {
+  background: #1E293B;
+}
+
+:global(.dark-theme) .insight-card h3 {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .weather-temp {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .weather-desc {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .weather-details > div {
+  background: #0F172A;
+}
+
+:global(.dark-theme) .weather-details span {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .weather-details strong {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .impact-good {
+  background: #064E3B;
+  color: #6EE7B7;
+}
+
+:global(.dark-theme) .impact-moderate {
+  background: #451A03;
+  color: #FCD34D;
+}
+
+:global(.dark-theme) .impact-low {
+  background: #450A0A;
+  color: #FCA5A5;
+}
+
+:global(.dark-theme) .savings-item {
+  background: #0F172A;
+}
+
+:global(.dark-theme) .savings-value {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .savings-label {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .time-range-tabs {
+  background: #0F172A;
+}
+
+:global(.dark-theme) .range-tab {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .range-tab:hover {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .range-tab.active {
+  background: #334155;
+  color: #FFCA4F;
+}
+
+:global(.dark-theme) .pie-legend {
+  color: #CBD5E1;
+}
+
+:global(.dark-theme) .status-active {
+  background-color: #064E3B;
+  color: #6EE7B7;
+}
+
+:global(.dark-theme) .status-inactive {
+  background-color: #450A0A;
+  color: #FCA5A5;
+}
+
+:global(.dark-theme) .status-pending,
+:global(.dark-theme) .status-maintenance {
+  background-color: #451A03;
+  color: #FCD34D;
+}
+
+:global(.dark-theme) .alert-success {
+  background: #064E3B;
+  color: #6EE7B7;
+  border-left-color: #34D399;
+}
+
+:global(.dark-theme) .alert-warning {
+  background: #451A03;
+  color: #FCD34D;
+  border-left-color: #FBBF24;
+}
+
+:global(.dark-theme) .alert-danger {
+  background: #450A0A;
+  color: #FCA5A5;
+  border-left-color: #F87171;
+}
+
+:global(.dark-theme) .alert-info {
+  background: #0C4A6E;
+  color: #7DD3FC;
+  border-left-color: #38BDF8;
+}
+
+:global(.dark-theme) .empty-state h3 {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .empty-state p {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .performance-bar {
+  background-color: #334155;
+}
+
+:global(.dark-theme) .btn-icon {
+  background: #334155;
+  color: #CBD5E1;
+}
+
+:global(.dark-theme) .btn-icon:hover {
+  background: #FFCA4F;
+  color: #1E293B;
 }
 </style>

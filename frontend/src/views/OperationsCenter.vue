@@ -105,3 +105,10 @@ async function resolveAlert(id) {
 
 onMounted(fetchAlerts)
 </script>
+
+<style scoped>
+/* ── Dark Theme Overrides ── */
+:global(.dark-theme) .border-b {
+  border-color: #334155;
+}
+</style>

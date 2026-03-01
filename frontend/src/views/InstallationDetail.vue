@@ -209,6 +209,19 @@ onMounted(async () => {
 }
 
 /* ── Dark Theme Overrides ── */
+:global(.dark-theme) .installation-detail h1 {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .installation-detail .card {
+  background-color: #1E293B;
+  border-color: #334155;
+}
+
+:global(.dark-theme) .installation-detail .loading {
+  color: #94A3B8;
+}
+
 :global(.dark-theme) .status-active {
   background-color: #064E3B;
   color: #6EE7B7;
@@ -217,5 +230,30 @@ onMounted(async () => {
 :global(.dark-theme) .status-inactive {
   background-color: #450A0A;
   color: #FCA5A5;
+}
+
+:global(.dark-theme) .detail {
+  background-color: #0F172A;
+}
+
+:global(.dark-theme) .label {
+  color: #CBD5E1;
+}
+
+:global(.dark-theme) .value {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .metric {
+  background-color: #0F172A;
+}
+
+:global(.dark-theme) .metric-label {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .detail-section h2 {
+  border-bottom-color: #334155;
+  color: #E2E8F0;
 }
 </style>

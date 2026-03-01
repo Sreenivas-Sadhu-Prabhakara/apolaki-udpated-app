@@ -101,7 +101,7 @@
         <h2 class="text-2xl font-bold text-gray-900 mb-6">🏆 Credits</h2>
         <div class="space-y-4">
           <div class="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-            <div class="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+            <div class="w-12 h-12 bg-linear-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0">
               A
             </div>
             <div>
@@ -147,7 +147,7 @@
       </section>
 
       <!-- Version & Contact -->
-      <section class="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl p-8 text-white text-center">
+      <section class="bg-linear-to-r from-gray-800 to-gray-900 rounded-xl p-8 text-white text-center">
         <h2 class="text-2xl font-bold mb-2">Apolaki Solar Platform</h2>
         <p class="text-gray-400 mb-4">Version {{ version }} • MVP Release</p>
         <div class="flex justify-center gap-6 text-sm text-gray-400">
@@ -195,3 +195,22 @@ const docs = [
   { icon: '🩺', title: 'Production Runbook', description: 'Monitoring, logging, and incident response', url: '/docs/PRODUCTION_RUNBOOK.md' }
 ]
 </script>
+
+<style scoped>
+/* ── Dark Theme Overrides ── */
+:global(.dark-theme) .bg-gray-50 {
+  background-color: #1E293B !important;
+}
+
+:global(.dark-theme) .bg-gray-100 {
+  background-color: #334155 !important;
+}
+
+:global(.dark-theme) .text-gray-700 {
+  color: #CBD5E1 !important;
+}
+
+:global(.dark-theme) .text-gray-800 {
+  color: #E2E8F0 !important;
+}
+</style>
