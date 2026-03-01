@@ -1086,6 +1086,215 @@ router.get('/telegram/callback', async (req, res) => {
 });
 
 // ============================================
+// WHATSAPP LOGIN (via WhatsApp Business API / Phone OTP)
+// ============================================
+
+/**
+ * GET /api/auth/whatsapp
+ * Initiate WhatsApp login flow.
+ * If WhatsApp Business API is configured, redirects to a phone-number
+ * verification page. Otherwise, falls back to a demo user so the
+ * button always works during development.
+ */
+router.get('/whatsapp', (req, res) => {
+  try {
+    const whatsappToken = process.env.WHATSAPP_API_TOKEN;
+    if (!whatsappToken || whatsappToken.startsWith('your_')) {
+      return socialLoginFallback(req, res, 'whatsapp', 'whatsapp-user@apolaki.solar');
+    }
+
+    // When configured, redirect to the WhatsApp phone verification page
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.redirect(`${frontendUrl}/auth-callback?provider=whatsapp&step=phone`);
+  } catch (error) {
+    console.error('WhatsApp auth error:', error);
+    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=${encodeURIComponent(error.message)}`);
+  }
+});
+
+/**
+ * POST /api/auth/whatsapp/send-otp
+ * Send an OTP code to the user's WhatsApp number via the WhatsApp Business API.
+ */
+router.post('/whatsapp/send-otp', async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({ error: 'Phone number is required' });
+    }
+
+    // Normalise phone (strip spaces/dashes, ensure leading +)
+    const normalisedPhone = phone.replace(/[\s\-()]/g, '').replace(/^(?!\+)/, '+');
+
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min
+
+    // Store OTP (using passwordResetTokens table as a generic token store)
+    const tokenKey = `whatsapp:${normalisedPhone}`;
+    await passwordResetTokens.create({
+      email: tokenKey,
+      token: otp,
+      expiresAt
+    });
+
+    // Send OTP via WhatsApp Business API
+    const whatsappToken = process.env.WHATSAPP_API_TOKEN;
+    const whatsappPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+
+    if (whatsappToken && !whatsappToken.startsWith('your_') && whatsappPhoneId) {
+      await axios.post(
+        `https://graph.facebook.com/v18.0/${whatsappPhoneId}/messages`,
+        {
+          messaging_product: 'whatsapp',
+          to: normalisedPhone.replace('+', ''),
+          type: 'template',
+          template: {
+            name: process.env.WHATSAPP_OTP_TEMPLATE || 'otp_verification',
+            language: { code: 'en' },
+            components: [
+              {
+                type: 'body',
+                parameters: [{ type: 'text', text: otp }]
+              },
+              {
+                type: 'button',
+                sub_type: 'url',
+                index: '0',
+                parameters: [{ type: 'text', text: otp }]
+              }
+            ]
+          }
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${whatsappToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+    } else {
+      // Dev mode – log OTP to console
+      console.log(`📱 [WhatsApp Dev] OTP for ${normalisedPhone}: ${otp}`);
+    }
+
+    res.json({ success: true, message: 'OTP sent to your WhatsApp number' });
+  } catch (error) {
+    console.error('WhatsApp send-otp error:', error);
+    res.status(500).json({ error: 'Failed to send OTP. Please try again.' });
+  }
+});
+
+/**
+ * POST /api/auth/whatsapp/verify-otp
+ * Verify the OTP and create/login the user.
+ */
+router.post('/whatsapp/verify-otp', async (req, res) => {
+  try {
+    const { phone, otp } = req.body;
+
+    if (!phone || !otp) {
+      return res.status(400).json({ error: 'Phone number and OTP are required' });
+    }
+
+    const normalisedPhone = phone.replace(/[\s\-()]/g, '').replace(/^(?!\+)/, '+');
+    const tokenKey = `whatsapp:${normalisedPhone}`;
+
+    // Look up stored OTP
+    const storedToken = await passwordResetTokens.getByToken(otp);
+
+    if (!storedToken || storedToken.email !== tokenKey) {
+      return res.status(401).json({ error: 'Invalid OTP' });
+    }
+
+    if (new Date(storedToken.expires_at) < new Date()) {
+      return res.status(401).json({ error: 'OTP has expired. Please request a new one.' });
+    }
+
+    // Delete used token
+    await passwordResetTokens.delete(storedToken.id);
+
+    // Find or create user by phone / WhatsApp provider
+    const whatsappEmail = `${normalisedPhone.replace('+', '')}@whatsapp.local`;
+
+    let oauthRecord = await oauthProviders.getByProvider('whatsapp', normalisedPhone);
+    let user;
+
+    if (oauthRecord) {
+      user = await users.getById(oauthRecord.user_id);
+    } else {
+      // Check by synthesised email
+      user = await users.getByEmail(whatsappEmail);
+
+      if (!user) {
+        user = await users.create({
+          email: whatsappEmail,
+          firstName: 'WhatsApp',
+          lastName: 'User',
+          phone: normalisedPhone,
+          passwordHash: null,
+          role: 'customer'
+        });
+      }
+
+      // Store provider link
+      await oauthProviders.upsert({
+        userId: user.id,
+        provider: 'whatsapp',
+        providerId: normalisedPhone,
+        providerEmail: whatsappEmail,
+        accessToken: null,
+        refreshToken: null,
+        tokenExpiresAt: null,
+        rawData: { phone: normalisedPhone }
+      });
+    }
+
+    // Create session
+    const sessionToken = generateSessionToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await sessions.create({
+      userId: user.id,
+      sessionToken,
+      ipAddress: getClientIp(req),
+      userAgent: req.get('user-agent'),
+      expiresAt
+    });
+
+    const token = generateToken(user);
+    const refreshTokenValue = generateRefreshToken(user);
+
+    await auditLogs.create({
+      userId: user.id,
+      action: 'WHATSAPP_OTP_LOGIN',
+      resourceType: 'user',
+      resourceId: user.id,
+      ipAddress: getClientIp(req),
+      status: 'success'
+    });
+
+    res.json({
+      success: true,
+      token,
+      refreshToken: refreshTokenValue,
+      sessionToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        phone: user.phone,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('WhatsApp verify-otp error:', error);
+    res.status(500).json({ error: 'OTP verification failed' });
+  }
+});
+
+// ============================================
 // USER PROFILE
 // ============================================
 
