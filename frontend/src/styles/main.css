@@ -1074,6 +1074,53 @@ label {
   background: linear-gradient(to bottom, #0F172A, #1E293B) !important;
 }
 
+/* ========================================
+   LIGHT MODE - Explicit baseline styles
+   Ensures light mode always renders properly
+   after switching from dark theme
+   ======================================== */
+html:not(.dark-theme) body,
+html:not(.dark-theme) {
+  background-color: #F9FAFB;
+  color: #111827;
+}
+
+html:not(.dark-theme) .main-content {
+  background: linear-gradient(to bottom, #F9FAFB, #F3F4F6) !important;
+}
+
+html:not(.dark-theme) .card {
+  background-color: #FFFFFF;
+  border-color: #F3F4F6;
+  color: #111827;
+}
+
+html:not(.dark-theme) .card:hover {
+  border-color: #E5E7EB;
+}
+
+html:not(.dark-theme) input,
+html:not(.dark-theme) select,
+html:not(.dark-theme) textarea {
+  background-color: #FFFFFF;
+  border-color: #E5E7EB;
+  color: #111827;
+}
+
+html:not(.dark-theme) input:focus,
+html:not(.dark-theme) select:focus,
+html:not(.dark-theme) textarea:focus {
+  border-color: #FFB81C;
+  background-color: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(255, 184, 28, 0.1);
+}
+
+html:not(.dark-theme) label {
+  color: #374151;
+}
+
+/* ======================================== */
+
 /* Dark theme: Override common Tailwind utility bg-white / text colors */
 .dark-theme .bg-white {
   background-color: #1E293B !important;

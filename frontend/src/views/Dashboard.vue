@@ -84,8 +84,8 @@
             <span class="kpi-trend trend-up">↑ 5%</span>
           </div>
           <h3 class="kpi-title">Monthly Savings</h3>
-          <p class="kpi-value">{{ formatCurrency(estimatedMonthlySavings) }}</p>
-          <p class="kpi-meta">Estimated utility savings</p>
+          <p class="kpi-value">{{ formatCurrencyLocal(monthlySavingsLocal) }}</p>
+          <p class="kpi-meta">{{ locationLabel }} · {{ formatCurrencyLocal(localElectricityRate) }}/kWh</p>
         </div>
 
         <!-- KPI Card 6: CO₂ Offset -->
@@ -271,6 +271,70 @@
       </div>
     </section>
 
+    <!-- Energy Economics Section -->
+    <section class="energy-economics-section mb-8">
+      <div class="section-header">
+        <h2>⚡ Energy Economics</h2>
+        <p class="text-gray-600">Local energy cost & investment payback for {{ locationLabel }}</p>
+      </div>
+
+      <div class="economics-grid">
+        <!-- Energy Cost Card -->
+        <div class="economics-card energy-cost-card">
+          <div class="econ-icon">💡</div>
+          <h3>Local Electricity Rate</h3>
+          <p class="econ-primary-value">{{ formatCurrencyLocal(localElectricityRate) }}<span class="econ-unit">/kWh</span></p>
+          <p class="econ-meta">{{ electricityProvider }} · {{ locationLabel }}</p>
+          <div class="econ-detail-row">
+            <span>Generation Charge</span>
+            <strong>{{ formatCurrencyLocal(localElectricityRate * 0.52) }}/kWh</strong>
+          </div>
+          <div class="econ-detail-row">
+            <span>Distribution & Others</span>
+            <strong>{{ formatCurrencyLocal(localElectricityRate * 0.48) }}/kWh</strong>
+          </div>
+        </div>
+
+        <!-- Monthly Savings Card -->
+        <div class="economics-card savings-highlight-card">
+          <div class="econ-icon">💰</div>
+          <h3>Estimated Savings</h3>
+          <p class="econ-primary-value">{{ formatCurrencyLocal(monthlySavingsLocal) }}<span class="econ-unit">/mo</span></p>
+          <p class="econ-meta">{{ formatCurrencyLocal(yearlySavingsLocal) }} per year</p>
+          <div class="econ-detail-row">
+            <span>Energy Produced</span>
+            <strong>{{ monthlyEnergyKwh }} kWh/mo</strong>
+          </div>
+          <div class="econ-detail-row">
+            <span>You Save vs Grid</span>
+            <strong class="text-green-600">{{ savingsPercent }}%</strong>
+          </div>
+        </div>
+
+        <!-- Payback Period Card -->
+        <div class="economics-card payback-card">
+          <div class="econ-icon">📈</div>
+          <h3>Investment Recovery</h3>
+          <p class="econ-primary-value">{{ paybackYears }}<span class="econ-unit"> years</span></p>
+          <p class="econ-meta">System Cost: {{ formatCurrencyLocal(estimatedSystemCost) }}</p>
+          <div class="payback-bar-wrapper">
+            <div class="payback-bar">
+              <div class="payback-progress" :style="{ width: Math.min(paybackProgress, 100) + '%' }"></div>
+            </div>
+            <div class="payback-labels">
+              <span>Now</span>
+              <span>{{ paybackYears }} yrs</span>
+              <span>25 yrs</span>
+            </div>
+          </div>
+          <div class="econ-detail-row">
+            <span>25-Year Net Profit</span>
+            <strong class="text-green-600">{{ formatCurrencyLocal(twentyFiveYearProfit) }}</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Weather & Savings Row -->
     <section class="insights-row mb-8">
       <!-- Weather Widget -->
@@ -301,14 +365,14 @@
           <div class="savings-item">
             <span class="savings-icon">💵</span>
             <div>
-              <p class="savings-value">{{ formatCurrency(estimatedMonthlySavings) }}</p>
+              <p class="savings-value">{{ formatCurrencyLocal(monthlySavingsLocal) }}</p>
               <p class="savings-label">Monthly Savings</p>
             </div>
           </div>
           <div class="savings-item">
             <span class="savings-icon">💰</span>
             <div>
-              <p class="savings-value">{{ formatCurrency(estimatedYearlySavingsRaw) }}</p>
+              <p class="savings-value">{{ formatCurrencyLocal(yearlySavingsLocal) }}</p>
               <p class="savings-label">Yearly Savings</p>
             </div>
           </div>
@@ -357,10 +421,24 @@
 import { computed, onMounted, ref } from 'vue'
 import { useInstallationStore } from '../stores/installationStore'
 import { useUserStore } from '../stores/userStore'
-import { formatCurrency } from '../utils/currency'
+import { formatCurrency, getUserCurrency, getCurrencySymbol } from '../utils/currency'
 
 const userStore = useUserStore()
 const installationStore = useInstallationStore()
+
+// ── Metro Manila Default Data ──
+// Used when no installations exist, giving meaningful dashboard data out of the box
+const METRO_MANILA_DEFAULTS = {
+  location: 'Metro Manila, Philippines',
+  provider: 'Meralco',
+  capacity: 5.0,         // kW – typical residential rooftop
+  peakSunHours: 4.5,     // average daily peak sun hours in Metro Manila
+  electricityRate: 11.50, // ₱/kWh – Meralco average residential rate (2024-2026)
+  systemCostPerKw: 65000, // ₱/kW – typical installed cost in PH
+  co2PerKwh: 0.42,       // kg CO₂ per kWh (Philippine grid factor)
+  panelDegradation: 0.005, // 0.5% per year
+  systemLifespan: 25,     // years
+}
 
 // ── Time Range ──
 const selectedRange = ref('7d')
@@ -371,28 +449,63 @@ const timeRanges = [
   { label: 'Year', value: 'yearly' }
 ]
 
-// ── Computed KPIs ──
+// ── Check if user has real installations ──
+const hasInstallations = computed(() => installationStore.installations.length > 0)
+
+// ── Computed KPIs (use real data when available, Metro Manila defaults otherwise) ──
 const activeCount = computed(() =>
-  installationStore.installations.filter(i => i.status === 'active').length
+  hasInstallations.value
+    ? installationStore.installations.filter(i => i.status === 'active').length
+    : 1
 )
 const inactiveCount = computed(() =>
-  installationStore.installations.filter(i => i.status === 'inactive').length
+  hasInstallations.value
+    ? installationStore.installations.filter(i => i.status === 'inactive').length
+    : 0
 )
 const maintenanceCount = computed(() =>
-  installationStore.installations.filter(i => i.status === 'maintenance').length
+  hasInstallations.value
+    ? installationStore.installations.filter(i => i.status === 'maintenance').length
+    : 0
 )
 const totalCapacity = computed(() =>
-  installationStore.installations.reduce((sum, i) => sum + (i.capacity || 0), 0).toFixed(2)
+  hasInstallations.value
+    ? installationStore.installations.reduce((sum, i) => sum + (i.capacity || 0), 0).toFixed(2)
+    : METRO_MANILA_DEFAULTS.capacity.toFixed(2)
 )
+
+// ── Location & Electricity Provider ──
+const locationLabel = computed(() =>
+  hasInstallations.value
+    ? (installationStore.installations[0]?.address || METRO_MANILA_DEFAULTS.location)
+    : METRO_MANILA_DEFAULTS.location
+)
+
+const electricityProvider = computed(() => METRO_MANILA_DEFAULTS.provider)
+
+// ── Local electricity rate (₱/kWh) ──
+const localElectricityRate = computed(() => METRO_MANILA_DEFAULTS.electricityRate)
 
 // ── Simulated daily energy based on capacity ──
 const dailyEnergyKwh = computed(() => {
-  const cap = parseFloat(totalCapacity.value) || 0
-  return (cap * 4.5).toFixed(1) // ~4.5 peak sun hours average
+  const cap = parseFloat(totalCapacity.value) || METRO_MANILA_DEFAULTS.capacity
+  return (cap * METRO_MANILA_DEFAULTS.peakSunHours).toFixed(1)
 })
 const monthlyEnergyKwh = computed(() => (parseFloat(dailyEnergyKwh.value) * 30).toFixed(0))
 
-// ── Savings estimates (avg $0.12/kWh, 0.42 kg CO₂/kWh) ──
+// ── Local currency savings (₱) ──
+const monthlySavingsLocal = computed(() =>
+  parseFloat(monthlyEnergyKwh.value) * localElectricityRate.value
+)
+const yearlySavingsLocal = computed(() => monthlySavingsLocal.value * 12)
+
+// ── Savings as percentage of typical household bill (₱3,500/mo average) ──
+const savingsPercent = computed(() => {
+  const typicalBill = 3500
+  return Math.min(Math.round((monthlySavingsLocal.value / typicalBill) * 100), 100)
+})
+
+// ── USD-based savings for formatCurrency (backward compat) ──
 const estimatedMonthlySavings = computed(() =>
   (parseFloat(monthlyEnergyKwh.value) * 0.12).toFixed(0)
 )
@@ -402,16 +515,55 @@ const estimatedYearlySavingsRaw = computed(() =>
 const estimatedYearlySavings = computed(() =>
   estimatedYearlySavingsRaw.value.toLocaleString()
 )
+
+// ── CO₂ offset ──
 const carbonOffsetMonthly = computed(() =>
-  (parseFloat(monthlyEnergyKwh.value) * 0.42).toFixed(0)
+  (parseFloat(monthlyEnergyKwh.value) * METRO_MANILA_DEFAULTS.co2PerKwh).toFixed(0)
 )
 const carbonOffsetYearly = computed(() =>
-  ((parseFloat(monthlyEnergyKwh.value) * 12 * 0.42) / 1000).toFixed(1)
+  ((parseFloat(monthlyEnergyKwh.value) * 12 * METRO_MANILA_DEFAULTS.co2PerKwh) / 1000).toFixed(1)
 )
+
+// ── Investment Recovery / Payback Period ──
+const estimatedSystemCost = computed(() => {
+  const cap = parseFloat(totalCapacity.value) || METRO_MANILA_DEFAULTS.capacity
+  return cap * METRO_MANILA_DEFAULTS.systemCostPerKw
+})
+
+const paybackYears = computed(() => {
+  if (yearlySavingsLocal.value <= 0) return '∞'
+  const years = estimatedSystemCost.value / yearlySavingsLocal.value
+  return years.toFixed(1)
+})
+
+const paybackProgress = computed(() => {
+  const years = parseFloat(paybackYears.value) || 25
+  return (years / 25) * 100
+})
+
+const twentyFiveYearProfit = computed(() => {
+  const totalSavings = yearlySavingsLocal.value * 25
+  return totalSavings - estimatedSystemCost.value
+})
+
+// ── Format as local PHP currency (without USD conversion) ──
+function formatCurrencyLocal(amount) {
+  const rounded = Math.round(amount)
+  try {
+    return new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(rounded)
+  } catch {
+    return `₱${rounded.toLocaleString()}`
+  }
+}
 
 // ── Chart Data (simulated by range) ──
 function generateChartData(range) {
-  const cap = parseFloat(totalCapacity.value) || 5
+  const cap = parseFloat(totalCapacity.value) || METRO_MANILA_DEFAULTS.capacity
   const random = (min, max) => Math.round((Math.random() * (max - min) + min) * 10) / 10
   if (range === '24h') {
     return Array.from({ length: 12 }, (_, i) => {
@@ -1449,6 +1601,129 @@ onMounted(async () => {
 
 .text-gray-600 {
   color: var(--gray-600);
+}
+
+/* ── Energy Economics Section ── */
+.energy-economics-section {
+  margin-bottom: 3rem;
+}
+
+.economics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.economics-card {
+  background: var(--bg-primary);
+  border-radius: 1rem;
+  padding: 1.75rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color-light);
+  position: relative;
+  overflow: hidden;
+}
+
+.economics-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+}
+
+.energy-cost-card::before {
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+
+.savings-highlight-card::before {
+  background: linear-gradient(90deg, #22c55e, #10b981);
+}
+
+.payback-card::before {
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+}
+
+.econ-icon {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.economics-card h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.75rem 0;
+}
+
+.econ-primary-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0 0 0.25rem 0;
+}
+
+.econ-unit {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--gray-600);
+}
+
+.econ-meta {
+  font-size: 0.85rem;
+  color: var(--gray-500);
+  margin: 0 0 1.25rem 0;
+}
+
+.econ-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 0;
+  border-top: 1px solid var(--border-color-light);
+  font-size: 0.875rem;
+}
+
+.econ-detail-row span {
+  color: var(--gray-600);
+}
+
+.econ-detail-row strong {
+  color: var(--gray-900);
+}
+
+.payback-bar-wrapper {
+  margin: 1.25rem 0;
+}
+
+.payback-bar {
+  width: 100%;
+  height: 10px;
+  background: var(--gray-200);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.payback-progress {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  border-radius: 5px;
+  transition: width 0.5s ease;
+}
+
+.payback-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  margin-top: 0.375rem;
+}
+
+.text-green-600 {
+  color: #16a34a;
 }
 
 /* ── Dark Theme Overrides ── */
