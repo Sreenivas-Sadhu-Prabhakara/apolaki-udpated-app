@@ -31,9 +31,13 @@ export const useThemeStore = defineStore('theme', () => {
     if (isDarkMode.value) {
       root.classList.add('dark-theme')
       root.classList.add('dark')        // also enable Tailwind dark: variant
+      root.setAttribute('data-theme', 'dark')
+      root.style.colorScheme = 'dark'
     } else {
       root.classList.remove('dark-theme')
       root.classList.remove('dark')
+      root.setAttribute('data-theme', 'light')
+      root.style.colorScheme = 'light'
     }
   }
 

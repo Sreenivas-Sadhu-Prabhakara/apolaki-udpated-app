@@ -1,5 +1,17 @@
 <template>
   <div class="dashboard">
+    <!-- Sample Data Banner (shown when no installations) -->
+    <div v-if="!hasInstallations && !installationStore.loading" class="sample-data-banner mb-6">
+      <div class="sample-banner-content">
+        <span class="sample-banner-icon">📍</span>
+        <div>
+          <strong>Showing sample data for Metro Manila, Philippines</strong>
+          <p>This dashboard uses estimated data for a typical 5 kW residential solar system. Create your first installation to see your actual data.</p>
+        </div>
+        <router-link to="/installations" class="btn btn-primary btn-sm">+ Add Installation</router-link>
+      </div>
+    </div>
+
     <!-- Hero Header Section -->
     <section class="hero-section mb-8">
       <div class="hero-content">
@@ -7,11 +19,12 @@
           <h1 class="hero-title">Solar Energy Dashboard</h1>
           <p v-if="userStore.user" class="hero-subtitle">Welcome back, {{ userStore.user.first_name || 'User' }}! Here's your solar overview.</p>
           <p v-else class="hero-subtitle">Monitor and manage your solar installations in real-time.</p>
+          <p v-if="!hasInstallations" class="hero-location">📍 {{ locationLabel }} · {{ electricityProvider }}</p>
         </div>
         <div class="hero-stats">
           <div class="hero-stat">
-            <span class="hero-stat-number">{{ installationStore.installations.length }}</span>
-            <span class="hero-stat-label">Systems</span>
+            <span class="hero-stat-number">{{ hasInstallations ? installationStore.installations.length : 1 }}</span>
+            <span class="hero-stat-label">{{ hasInstallations ? 'Systems' : 'Sample System' }}</span>
           </div>
           <div class="hero-stat">
             <span class="hero-stat-number">{{ totalCapacity }}</span>
@@ -40,8 +53,8 @@
             <span class="kpi-trend trend-up">↑ 15%</span>
           </div>
           <h3 class="kpi-title">Total Installations</h3>
-          <p class="kpi-value">{{ installationStore.installations.length }}</p>
-          <p class="kpi-meta">Active projects in portfolio</p>
+          <p class="kpi-value">{{ hasInstallations ? installationStore.installations.length : 1 }}</p>
+          <p class="kpi-meta">{{ hasInstallations ? 'Active projects in portfolio' : 'Sample 5kW system · Metro Manila' }}</p>
         </div>
 
         <!-- KPI Card 2: Daily Energy -->
@@ -52,7 +65,7 @@
           </div>
           <h3 class="kpi-title">Daily Energy</h3>
           <p class="kpi-value">{{ dailyEnergyKwh }} <span class="kpi-unit">kWh</span></p>
-          <p class="kpi-meta">Estimated today's generation</p>
+          <p class="kpi-meta">{{ dailyEnergyValueDisplay }}</p>
         </div>
 
         <!-- KPI Card 3: Total Capacity -->
@@ -63,7 +76,7 @@
           </div>
           <h3 class="kpi-title">Total Capacity</h3>
           <p class="kpi-value">{{ totalCapacity }} <span class="kpi-unit">kW</span></p>
-          <p class="kpi-meta">{{ activeCount }} of {{ installationStore.installations.length }} systems active</p>
+          <p class="kpi-meta">{{ hasInstallations ? activeCount + ' of ' + installationStore.installations.length + ' systems active' : METRO_MANILA_DEFAULTS.peakSunHours + ' peak sun hrs/day · ' + locationLabel }}</p>
         </div>
 
         <!-- KPI Card 4: Efficiency -->
@@ -421,7 +434,6 @@
 import { computed, onMounted, ref } from 'vue'
 import { useInstallationStore } from '../stores/installationStore'
 import { useUserStore } from '../stores/userStore'
-import { formatCurrency, getUserCurrency, getCurrencySymbol } from '../utils/currency'
 
 const userStore = useUserStore()
 const installationStore = useInstallationStore()
@@ -434,10 +446,38 @@ const METRO_MANILA_DEFAULTS = {
   capacity: 5.0,         // kW – typical residential rooftop
   peakSunHours: 4.5,     // average daily peak sun hours in Metro Manila
   electricityRate: 11.50, // ₱/kWh – Meralco average residential rate (2024-2026)
-  systemCostPerKw: 65000, // ₱/kW – typical installed cost in PH
   co2PerKwh: 0.42,       // kg CO₂ per kWh (Philippine grid factor)
   panelDegradation: 0.005, // 0.5% per year
   systemLifespan: 25,     // years
+}
+
+// ── Installation cost tiers (Philippine market) ──
+// Interpolates between known price points: ₱120k for 3kW, ₱200k for 5kW
+function getSystemCost(capacityKw) {
+  const tiers = [
+    { kw: 1, cost: 55000 },
+    { kw: 2, cost: 90000 },
+    { kw: 3, cost: 120000 },
+    { kw: 5, cost: 200000 },
+    { kw: 8, cost: 310000 },
+    { kw: 10, cost: 380000 },
+  ]
+  if (capacityKw <= tiers[0].kw) return tiers[0].cost
+  if (capacityKw >= tiers[tiers.length - 1].kw) {
+    // extrapolate from last two tiers
+    const last = tiers[tiers.length - 1]
+    const prev = tiers[tiers.length - 2]
+    const rate = (last.cost - prev.cost) / (last.kw - prev.kw)
+    return Math.round(last.cost + rate * (capacityKw - last.kw))
+  }
+  // linear interpolation between surrounding tiers
+  for (let i = 0; i < tiers.length - 1; i++) {
+    if (capacityKw >= tiers[i].kw && capacityKw <= tiers[i + 1].kw) {
+      const ratio = (capacityKw - tiers[i].kw) / (tiers[i + 1].kw - tiers[i].kw)
+      return Math.round(tiers[i].cost + ratio * (tiers[i + 1].cost - tiers[i].cost))
+    }
+  }
+  return 200000 // fallback
 }
 
 // ── Time Range ──
@@ -493,6 +533,14 @@ const dailyEnergyKwh = computed(() => {
 })
 const monthlyEnergyKwh = computed(() => (parseFloat(dailyEnergyKwh.value) * 30).toFixed(0))
 
+// Daily energy value in pesos
+const dailyEnergyValue = computed(() =>
+  parseFloat(dailyEnergyKwh.value) * localElectricityRate.value
+)
+const dailyEnergyValueDisplay = computed(() =>
+  `Worth ${formatCurrencyLocal(dailyEnergyValue.value)}/day · ${formatCurrencyLocal(localElectricityRate.value)}/kWh`
+)
+
 // ── Local currency savings (₱) ──
 const monthlySavingsLocal = computed(() =>
   parseFloat(monthlyEnergyKwh.value) * localElectricityRate.value
@@ -505,17 +553,6 @@ const savingsPercent = computed(() => {
   return Math.min(Math.round((monthlySavingsLocal.value / typicalBill) * 100), 100)
 })
 
-// ── USD-based savings for formatCurrency (backward compat) ──
-const estimatedMonthlySavings = computed(() =>
-  (parseFloat(monthlyEnergyKwh.value) * 0.12).toFixed(0)
-)
-const estimatedYearlySavingsRaw = computed(() =>
-  parseFloat(estimatedMonthlySavings.value) * 12
-)
-const estimatedYearlySavings = computed(() =>
-  estimatedYearlySavingsRaw.value.toLocaleString()
-)
-
 // ── CO₂ offset ──
 const carbonOffsetMonthly = computed(() =>
   (parseFloat(monthlyEnergyKwh.value) * METRO_MANILA_DEFAULTS.co2PerKwh).toFixed(0)
@@ -527,7 +564,7 @@ const carbonOffsetYearly = computed(() =>
 // ── Investment Recovery / Payback Period ──
 const estimatedSystemCost = computed(() => {
   const cap = parseFloat(totalCapacity.value) || METRO_MANILA_DEFAULTS.capacity
-  return cap * METRO_MANILA_DEFAULTS.systemCostPerKw
+  return getSystemCost(cap)
 })
 
 const paybackYears = computed(() => {
@@ -680,6 +717,44 @@ onMounted(async () => {
   padding: 2rem;
 }
 
+/* Sample Data Banner */
+.sample-data-banner {
+  background: linear-gradient(135deg, #eff6ff 0%, #fef3c7 100%);
+  border: 2px solid #fbbf24;
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.sample-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.sample-banner-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.sample-banner-content strong {
+  font-size: 1rem;
+  color: #92400e;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.sample-banner-content p {
+  font-size: 0.875rem;
+  color: #78716c;
+  margin: 0;
+}
+
+.sample-banner-content .btn {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
 /* Hero Section */
 .hero-section {
   background: linear-gradient(135deg, var(--solar-gold) 0%, var(--solar-gold-dark) 100%);
@@ -707,6 +782,13 @@ onMounted(async () => {
   font-size: 1.1rem;
   opacity: 0.95;
   margin: 0;
+}
+
+.hero-location {
+  font-size: 0.95rem;
+  margin-top: 0.5rem;
+  opacity: 0.85;
+  font-weight: 500;
 }
 
 .hero-stats {
@@ -1737,6 +1819,19 @@ onMounted(async () => {
   color: #FFB81C;
 }
 
+:global(.dark-theme) .sample-data-banner {
+  background: linear-gradient(135deg, #1E293B 0%, #2A1F00 100%);
+  border-color: #FFCA4F;
+}
+
+:global(.dark-theme) .sample-banner-content strong {
+  color: #FCD34D;
+}
+
+:global(.dark-theme) .sample-banner-content p {
+  color: #94A3B8;
+}
+
 :global(.dark-theme) .kpi-card {
   background: #1E293B;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -1972,5 +2067,50 @@ onMounted(async () => {
 :global(.dark-theme) .btn-icon:hover {
   background: #FFCA4F;
   color: #1E293B;
+}
+
+:global(.dark-theme) .economics-card {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+:global(.dark-theme) .economics-card h3 {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .econ-primary-value {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .econ-unit {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .econ-meta {
+  color: #64748B;
+}
+
+:global(.dark-theme) .econ-detail-row {
+  border-top-color: #334155;
+}
+
+:global(.dark-theme) .econ-detail-row span {
+  color: #94A3B8;
+}
+
+:global(.dark-theme) .econ-detail-row strong {
+  color: #F1F5F9;
+}
+
+:global(.dark-theme) .payback-bar {
+  background: #334155;
+}
+
+:global(.dark-theme) .payback-labels span {
+  color: #64748B;
+}
+
+:global(.dark-theme) .text-green-600 {
+  color: #34D399 !important;
 }
 </style>
