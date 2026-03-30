@@ -1,4 +1,4 @@
-# Multi-stage build for Node.js Database Service
+# Multi-stage build for Apolaki Backend API Service (Cloud Run)
 # Stage 1: Build
 FROM node:18-alpine AS builder
 
@@ -29,15 +29,15 @@ RUN adduser -S node -u 1001
 
 USER node
 
-# Expose port
-EXPOSE 3001
-
-# Environment variables
+# Cloud Run injects PORT env var (default 8080)
+ENV PORT=8080
 ENV NODE_ENV=production
+
+EXPOSE ${PORT}
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3001/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+  CMD node -e "const http=require('http');const port=process.env.PORT||8080;http.get('http://localhost:'+port+'/health',(r)=>{if(r.statusCode!==200)throw new Error(r.statusCode)})"
 
 # Start the application
 CMD ["npm", "start"]

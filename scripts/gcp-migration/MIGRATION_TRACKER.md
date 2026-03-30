@@ -68,14 +68,14 @@
 
 | Step | Description | Maker | Checker | Status |
 |------|-------------|-------|---------|--------|
-| 4.1 | Create git branch `gcp/phase-4-backend` | — | — | ⬜ |
-| 4.2 | Remove Netlify Lambda detection from server.js | — | — | ⬜ |
-| 4.3 | Update Dockerfile for Cloud Run (PORT env) | — | — | ⬜ |
-| 4.4 | Add .dockerignore for lean image | — | — | ⬜ |
-| 4.5 | Remove serverless-http dependency | — | — | ⬜ |
-| 4.6 | Create Cloud Run deploy script | — | — | ⬜ |
-| 4.7 | Test Docker build locally | — | — | ⬜ |
-| 4.8 | Commit & merge phase-4 | — | — | ⬜ |
+| 4.1 | Create git branch `gcp/phase-4-backend` | Qwen | Qwen | ✅ |
+| 4.2 | Remove Netlify Lambda detection from server.js | Qwen | Qwen | ✅ |
+| 4.3 | Update Dockerfile for Cloud Run (PORT env) | Qwen | Qwen | ✅ |
+| 4.4 | Add .dockerignore for lean image | Qwen | Qwen | ✅ |
+| 4.5 | Remove serverless-http dependency | Qwen | Qwen | ✅ |
+| 4.6 | Create Cloud Run deploy script | Qwen | Qwen | ✅ |
+| 4.7 | Test Docker build locally | Qwen | Qwen | ✅ |
+| 4.8 | Commit & merge phase-4 | Qwen | Qwen | ✅ |
 
 ## PHASE 5: Go Solar Service → Cloud Run
 

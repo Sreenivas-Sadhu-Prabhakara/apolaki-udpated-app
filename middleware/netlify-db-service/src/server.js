@@ -1,6 +1,6 @@
 /**
- * Apolaki Solar Platform - Netlify DB Service
- * Express server using Netlify Neon database
+ * Apolaki Solar Platform - Backend API Service
+ * Express server with PostgreSQL (Neon Serverless or standard pg)
  * Configuration is read from environment variables via ConfigManager
  */
 
@@ -33,7 +33,7 @@ console.log('Configuration:', configManager.logConfig());
 import { ensureSchema, initializeDatabase } from './db.js';
 try {
   initializeDatabase();
-  // Auto-create schema if tables don't exist (e.g. fresh Netlify Neon database)
+  // Auto-create schema if tables don't exist
   ensureSchema().catch(err => console.warn('⚠️  Schema ensure warning:', err.message));
 } catch (error) {
   console.warn('⚠️  Database initialization warning:', error.message);
@@ -48,7 +48,7 @@ import routesModule from './routes.js';
 import authRoutesModule from './routes/auth.js';
 import personaRoutesModule from './routes/personas.js';
 
-// Handle CJS/ESM interop — esbuild bundling on Netlify can wrap default exports
+// Handle CJS/ESM interop
 const session = sessionModule.default || sessionModule;
 const passport = passportModule.default || passportModule;
 const routes = routesModule.default || routesModule;
@@ -62,7 +62,7 @@ const config = configManager.getAll();
 const PORT = config.app.port;
 const isProduction = config.app.environment === 'production';
 
-// In production on Netlify, use permissive CORS since frontend & functions share the same origin
+// In production, use permissive CORS (frontend & backend may share origin via Firebase rewrite)
 const corsOptions = {
   origin: isProduction ? true : config.cors.origin,  // true = reflect request origin
   credentials: config.cors.credentials,
@@ -83,7 +83,7 @@ app.use(cors(corsOptions));
 // Session configuration
 const sessionConfig = config.session;
 
-// Trust proxy in production (Netlify/AWS puts a reverse proxy in front)
+// Trust proxy in production (Cloud Run / load balancer puts a reverse proxy in front)
 if (isProduction) {
   app.set('trust proxy', 1);
 }
@@ -126,14 +126,14 @@ app.get('/health', async (req, res) => {
 
   res.json({
     status: 'ok',
-    service: 'netlify-db-service',
+    service: 'apolaki-backend',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     database: dbStatus,
     environment: process.env.NODE_ENV || 'development',
-    hasDbUrl: !!(process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL),
+    hasDbUrl: !!process.env.DATABASE_URL,
     hasJwtSecret: !!process.env.JWT_SECRET,
-    isNetlify: !!(process.env.NETLIFY || process.env.LAMBDA_TASK_ROOT)
+    platform: process.env.K_SERVICE ? 'cloud-run' : 'local'
   });
 });
 
@@ -149,9 +149,9 @@ app.use('/api', routes);
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
-    name: 'Apolaki Solar Platform - Netlify DB Service',
+    name: 'Apolaki Solar Platform - Backend API',
     version: '2.0.0',
-    description: 'Backend API service with OAuth authentication using Netlify Neon database',
+    description: 'Backend API service with OAuth authentication using PostgreSQL',
     authentication: {
       local: {
         signup: 'POST /api/auth/signup',
@@ -233,7 +233,7 @@ app.get('/', (req, res) => {
         summary: 'GET /api/users/:userId/finance/summary'
       }
     },
-    database: 'Netlify Neon (PostgreSQL)',
+    database: 'PostgreSQL (Neon Serverless / standard pg)',
     documentation: 'See README.md and SETUP.md for detailed documentation'
   });
 });
@@ -257,20 +257,17 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server only when run directly (not as serverless function)
-const isNetlifyFunction = !!process.env.LAMBDA_TASK_ROOT || !!process.env.AWS_LAMBDA_FUNCTION_NAME || !!process.env.NETLIFY;
-
-if (!isNetlifyFunction) {
-  app.listen(PORT, () => {
-    console.log(`
+// Start server (Cloud Run sets PORT env var automatically)
+app.listen(PORT, () => {
+  console.log(`
 ╔════════════════════════════════════════════════════════╗
-║   Apolaki Solar Platform - Netlify DB Service          ║
+║   Apolaki Solar Platform - Backend API Service         ║
 ║   Server running on http://localhost:${PORT}           ║
-║   Database: Netlify Neon (PostgreSQL)                  ║
+║   Database: PostgreSQL (Neon Serverless / pg)          ║
+║   Platform: ${process.env.K_SERVICE ? 'Cloud Run' : 'Local'}                                     ║
 ║   Status: Ready                                        ║
 ╚════════════════════════════════════════════════════════╝
-    `);
-  });
-}
+  `);
+});
 
 export default app;
