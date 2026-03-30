@@ -33,13 +33,13 @@
 
 | Step | Description | Maker | Checker | Status |
 |------|-------------|-------|---------|--------|
-| 1.1 | Create git branch `gcp/phase-1-database` | — | — | ⬜ |
-| 1.2 | Add `@neondatabase/serverless` as alternative driver | — | — | ⬜ |
-| 1.3 | Refactor db.js — extract Neon/PG logic into provider pattern | — | — | ⬜ |
-| 1.4 | Add GCP-compatible db provider (standard pg with SSL) | — | — | ⬜ |
-| 1.5 | Update config.manager.js for GCP database settings | — | — | ⬜ |
-| 1.6 | Test db.js with local PostgreSQL | — | — | ⬜ |
-| 1.7 | Run init-db.sql against test database | — | — | ⬜ |
+| 1.1 | Create git branch `gcp/phase-1-database` | Qwen | Qwen | ✅ |
+| 1.2 | Add `@neondatabase/serverless` as alternative driver | Qwen | Qwen | ✅ |
+| 1.3 | Refactor db.js — extract Neon/PG logic into provider pattern | Qwen | Qwen | ✅ |
+| 1.4 | Add GCP-compatible db provider (standard pg with SSL) | Qwen | Qwen | ✅ |
+| 1.5 | Update config.manager.js for GCP database settings | Qwen | Qwen | ✅ |
+| 1.6 | Test db.js with local PostgreSQL | — | — | ⏭️ |
+| 1.7 | Run init-db.sql against test database | — | — | ⏭️ |
 | 1.8 | Commit & merge phase-1 | — | — | ⬜ |
 
 ## PHASE 2: Static Assets → Cloud Storage

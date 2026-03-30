@@ -1,9 +1,10 @@
 /**
- * Database client for Netlify Neon
- * Handles all database operations using @netlify/neon with PostgreSQL fallback
+ * Database client for Apolaki Solar Platform
+ * Supports: @neondatabase/serverless (Neon) and standard pg Pool
+ * Provider auto-detected from DATABASE_URL, or forced via DB_PROVIDER env var
  */
 
-import { neon } from '@netlify/neon';
+import { neon } from '@neondatabase/serverless';
 import pkg from 'pg';
 const { Pool } = pkg;
 
@@ -15,36 +16,32 @@ let initialized = false;
 function initializeDatabase() {
   if (initialized) return;
   
-  const databaseUrl = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
+  // DATABASE_URL is primary; NETLIFY_DATABASE_URL kept for backward compat
+  const databaseUrl = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
   
   if (!databaseUrl) {
-    console.error('⚠️  Database URL not configured. Set NETLIFY_DATABASE_URL or DATABASE_URL in .env');
+    console.error('⚠️  Database URL not configured. Set DATABASE_URL in .env');
     console.error('   The server will start but database operations will fail.');
-    // Create a stub so the server can still start for health checks
     sql = async () => { throw new Error('Database not configured'); };
     initialized = true;
     return;
   }
 
-  // Auto-detect Netlify/Neon environment:
-  // - NETLIFY_NEON explicitly set to 'true'
-  // - Or running in Netlify Functions (NETLIFY env var set)
-  // - Or connection string contains 'neon.tech'
-  const isNetlifyEnv = !!process.env.NETLIFY || !!process.env.LAMBDA_TASK_ROOT || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+  // Auto-detect Neon from URL, or force via DB_PROVIDER env var ('neon' | 'pg')
   const isNeonUrl = databaseUrl.includes('neon.tech') || databaseUrl.includes('neon-');
-  const useNeon = process.env.NETLIFY_NEON === 'true' || (isNetlifyEnv && isNeonUrl);
+  const dbProvider = process.env.DB_PROVIDER; // optional: 'neon' or 'pg'
+  const useNeon = dbProvider === 'neon' || (isNeonUrl && dbProvider !== 'pg');
   
-  // Determine if SSL is needed (Neon always requires SSL; also if url has sslmode=require)
+  // SSL needed for Neon, or if explicitly requested
   const needsSsl = isNeonUrl || databaseUrl.includes('sslmode=require') || process.env.DB_SSL === 'true';
   
   if (useNeon) {
     try {
-      // Use Netlify Neon for serverless functions
-      sql = neon();
-      console.log('Using Netlify Neon database client');
+      // Use @neondatabase/serverless — works on any platform (GCP, local, etc.)
+      sql = neon(databaseUrl);
+      console.log('Using Neon Serverless database client');
     } catch (error) {
-      console.log('Neon initialization failed, falling back to pg client');
-      // Fallback to pg client with SSL for Neon
+      console.log('Neon initialization failed, falling back to pg client:', error.message);
       pool = new Pool({
         connectionString: databaseUrl,
         ssl: needsSsl ? { rejectUnauthorized: false } : false,
@@ -52,22 +49,15 @@ function initializeDatabase() {
       sql = createPgSqlInterface();
     }
   } else {
-    // Use pg client for local development or non-Neon remote databases
+    // Use standard pg Pool — works with any PostgreSQL (local, Cloud SQL, Neon, etc.)
     console.log(`Using PostgreSQL pg client (ssl: ${needsSsl})`);
-
-    // Clear PG* env vars that would override connectionString
-    // (e.g. when Neon sets PGHOST, PGUSER, PGDATABASE, PGPASSWORD in the shell)
-    delete process.env.PGHOST;
-    delete process.env.PGUSER;
-    delete process.env.PGDATABASE;
-    delete process.env.PGPASSWORD;
 
     pool = new Pool({
       connectionString: databaseUrl,
       ssl: needsSsl ? { rejectUnauthorized: false } : false,
     });
     
-    // Use public schema for all queries (unified with seeds and schema.sql)
+    // Use public schema for all queries
     pool.on('connect', (client) => {
       client.query('SET search_path TO public');
     });
