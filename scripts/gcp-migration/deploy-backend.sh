@@ -39,7 +39,8 @@ gcloud run deploy "${SERVICE_NAME}" \
   --cpu 1 \
   --min-instances 0 \
   --max-instances 2 \
-  --set-env-vars "NODE_ENV=production" \
+  --set-env-vars "NODE_ENV=production,APP_ENV=production" \
+  --set-secrets "DATABASE_URL=DATABASE_URL:latest,JWT_SECRET=JWT_SECRET:latest,JWT_REFRESH_SECRET=JWT_REFRESH_SECRET:latest,WEATHER_API_KEY=WEATHER_API_KEY:latest,GOOGLE_SOLAR_API_KEY=GOOGLE_SOLAR_API_KEY:latest,NREL_API_KEY=NREL_API_KEY:latest" \
   2>&1
 
 echo ""
