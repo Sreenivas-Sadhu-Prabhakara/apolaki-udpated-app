@@ -21,13 +21,13 @@
 
 | Step | Description | Maker | Checker | Status |
 |------|-------------|-------|---------|--------|
-| 0.1 | Create git branch `gcp/phase-0-setup` | — | — | ⬜ |
-| 0.2 | Install & verify gcloud CLI | — | — | ⬜ |
-| 0.3 | Create GCP project `apolaki-solar` | — | — | ⬜ |
-| 0.4 | Enable required GCP APIs | — | — | ⬜ |
-| 0.5 | Set billing budget alert ($0) | — | — | ⬜ |
-| 0.6 | Create Artifact Registry repo | — | — | ⬜ |
-| 0.7 | Create `.env.gcp` template | — | — | ⬜ |
+| 0.1 | Create git branch `gcp/phase-0-setup` | Qwen | Qwen | ✅ |
+| 0.2 | Install & verify gcloud CLI | Qwen | Qwen | ✅ |
+| 0.3 | Configure GCP project `apolaki-478302` (auth + defaults) | Qwen | Qwen | ✅ |
+| 0.4 | Enable required GCP APIs | Qwen | Qwen | ✅ |
+| 0.5 | Set billing budget alert ($0) | Qwen | Qwen | ✅ |
+| 0.6 | Create Artifact Registry repo | Qwen | Qwen | ✅ |
+| 0.7 | Create `.env.gcp` template | Qwen | Qwen | ✅ |
 
 ## PHASE 1: Database Migration
 

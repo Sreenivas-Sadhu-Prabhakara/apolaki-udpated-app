@@ -1,0 +1,101 @@
+================================================================================
+🔐 GITHUB PUSH BLOCKED - IMMEDIATE ACTION REQUIRED
+================================================================================
+
+STATUS: Push was blocked by GitHub Secret Scanning
+REASON: Secrets found in commit e531bf5 (the old commit with real credentials)
+
+The good news: You've already removed the secrets from .env
+The issue: The OLD commit still has secrets in git history
+
+================================================================================
+SOLUTION: USE GITHUB'S UNBLOCK FEATURE (Recommended & Safest)
+================================================================================
+
+GitHub is asking you to review and allow the secrets. This proves you know
+about them and have secured them properly.
+
+STEP 1: Visit the first unblock link in your browser
+────────────────────────────────────────────────────────────────────────────
+Google OAuth Client ID:
+https://github.com/Sreenivas-Sadhu-Prabhakara/apolaki-udpated-app/security/secret-scanning/unblock-secret/3ALSgQ92RIS9dDIZEAwrCgaACpp
+
+Click "Allow" or "Review" button
+
+STEP 2: Visit the second unblock link
+────────────────────────────────────────────────────────────────────────────
+Google OAuth Client Secret:
+https://github.com/Sreenivas-Sadhu-Prabhakara/apolaki-udpated-app/security/secret-scanning/unblock-secret/3ALSgKpjPM0UytCpIjlBRYh0dxo
+
+Click "Allow" or "Review" button
+
+STEP 3: Rotate your credentials IMMEDIATELY
+────────────────────────────────────────────────────────────────────────────
+⚠️  CRITICAL: The old credentials were exposed in git!
+
+Go to: https://console.cloud.google.com/apis/credentials
+
+1. Delete the old OAuth credentials (the ones that were in git)
+2. Create NEW OAuth Client ID
+3. Create NEW OAuth Client Secret
+4. Copy these new credentials
+
+STEP 4: Push again after unblocking
+────────────────────────────────────────────────────────────────────────────
+Once you've clicked "Allow" on both GitHub links, try pushing again:
+
+$ cd /Users/macstudio/Documents/Code/apolaki-udpated-app
+$ git push origin main
+
+STEP 5: Update your local .env with NEW credentials
+────────────────────────────────────────────────────────────────────────────
+$ cd middleware/netlify-db-service
+
+Edit .env file and replace:
+  GOOGLE_CLIENT_ID=PLACEHOLDER_REPLACE_LOCALLY
+  GOOGLE_CLIENT_SECRET=PLACEHOLDER_REPLACE_LOCALLY
+
+With your NEW credentials from Google Cloud:
+  GOOGLE_CLIENT_ID=YOUR_NEW_ID
+  GOOGLE_CLIENT_SECRET=YOUR_NEW_SECRET
+
+STEP 6: Test locally
+────────────────────────────────────────────────────────────────────────────
+$ npm run dev
+
+Verify OAuth login works with your new credentials
+
+================================================================================
+IMPORTANT NOTES
+================================================================================
+
+✓ The cleanup commit (24b38f0) is good - it removes the secrets
+✓ GitHub is just asking you to acknowledge the old exposed secrets
+✓ By clicking "Allow", you're confirming you know about them
+✓ This is NORMAL and safe - GitHub does this for all secret exposure
+
+⚠️  CRITICAL: Rotate credentials within 1 hour!
+
+================================================================================
+IF THAT DOESN'T WORK: Alternative approach
+================================================================================
+
+If GitHub's unblock links don't work, you may need to:
+
+1. Remove the commit with secrets entirely (git rebase)
+2. Or push directly with --skip-secret-scanning (NOT recommended)
+
+But first, try the unblock links above - that's the proper way!
+
+================================================================================
+TLDR
+================================================================================
+
+1. Click the two GitHub unblock links provided
+2. Rotate credentials on Google Cloud
+3. git push origin main
+4. Update local .env with new credentials
+5. Test with npm run dev
+6. Done!
+
+================================================================================

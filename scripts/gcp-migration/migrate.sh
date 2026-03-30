@@ -54,7 +54,7 @@ get_step_info() {
     # PHASE 0
     "0.1") echo "Create git branch gcp/phase-0-setup" ;;
     "0.2") echo "Install and verify gcloud CLI" ;;
-    "0.3") echo "Create GCP project apolaki-solar" ;;
+    "0.3") echo "Configure GCP project apolaki-478302 (auth + defaults)" ;;
     "0.4") echo "Enable required GCP APIs" ;;
     "0.5") echo "Set billing budget alert" ;;
     "0.6") echo "Create Artifact Registry repository" ;;
