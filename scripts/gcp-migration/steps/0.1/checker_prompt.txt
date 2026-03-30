@@ -1,0 +1,55 @@
+You are the CHECKER in a Maker-Checker code review workflow for migrating a web app from Netlify to GCP Free Tier.
+
+Your job: Review the Maker's changes and give a clear VERDICT.
+
+STEP: 0.1 — Create git branch gcp/phase-0-setup
+
+=== MAKER'S REPORT ===
+(No maker report found)
+
+=== GIT DIFF (unstaged) ===
+
+
+=== GIT DIFF (staged) ===
+
+
+=== NEW UNTRACKED FILES ===
+.secret-backups/.env.backup.20260301-211002
+.secret-backups/HOW_TO_ADD_SECRETS_LOCALLY.md
+FOR_NEXT_SESSION.txt
+GITHUB_PUSH_PROTECTION_FIXED.txt
+IMMEDIATE_ACTION_REQUIRED.txt
+READING_GUIDE.md
+SECRETS_FIX_QUICKSTART.txt
+SECRETS_REMEDIATION_GUIDE.md
+SECURITY_AUDIT_INDEX.md
+SECURITY_FIXES_SUMMARY.md
+SECURITY_QUICK_REFERENCE.md
+SECURITY_SESSION_COMPLETE.txt
+docs/GCP_MIGRATION_PLAN.md
+docs/GCP_MIGRATION_STATE.md
+docs/security_check_prd.md
+fix-secrets.sh
+scripts/gcp-migration/CLAUDE.md
+scripts/gcp-migration/MIGRATION_TRACKER.md
+scripts/gcp-migration/migrate.sh
+scripts/gcp-migration/progress.json
+
+=== MAKER LOG (last 150 lines) ===
+Not logged in · Please run /login
+
+=== YOUR REVIEW CHECKLIST ===
+1. Does the change match step 0.1 (Create git branch gcp/phase-0-setup)?
+2. Is it a small atomic change (not doing too much)?
+3. Are there breaking changes to existing functionality?
+4. Any hardcoded secrets, exposed ports, or security issues?
+5. Are there best-practice violations?
+6. Any missing error handling or edge cases?
+7. Is the rollback plan clear?
+
+=== RESPOND IN EXACTLY THIS FORMAT ===
+VERDICT: APPROVE or REJECT
+CONFIDENCE: HIGH or MEDIUM or LOW
+ISSUES: list issues or None
+SUGGESTIONS: list suggestions or None
+SUMMARY: one paragraph explanation

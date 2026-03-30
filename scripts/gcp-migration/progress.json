@@ -1,0 +1,127 @@
+{
+  "migration": "apolaki-solar-platform-to-gcp",
+  "started": "2026-03-30",
+  "current_phase": 0,
+  "current_step": "0.1",
+  "status": "not_started",
+  "phases": {
+    "0": {
+      "name": "GCP Project Setup & Prerequisites",
+      "branch": "gcp/phase-0-project-setup",
+      "status": "not_started",
+      "steps": {
+        "0.1": { "name": "Create git branch for phase 0", "status": "not_started" },
+        "0.2": { "name": "Verify gcloud CLI installed and authenticated", "status": "not_started" },
+        "0.3": { "name": "Create GCP project apolaki-solar", "status": "not_started" },
+        "0.4": { "name": "Enable required GCP APIs", "status": "not_started" },
+        "0.5": { "name": "Set up billing budget alert at $0", "status": "not_started" },
+        "0.6": { "name": "Create Artifact Registry repository", "status": "not_started" },
+        "0.7": { "name": "Verify Docker is installed", "status": "not_started" },
+        "0.8": { "name": "Create GCP env config template", "status": "not_started" }
+      }
+    },
+    "1": {
+      "name": "Database Migration",
+      "branch": "gcp/phase-1-database",
+      "status": "not_started",
+      "steps": {
+        "1.1": { "name": "Create standalone Neon account and project", "status": "not_started" },
+        "1.2": { "name": "Run init-db.sql against new Neon database", "status": "not_started" },
+        "1.3": { "name": "Update db.js to use standard pg Pool instead of @netlify/neon", "status": "not_started" },
+        "1.4": { "name": "Update package.json - swap neon dep for @neondatabase/serverless", "status": "not_started" },
+        "1.5": { "name": "Create config/env/.env.gcp template", "status": "not_started" },
+        "1.6": { "name": "Test local connection to new Neon DB", "status": "not_started" },
+        "1.7": { "name": "Run seed scripts against new DB", "status": "not_started" }
+      }
+    },
+    "2": {
+      "name": "Static Assets to Cloud Storage",
+      "branch": "gcp/phase-2-assets",
+      "status": "not_started",
+      "steps": {
+        "2.1": { "name": "Create Cloud Storage bucket for assets", "status": "not_started" },
+        "2.2": { "name": "Set bucket permissions and CORS", "status": "not_started" },
+        "2.3": { "name": "Upload frontend assets to bucket", "status": "not_started" },
+        "2.4": { "name": "Create upload-assets script", "status": "not_started" },
+        "2.5": { "name": "Add VITE_ASSET_BASE_URL to frontend env config", "status": "not_started" },
+        "2.6": { "name": "Test asset loading from GCS", "status": "not_started" }
+      }
+    },
+    "3": {
+      "name": "Frontend to Firebase Hosting",
+      "branch": "gcp/phase-3-frontend",
+      "status": "not_started",
+      "steps": {
+        "3.1": { "name": "Install firebase-tools and init hosting", "status": "not_started" },
+        "3.2": { "name": "Create firebase.json and .firebaserc", "status": "not_started" },
+        "3.3": { "name": "Update frontend .env.production with GCP URLs", "status": "not_started" },
+        "3.4": { "name": "Build and deploy frontend to Firebase", "status": "not_started" },
+        "3.5": { "name": "Test frontend loads from Firebase Hosting", "status": "not_started" }
+      }
+    },
+    "4": {
+      "name": "Node.js Backend to Cloud Run",
+      "branch": "gcp/phase-4-backend",
+      "status": "not_started",
+      "steps": {
+        "4.1": { "name": "Update server.js - remove Netlify/Lambda detection", "status": "not_started" },
+        "4.2": { "name": "Update server.js - use PORT env var from Cloud Run", "status": "not_started" },
+        "4.3": { "name": "Update Dockerfile for Cloud Run compatibility", "status": "not_started" },
+        "4.4": { "name": "Remove serverless-http from package.json", "status": "not_started" },
+        "4.5": { "name": "Update .dockerignore for clean builds", "status": "not_started" },
+        "4.6": { "name": "Build and push Docker image to Artifact Registry", "status": "not_started" },
+        "4.7": { "name": "Deploy to Cloud Run", "status": "not_started" },
+        "4.8": { "name": "Test all API endpoints on Cloud Run URL", "status": "not_started" }
+      }
+    },
+    "5": {
+      "name": "Go Solar Service to Cloud Run",
+      "branch": "gcp/phase-5-solar-service",
+      "status": "not_started",
+      "steps": {
+        "5.1": { "name": "Verify Go service reads PORT from env", "status": "not_started" },
+        "5.2": { "name": "Build and push Go Docker image", "status": "not_started" },
+        "5.3": { "name": "Deploy Go service to Cloud Run", "status": "not_started" },
+        "5.4": { "name": "Test solar service endpoints", "status": "not_started" }
+      }
+    },
+    "6": {
+      "name": "Secrets to Secret Manager",
+      "branch": "gcp/phase-6-secrets",
+      "status": "not_started",
+      "steps": {
+        "6.1": { "name": "Create setup-secrets-gcp.sh script", "status": "not_started" },
+        "6.2": { "name": "Create all secrets in GCP Secret Manager", "status": "not_started" },
+        "6.3": { "name": "Grant Cloud Run access to secrets", "status": "not_started" },
+        "6.4": { "name": "Redeploy Cloud Run services with --set-secrets", "status": "not_started" },
+        "6.5": { "name": "Verify no secrets in code or images", "status": "not_started" }
+      }
+    },
+    "7": {
+      "name": "CI/CD with Cloud Build",
+      "branch": "gcp/phase-7-cicd",
+      "status": "not_started",
+      "steps": {
+        "7.1": { "name": "Create cloudbuild.yaml for db-service", "status": "not_started" },
+        "7.2": { "name": "Create cloudbuild-frontend.yaml", "status": "not_started" },
+        "7.3": { "name": "Create cloudbuild-solar.yaml for Go service", "status": "not_started" },
+        "7.4": { "name": "Set up Cloud Build triggers", "status": "not_started" },
+        "7.5": { "name": "Archive old GitHub Actions workflows", "status": "not_started" },
+        "7.6": { "name": "Test full CI/CD pipeline end to end", "status": "not_started" }
+      }
+    },
+    "8": {
+      "name": "DNS, SSL, Monitoring & Cleanup",
+      "branch": "gcp/phase-8-finalize",
+      "status": "not_started",
+      "steps": {
+        "8.1": { "name": "Configure custom domain on Cloud Run (if applicable)", "status": "not_started" },
+        "8.2": { "name": "Set up Cloud Monitoring uptime checks", "status": "not_started" },
+        "8.3": { "name": "Update OAuth callback URLs", "status": "not_started" },
+        "8.4": { "name": "Archive Netlify config files", "status": "not_started" },
+        "8.5": { "name": "Update README and documentation for GCP", "status": "not_started" },
+        "8.6": { "name": "Final end-to-end verification", "status": "not_started" }
+      }
+    }
+  }
+}
