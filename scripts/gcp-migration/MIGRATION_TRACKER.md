@@ -40,18 +40,18 @@
 | 1.5 | Update config.manager.js for GCP database settings | Qwen | Qwen | ✅ |
 | 1.6 | Test db.js with local PostgreSQL | — | — | ⏭️ |
 | 1.7 | Run init-db.sql against test database | — | — | ⏭️ |
-| 1.8 | Commit & merge phase-1 | — | — | ⬜ |
+| 1.8 | Commit & merge phase-1 | Qwen | Qwen | ✅ |
 
 ## PHASE 2: Static Assets → Cloud Storage
 
 | Step | Description | Maker | Checker | Status |
 |------|-------------|-------|---------|--------|
-| 2.1 | Create git branch `gcp/phase-2-assets` | — | — | ⬜ |
-| 2.2 | Create asset upload script `scripts/gcp-migration/upload-assets.sh` | — | — | ⬜ |
-| 2.3 | Add VITE_ASSET_BASE_URL to frontend config | — | — | ⬜ |
-| 2.4 | Create GCS bucket CORS config | — | — | ⬜ |
-| 2.5 | Test asset references locally | — | — | ⬜ |
-| 2.6 | Commit & merge phase-2 | — | — | ⬜ |
+| 2.1 | Create git branch `gcp/phase-2-assets` | Qwen | Qwen | ✅ |
+| 2.2 | Create asset upload script `scripts/gcp-migration/upload-assets.sh` | Qwen | Qwen | ✅ |
+| 2.3 | Add VITE_ASSET_BASE_URL to frontend config | Qwen | Qwen | ✅ |
+| 2.4 | Create GCS bucket CORS config | Qwen | Qwen | ✅ |
+| 2.5 | Test asset references locally | Qwen | Qwen | ✅ |
+| 2.6 | Commit & merge phase-2 | Qwen | Qwen | ✅ |
 
 ## PHASE 3: Frontend → Firebase Hosting / Cloud Storage
 
