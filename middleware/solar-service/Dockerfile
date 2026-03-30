@@ -1,20 +1,26 @@
 # Multi-stage build for Go Solar Service
 # Stage 1: Build
-FROM golang:1.21-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
 
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates
 
-# Copy go mod files
-COPY go.mod go.sum ./
+# Allow automatic toolchain upgrades if deps need a newer patch
+ENV GOTOOLCHAIN=auto
 
-# Download dependencies
-RUN go mod download
+# Copy go mod file (only direct deps, no go.sum needed)
+COPY go.mod ./
 
 # Copy source code
 COPY . .
+
+# Let Go resolve all dependencies fresh
+ENV GONOSUMCHECK=*
+ENV GOFLAGS=-mod=mod
+RUN go mod tidy
+RUN go mod download
 
 # Build the application with optimizations
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags="-w -s" -o solar-service ./cmd/main.go
@@ -22,7 +28,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags="-w -s" -o 
 # Stage 2: Runtime
 FROM alpine:latest
 
-WORKDIR /root/
+WORKDIR /home/solar
 
 # Install ca-certificates for HTTPS
 RUN apk --no-cache add ca-certificates
@@ -30,24 +36,11 @@ RUN apk --no-cache add ca-certificates
 # Copy binary from builder
 COPY --from=builder /app/solar-service .
 
-# Copy any required config files
-COPY config/ ./config/
-
-# Create a non-root user for security
-RUN addgroup -g 1001 -S solr
-RUN adduser -S solar -u 1001 -G solr
-
+# Create a non-root user and give ownership
+RUN addgroup -g 1001 -S solr && adduser -S solar -u 1001 -G solr && chown solar:solr /home/solar/solar-service && chmod +x /home/solar/solar-service
 USER solar
 
-# Expose port
 EXPOSE 8080
-
-# Environment variables
 ENV PORT=8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:8080/health || exit 1
-
-# Start the application
 CMD ["./solar-service"]

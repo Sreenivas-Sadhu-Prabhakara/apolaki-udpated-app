@@ -9,6 +9,7 @@ steps:
     id: 'build-solar-service'
     args:
       - 'build'
+      - '--no-cache'
       - '-t'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/apolaki-repo/solar-service:$SHORT_SHA'
       - '-t'
@@ -52,8 +53,6 @@ steps:
       - '8080'
       - '--set-env-vars'
       - 'APP_ENV=production'
-      - '--set-secrets'
-      - 'GOOGLE_SOLAR_API_KEY=GOOGLE_SOLAR_API_KEY:latest,NREL_API_KEY=NREL_API_KEY:latest,DATABASE_URL=DATABASE_URL:latest'
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/apolaki-repo/solar-service:$SHORT_SHA'
