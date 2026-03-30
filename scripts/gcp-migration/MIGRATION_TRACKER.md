@@ -57,12 +57,12 @@
 
 | Step | Description | Maker | Checker | Status |
 |------|-------------|-------|---------|--------|
-| 3.1 | Create git branch `gcp/phase-3-frontend` | — | — | ⬜ |
-| 3.2 | Create firebase.json and .firebaserc | — | — | ⬜ |
-| 3.3 | Update frontend/.env.production for GCP | — | — | ⬜ |
-| 3.4 | Create deploy script `scripts/gcp-migration/deploy-frontend.sh` | — | — | ⬜ |
-| 3.5 | Test build with GCP env vars | — | — | ⬜ |
-| 3.6 | Commit & merge phase-3 | — | — | ⬜ |
+| 3.1 | Create git branch `gcp/phase-3-frontend` | Qwen | Qwen | ✅ |
+| 3.2 | Create firebase.json and .firebaserc | Qwen | Qwen | ✅ |
+| 3.3 | Update frontend/.env.production for GCP | Qwen | Qwen | ✅ |
+| 3.4 | Create deploy script `scripts/gcp-migration/deploy-frontend.sh` | Qwen | Qwen | ✅ |
+| 3.5 | Test build with GCP env vars | Qwen | Qwen | ✅ |
+| 3.6 | Commit & merge phase-3 | Qwen | Qwen | ✅ |
 
 ## PHASE 4: Node.js Backend → Cloud Run
 
