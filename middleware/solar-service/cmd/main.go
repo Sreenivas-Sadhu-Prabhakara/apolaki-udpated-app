@@ -105,8 +105,11 @@ func main() {
 		}
 	}
 
-	// Start server
-	port := os.Getenv("API_PORT")
+	// Start server — Cloud Run injects PORT env var
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = os.Getenv("API_PORT")
+	}
 	if port == "" {
 		port = "8080"
 	}

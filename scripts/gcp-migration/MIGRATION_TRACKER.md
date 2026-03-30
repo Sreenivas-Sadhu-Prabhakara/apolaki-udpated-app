@@ -81,12 +81,12 @@
 
 | Step | Description | Maker | Checker | Status |
 |------|-------------|-------|---------|--------|
-| 5.1 | Create git branch `gcp/phase-5-solar` | — | — | ⬜ |
-| 5.2 | Verify Go Dockerfile for Cloud Run compatibility | — | — | ⬜ |
-| 5.3 | Ensure PORT env var in main.go | — | — | ⬜ |
-| 5.4 | Create Cloud Run deploy script for solar service | — | — | ⬜ |
-| 5.5 | Test Docker build locally | — | — | ⬜ |
-| 5.6 | Commit & merge phase-5 | — | — | ⬜ |
+| 5.1 | Create git branch `gcp/phase-5-solar` | Qwen | Qwen | ✅ |
+| 5.2 | Verify Go Dockerfile for Cloud Run compatibility | Qwen | Qwen | ✅ |
+| 5.3 | Ensure PORT env var in main.go | Qwen | Qwen | ✅ |
+| 5.4 | Create Cloud Run deploy script for solar service | Qwen | Qwen | ✅ |
+| 5.5 | Test Docker build locally | Qwen | Qwen | ⏭️ |
+| 5.6 | Commit & merge phase-5 | Qwen | Qwen | ✅ |
 
 ## PHASE 6: Secrets → Secret Manager
 
