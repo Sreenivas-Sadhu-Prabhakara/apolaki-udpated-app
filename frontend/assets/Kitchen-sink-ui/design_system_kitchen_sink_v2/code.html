@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kitchen Sink V2</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#136dec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101822",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display antialiased min-h-screen flex flex-col overflow-x-hidden">
+<!-- Header -->
+<header class="flex items-center justify-between p-4 pb-2 sticky top-0 z-50 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold">Kitchen Sink V2</h1>
+</div>
+<button class="text-primary font-bold text-sm hover:text-primary/80 transition-colors px-3 py-1.5 rounded hover:bg-primary/10">
+            Settings
+        </button>
+</header>
+<main class="flex-1 p-4 flex flex-col gap-6 pb-24">
+<!-- Loan Status Card -->
+<section>
+<div class="flex items-center justify-between mb-3">
+<h3 class="text-xl font-bold">Loan Application</h3>
+<span class="px-2 py-1 rounded text-xs font-medium bg-amber-500/10 text-amber-500 border border-amber-500/20">Under Review</span>
+</div>
+<div class="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-800">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">account_balance</span>
+</div>
+<div>
+<p class="font-bold text-base">Chase Mortgage</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Ref: #LN-9928-X</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-lg font-bold">$45,000</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Requested Amount</p>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex items-center gap-3">
+<div class="flex flex-col items-center gap-1">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<div class="w-0.5 h-8 bg-primary"></div>
+</div>
+<div class="flex-1 pb-4">
+<p class="text-sm font-medium">Application Submitted</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Oct 24, 10:00 AM</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex flex-col items-center gap-1">
+<div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+<div class="w-0.5 h-8 bg-slate-200 dark:bg-slate-800"></div>
+</div>
+<div class="flex-1 pb-4">
+<p class="text-sm font-medium">Bank Review</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">In Progress</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex flex-col items-center gap-1">
+<div class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium text-slate-400 dark:text-slate-600">Funds Disbursed</p>
+<p class="text-xs text-slate-400 dark:text-slate-600">Pending Approval</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Project Contracts Data Table -->
+<section>
+<h3 class="text-xl font-bold mb-3">Project Contracts</h3>
+<div class="bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
+<!-- Table Row 1 -->
+<div class="grid grid-cols-2 p-4 border-b border-slate-200 dark:border-slate-800 gap-y-4">
+<div class="border-r border-slate-200 dark:border-slate-800 pr-4">
+<p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Contract ID</p>
+<p class="font-medium text-sm">#88392</p>
+</div>
+<div class="pl-4">
+<p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Status</p>
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
+                        </span>
+</div>
+<div class="border-r border-slate-200 dark:border-slate-800 pr-4">
+<p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Value</p>
+<p class="font-medium text-sm">$12,500</p>
+</div>
+<div class="pl-4">
+<p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Dates</p>
+<p class="font-medium text-sm">Oct 12 - Dec 01</p>
+</div>
+</div>
+<!-- Table Row 2 -->
+<div class="grid grid-cols-2 p-4 gap-y-4 bg-slate-50/50 dark:bg-slate-800/20">
+<div class="border-r border-slate-200 dark:border-slate-800 pr-4">
+<p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Contract ID</p>
+<p class="font-medium text-sm">#88401</p>
+</div>
+<div class="pl-4">
+<p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Status</p>
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
+                            Draft
+                        </span>
+</div>
+<div class="border-r border-slate-200 dark:border-slate-800 pr-4">
+<p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Value</p>
+<p class="font-medium text-sm">$4,200</p>
+</div>
+<div class="pl-4">
+<p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Dates</p>
+<p class="font-medium text-sm">TBD</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Installation Progress -->
+<section>
+<h3 class="text-xl font-bold mb-3">Installation Progress</h3>
+<div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="flex justify-between items-end mb-2">
+<div>
+<p class="font-bold">Kitchen Remodel</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">SafeHands Inc.</p>
+</div>
+<p class="text-2xl font-bold text-primary">65%</p>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-3 mb-4 overflow-hidden">
+<div class="bg-primary h-3 rounded-full" style="width: 65%"></div>
+</div>
+<div class="grid grid-cols-3 gap-2 text-center text-xs">
+<div class="p-2 rounded bg-primary/10 text-primary font-medium border border-primary/20">
+                        Demolition
+                    </div>
+<div class="p-2 rounded bg-primary/10 text-primary font-medium border border-primary/20">
+                        Plumbing
+                    </div>
+<div class="p-2 rounded bg-slate-100 dark:bg-slate-800 text-slate-400 font-medium border border-slate-200 dark:border-slate-700">
+                        Cabinets
+                    </div>
+</div>
+</div>
+</section>
+<!-- Interactive Switches -->
+<section>
+<h3 class="text-xl font-bold mb-3">Preferences</h3>
+<div class="bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm divide-y divide-slate-200 dark:divide-slate-800">
+<div class="p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400">
+<span class="material-symbols-outlined text-[20px]">notifications_active</span>
+</div>
+<div>
+<p class="font-medium text-sm">Push Notifications</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Updates on project milestones</p>
+</div>
+</div>
+<!-- Toggle Switch Active -->
+<button class="w-12 h-6 rounded-full bg-primary relative transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-dark">
+<div class="absolute right-1 top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform"></div>
+</button>
+</div>
+<div class="p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</div>
+<div>
+<p class="font-medium text-sm">Installer Visibility</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Share profile with nearby installers</p>
+</div>
+</div>
+<!-- Toggle Switch Active -->
+<button class="w-12 h-6 rounded-full bg-primary relative transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-dark">
+<div class="absolute right-1 top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform"></div>
+</button>
+</div>
+<div class="p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-500/10 flex items-center justify-center text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined text-[20px]">dark_mode</span>
+</div>
+<div>
+<p class="font-medium text-sm">Dark Mode Sync</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Match system appearance</p>
+</div>
+</div>
+<!-- Toggle Switch Inactive -->
+<button class="w-12 h-6 rounded-full bg-slate-200 dark:bg-slate-700 relative transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 focus:ring-offset-background-dark">
+<div class="absolute left-1 top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform"></div>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 w-full bg-background-light dark:bg-[#1c2027] border-t border-slate-200 dark:border-[#282f39] px-4 pb-6 pt-2 z-50">
+<div class="flex justify-between items-end">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 group" href="#">
+<div class="flex h-8 items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined" style="font-size: 24px;">home</span>
+</div>
+<p class="text-xs font-medium text-slate-400 group-hover:text-primary transition-colors">Home</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 group" href="#">
+<div class="flex h-8 items-center justify-center text-primary">
+<span class="material-symbols-outlined fill-current" style="font-variation-settings: 'FILL' 1; font-size: 24px;">construction</span>
+</div>
+<p class="text-xs font-medium text-primary">Projects</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 group" href="#">
+<div class="flex h-8 items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined" style="font-size: 24px;">payments</span>
+</div>
+<p class="text-xs font-medium text-slate-400 group-hover:text-primary transition-colors">Finances</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 group" href="#">
+<div class="flex h-8 items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined" style="font-size: 24px;">person</span>
+</div>
+<p class="text-xs font-medium text-slate-400 group-hover:text-primary transition-colors">Profile</p>
+</a>
+</div>
+</nav>
+</body></html>

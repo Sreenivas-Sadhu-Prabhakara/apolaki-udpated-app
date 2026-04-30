@@ -49,14 +49,7 @@
         <!-- KPI Card 1: Total Installations -->
         <div class="kpi-card card-accent-blue">
           <div class="kpi-header">
-            <div class="kpi-icon-container icon-layout-grid">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="7" height="7"/>
-                <rect x="14" y="3" width="7" height="7"/>
-                <rect x="14" y="14" width="7" height="7"/>
-                <rect x="3" y="14" width="7" height="7"/>
-              </svg>
-            </div>
+            <span class="kpi-icon">📦</span>
             <span class="kpi-trend trend-up">↑ 15%</span>
           </div>
           <h3 class="kpi-title">Total Installations</h3>
@@ -67,11 +60,7 @@
         <!-- KPI Card 2: Daily Energy -->
         <div class="kpi-card card-accent-green">
           <div class="kpi-header">
-            <div class="kpi-icon-container icon-zap">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polyline>
-              </svg>
-            </div>
+            <span class="kpi-icon">⚡</span>
             <span class="kpi-trend trend-up">↑ 8%</span>
           </div>
           <h3 class="kpi-title">Daily Energy</h3>
@@ -82,19 +71,7 @@
         <!-- KPI Card 3: Total Capacity -->
         <div class="kpi-card card-accent-amber">
           <div class="kpi-header">
-            <div class="kpi-icon-container icon-sun">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="5"/>
-                <line x1="12" y1="1" x2="12" y2="3"/>
-                <line x1="12" y1="21" x2="12" y2="23"/>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                <line x1="1" y1="12" x2="3" y2="12"/>
-                <line x1="21" y1="12" x2="23" y2="12"/>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-              </svg>
-            </div>
+            <span class="kpi-icon">☀️</span>
             <span class="kpi-trend trend-up">↑ 12%</span>
           </div>
           <h3 class="kpi-title">Total Capacity</h3>
@@ -105,13 +82,7 @@
         <!-- KPI Card 4: Efficiency -->
         <div class="kpi-card card-accent-purple">
           <div class="kpi-header">
-            <div class="kpi-icon-container icon-chart">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="20" x2="12" y2="10"/>
-                <line x1="18" y1="20" x2="18" y2="4"/>
-                <line x1="6" y1="20" x2="6" y2="16"/>
-              </svg>
-            </div>
+            <span class="kpi-icon">📊</span>
             <span class="kpi-trend trend-neutral">→ 0%</span>
           </div>
           <h3 class="kpi-title">System Efficiency</h3>
@@ -122,12 +93,7 @@
         <!-- KPI Card 5: Monthly Savings -->
         <div class="kpi-card card-accent-green">
           <div class="kpi-header">
-            <div class="kpi-icon-container icon-wallet">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                <path d="M1 10h22"/>
-              </svg>
-            </div>
+            <span class="kpi-icon">💰</span>
             <span class="kpi-trend trend-up">↑ 5%</span>
           </div>
           <h3 class="kpi-title">Monthly Savings</h3>
@@ -138,12 +104,7 @@
         <!-- KPI Card 6: CO₂ Offset -->
         <div class="kpi-card card-accent-blue">
           <div class="kpi-header">
-            <div class="kpi-icon-container icon-leaf">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
-                <path d="M12 6c-1.1 0-2 .9-2 2v5h4V8c0-1.1-.9-2-2-2z"/>
-              </svg>
-            </div>
+            <span class="kpi-icon">🌱</span>
             <span class="kpi-trend trend-up">↑ 10%</span>
           </div>
           <h3 class="kpi-title">CO₂ Offset</h3>
@@ -172,9 +133,7 @@
 
       <div v-else-if="installationStore.installations.length === 0" class="empty-state-container">
         <div class="empty-state">
-          <div class="empty-icon-container">
-            🌱
-          </div>
+          <div class="empty-icon">🌱</div>
           <h3>No Solar Installations Yet</h3>
           <p>Start your solar journey by creating your first installation.</p>
           <router-link to="/installations" class="btn btn-primary mt-4">Create Installation</router-link>
@@ -203,7 +162,7 @@
               </td>
               <td>
                 <div class="installation-name">
-                  ☀️
+                  <span class="icon">☀️</span>
                   <div class="name-content">
                     <p class="font-semibold">{{ installation.name }}</p>
                     <p class="text-xs text-gray-500">ID: {{ installation.id }}</p>
@@ -264,7 +223,7 @@
         </router-link>
         
         <router-link to="/monitoring" class="action-card">
-          <div class="action-icon">⚙️</div>
+          <div class="action-icon">�</div>
           <h3>Monitor Systems</h3>
           <p>Track real-time performance metrics</p>
           <span class="arrow">→</span>
@@ -328,14 +287,14 @@
     <!-- Energy Economics Section -->
     <section class="energy-economics-section mb-8">
       <div class="section-header">
-        <h2>⚡💡 Energy Economics</h2>
+        <h2>⚡ Energy Economics</h2>
         <p class="text-gray-600">Local energy cost & investment payback for {{ locationLabel }}</p>
       </div>
 
       <div class="economics-grid">
         <!-- Energy Cost Card -->
         <div class="economics-card energy-cost-card">
-          <div class="econ-icon">☀️</div>
+          <div class="econ-icon">💡</div>
           <h3>Local Electricity Rate</h3>
           <p class="econ-primary-value">{{ formatCurrencyLocal(localElectricityRate) }}<span class="econ-unit">/kWh</span></p>
           <p class="econ-meta">{{ electricityProvider }} · {{ locationLabel }}</p>
@@ -393,23 +352,19 @@
     <section class="insights-row mb-8">
       <!-- Weather Widget -->
       <div class="insight-card weather-card">
-        <h3 class="section-title-with-icon">
-          ☁️ Weather Conditions
-        </h3>
+        <h3>☁️ Weather Conditions</h3>
         <div class="weather-main">
-          <span class="weather-icon">
-            {{ weatherData.icon }}
-          </span>
+          <span class="weather-icon">{{ weatherData.icon }}</span>
           <div>
             <p class="weather-temp">{{ weatherData.temperature }}°C</p>
             <p class="weather-desc">{{ weatherData.description }}</p>
           </div>
         </div>
         <div class="weather-details">
-          <div><span class="weather-detail-icon">☀️</span> UV Index<strong>{{ weatherData.uvIndex }}</strong></div>
-          <div><span class="weather-detail-icon">💨</span> Wind<strong>{{ weatherData.wind }} km/h</strong></div>
-          <div><span class="weather-detail-icon">💧</span> Humidity<strong>{{ weatherData.humidity }}%</strong></div>
-          <div><span class="weather-detail-icon">⛅</span> Cloud Cover<strong>{{ weatherData.cloudCover }}%</strong></div>
+          <div><span>☀️ UV Index</span><strong>{{ weatherData.uvIndex }}</strong></div>
+          <div><span>💨 Wind</span><strong>{{ weatherData.wind }} km/h</strong></div>
+          <div><span>💧 Humidity</span><strong>{{ weatherData.humidity }}%</strong></div>
+          <div><span>🌤️ Cloud Cover</span><strong>{{ weatherData.cloudCover }}%</strong></div>
         </div>
         <p class="weather-impact" :class="weatherData.solarImpact === 'High' ? 'impact-good' : weatherData.solarImpact === 'Moderate' ? 'impact-moderate' : 'impact-low'">
           Solar Production Potential: <strong>{{ weatherData.solarImpact }}</strong>
@@ -418,9 +373,7 @@
 
       <!-- Savings & CO2 Widget -->
       <div class="insight-card savings-card">
-        <h3 class="section-title-with-icon">
-          💰 Estimated Savings & Impact
-        </h3>
+        <h3>💰 Estimated Savings & Impact</h3>
         <div class="savings-grid">
           <div class="savings-item">
             <span class="savings-icon">💵</span>
@@ -457,9 +410,7 @@
     <!-- Alerts Section -->
     <section class="alerts-section mb-8">
       <div class="section-header">
-        <h2 class="section-title-with-icon">
-          ⚠️ System Alerts
-        </h2>
+        <h2>⚠️ System Alerts</h2>
         <p class="text-gray-600">{{ systemAlerts.length }} active alert{{ systemAlerts.length !== 1 ? 's' : '' }}</p>
       </div>
       <div v-if="systemAlerts.length === 0" class="alert alert-success">
@@ -469,7 +420,7 @@
       <div v-for="(alert, idx) in systemAlerts" :key="idx"
         :class="['alert', 'alert-' + alert.severity]">
         <span class="alert-icon">{{ alert.icon }}</span>
-        <div>
+        <div class="alert-body">
           <strong>{{ alert.title }}</strong>
           <span>{{ alert.message }}</span>
         </div>
@@ -693,7 +644,7 @@ const pieChartStyle = computed(() => {
 const weatherData = computed(() => {
   const conditions = [
     { icon: '☀️', description: 'Sunny & Clear', temperature: 32, uvIndex: 8, wind: 12, humidity: 35, cloudCover: 10, solarImpact: 'High' },
-    { icon: '☁️', description: 'Partly Cloudy', temperature: 28, uvIndex: 5, wind: 18, humidity: 55, cloudCover: 45, solarImpact: 'Moderate' },
+    { icon: '⛅', description: 'Partly Cloudy', temperature: 28, uvIndex: 5, wind: 18, humidity: 55, cloudCover: 45, solarImpact: 'Moderate' },
     { icon: '🌤️', description: 'Mostly Sunny', temperature: 30, uvIndex: 7, wind: 10, humidity: 40, cloudCover: 20, solarImpact: 'High' },
   ]
   // Pick based on current hour for some variety
@@ -957,44 +908,8 @@ onMounted(async () => {
   margin-bottom: 1rem;
 }
 
-.kpi-icon-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 0.75rem;
-  background: white;
-  border: 1px solid var(--gray-200);
-  color: var(--gray-700);
-}
-
-.icon-layout-grid {
-  color: #2563eb;
-}
-
-.icon-zap {
-  color: #f59e0b;
-}
-
-.icon-sun {
-  color: #f59e0b;
-}
-
-.icon-chart {
-  color: #8b5cf6;
-}
-
-.icon-wallet {
-  color: #16a34a;
-}
-
-.icon-leaf {
-  color: #059669;
-}
-
-.icon-sun-inline {
-  color: inherit;
+.kpi-icon {
+  font-size: 2rem;
 }
 
 .kpi-trend {
@@ -1040,59 +955,6 @@ onMounted(async () => {
   font-size: 0.85rem;
   color: var(--gray-600);
   margin: 0;
-}
-
-/* Action  Icon Styles */
-.action-icon-svg {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 50px;
-  height: 50px;
-  border-radius: 0.75rem;
-  background: linear-gradient(135deg, #f0f9ff 0%, #f5f3ff 100%);
-  color: #2563eb;
-  margin-bottom: 1rem;
-}
-
-.action-icon-svg svg {
-  color: inherit;
-}
-
-/* Weather Detail Icons */
-.weather-detail-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  margin-right: 0.5rem;
-  color: var(--gray-600);
-}
-
-/* Section Title with Icon */
-.section-title-with-icon {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.title-icon {
-  color: currentColor;
-}
-
-/* Economics Icon */
-.econ-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 0.75rem;
-  background: white;
-  border: 1px solid var(--gray-200);
-  color: #2563eb;
-  margin-bottom: 1rem;
 }
 
 /* Installations Section */
@@ -1253,19 +1115,6 @@ onMounted(async () => {
   font-size: 4rem;
   margin-bottom: 1rem;
   opacity: 0.6;
-}
-
-.empty-icon-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 1.5rem;
-  border-radius: 1rem;
-  background: #f3f4f6;
-  color: #059669;
-  font-size: 3rem;
 }
 
 .empty-state h3 {
