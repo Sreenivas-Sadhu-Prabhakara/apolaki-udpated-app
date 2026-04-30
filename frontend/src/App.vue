@@ -109,10 +109,8 @@
     </nav>
 
     <!-- Main Content Area -->
-    <main class="main-content flex-1" :class="mainBgClass">
-      <transition name="fade">
-        <router-view />
-      </transition>
+    <main class="main-content">
+      <router-view />
     </main>
 
     <!-- Footer -->

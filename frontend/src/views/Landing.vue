@@ -453,20 +453,14 @@
 }
 
 .feature-list {
-  list-style: none;
-  padding: 0;
+  list-style: disc;
+  padding-left: 1rem;
 }
 
 .feature-list li {
   padding: 0.35rem 0;
   font-size: 0.875rem;
   color: #475569;
-}
-
-.feature-list li::before {
-  content: '✓ ';
-  color: #22c55e;
-  font-weight: 700;
 }
 
 /* ── How It Works ─────────────────────────────────────── */
