@@ -5,13 +5,13 @@ const routes = [
   {
     path: '/',
     name: 'Landing',
-    component: () => import('../views/Landing.vue'),
+    component: () => import('../views/ApolakiPrd.vue'),
     meta: { requiresAuth: false, publicOnly: true }
   },
   {
     path: '/dashboard',
     name: 'Dashboard',
-    component: () => import('../views/Dashboard.vue'),
+    component: () => import('../views/ApolakiPrd.vue'),
     meta: { requiresAuth: false }
   },
   {
@@ -47,7 +47,7 @@ const routes = [
   {
     path: '/installations',
     name: 'Installations',
-    component: () => import('../views/Installations.vue'),
+    component: () => import('../views/ApolakiPrd.vue'),
     meta: { requiresAuth: true }
   },
   {
@@ -59,25 +59,31 @@ const routes = [
   {
     path: '/monitoring',
     name: 'Monitoring',
-    component: () => import('../views/Monitoring.vue'),
+    component: () => import('../views/ApolakiPrd.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/marketplace',
     name: 'Marketplace',
-    component: () => import('../views/Marketplace.vue'),
+    component: () => import('../views/ApolakiPrd.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/assessment',
     name: 'Assessment',
-    component: () => import('../views/Assessment.vue'),
+    component: () => import('../views/ApolakiPrd.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/finance',
+    name: 'Finance',
+    component: () => import('../views/ApolakiPrd.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/contracts',
     name: 'Contracts',
-    component: () => import('../views/Contracts.vue'),
+    component: () => import('../views/ApolakiPrd.vue'),
     meta: { requiresAuth: true }
   },
   {
@@ -94,9 +100,7 @@ const routes = [
   },
   {
     path: '/kitchen-sink',
-    name: 'KitchenSink',
-    component: () => import('../views/KitchenSink.vue'),
-    meta: { requiresAuth: false }
+    redirect: '/dashboard'
   },
   // ── Persona Routes ─────────────────────────────────────────────
   {

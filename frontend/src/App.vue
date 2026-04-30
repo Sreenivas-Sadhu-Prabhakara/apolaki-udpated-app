@@ -17,11 +17,11 @@
         <!-- Brand -->
         <div class="nav-brand flex items-center gap-1.5 shrink-0">
           <div class="text-2xl">☀️</div>
-          <h1 class="text-lg font-bold hidden lg:block" :class="isDarkMode ? 'text-slate-100' : 'text-white'">Apolaki</h1>
+          <h1 class="text-lg font-bold hidden lg:block" :class="isDarkMode ? 'text-slate-100' : 'text-[#0F6CBD]'">Apolaki</h1>
         </div>
 
         <!-- Mobile Hamburger Button -->
-        <button @click="mobileMenuOpen = !mobileMenuOpen" class="hamburger-btn md:hidden p-2 rounded-lg transition" :class="isDarkMode ? 'text-white hover:bg-white/10' : 'text-white hover:bg-black/10'" aria-label="Toggle menu">
+        <button @click="mobileMenuOpen = !mobileMenuOpen" class="hamburger-btn md:hidden p-2 rounded-lg transition" :class="isDarkMode ? 'text-white hover:bg-white/10' : 'text-[#0F6CBD] hover:bg-black/10'" aria-label="Toggle menu">
           <svg v-if="!mobileMenuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
           <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
@@ -33,8 +33,8 @@
           <li><router-link to="/monitoring" class="nav-link transition">Monitoring</router-link></li>
           <li><router-link to="/marketplace" class="nav-link transition">Marketplace</router-link></li>
           <li><router-link to="/assessment" class="nav-link transition">Assessment</router-link></li>
+          <li><router-link to="/finance" class="nav-link transition">Financing</router-link></li>
           <li><router-link to="/contracts" class="nav-link transition">Contracts</router-link></li>
-          <li><router-link to="/kitchen-sink" class="nav-link transition">UI Kit</router-link></li>
 
           <!-- "More" dropdown for role-specific links -->
           <li v-if="hasAdminLinks" class="nav-more-wrapper">
@@ -86,24 +86,24 @@
       <transition name="slide-down">
         <div v-if="mobileMenuOpen" class="mobile-menu mobile-menu-kinetic md:hidden" :class="isDarkMode ? 'mobile-menu-kinetic--dark' : 'mobile-menu-kinetic--light'">
           <ul class="flex flex-col py-3 px-4 gap-1">
-            <li><router-link to="/dashboard" class="mobile-link" @click="mobileMenuOpen = false">📊 Dashboard</router-link></li>
-            <li><router-link to="/installations" class="mobile-link" @click="mobileMenuOpen = false">🏠 Installations</router-link></li>
-            <li><router-link to="/monitoring" class="mobile-link" @click="mobileMenuOpen = false">📡 Monitoring</router-link></li>
-            <li><router-link to="/marketplace" class="mobile-link" @click="mobileMenuOpen = false">🛒 Marketplace</router-link></li>
-            <li><router-link to="/assessment" class="mobile-link" @click="mobileMenuOpen = false">☀️ Assessment</router-link></li>
-            <li><router-link to="/contracts" class="mobile-link" @click="mobileMenuOpen = false">📄 Contracts</router-link></li>
-            <li><router-link to="/kitchen-sink" class="mobile-link" @click="mobileMenuOpen = false">UI Kit</router-link></li>
+            <li><router-link to="/dashboard" class="mobile-link" @click="mobileMenuOpen = false">Dashboard</router-link></li>
+            <li><router-link to="/installations" class="mobile-link" @click="mobileMenuOpen = false">Installations</router-link></li>
+            <li><router-link to="/monitoring" class="mobile-link" @click="mobileMenuOpen = false">Monitoring</router-link></li>
+            <li><router-link to="/marketplace" class="mobile-link" @click="mobileMenuOpen = false">Marketplace</router-link></li>
+            <li><router-link to="/assessment" class="mobile-link" @click="mobileMenuOpen = false">Assessment</router-link></li>
+            <li><router-link to="/finance" class="mobile-link" @click="mobileMenuOpen = false">Financing</router-link></li>
+            <li><router-link to="/contracts" class="mobile-link" @click="mobileMenuOpen = false">Contracts</router-link></li>
             <li v-if="userStore.hasRole('dealer', 'installer', 'admin', 'superadmin')">
-              <router-link to="/dealer" class="mobile-link" @click="mobileMenuOpen = false">🔧 Dealer</router-link>
+              <router-link to="/dealer" class="mobile-link" @click="mobileMenuOpen = false">Dealer</router-link>
             </li>
             <li v-if="userStore.hasRole('operations', 'admin', 'superadmin')">
-              <router-link to="/operations" class="mobile-link" @click="mobileMenuOpen = false">🛠️ Operations</router-link>
+              <router-link to="/operations" class="mobile-link" @click="mobileMenuOpen = false">Operations</router-link>
             </li>
             <li v-if="userStore.hasRole('admin', 'superadmin')">
-              <router-link to="/admin" class="mobile-link" @click="mobileMenuOpen = false">👤 Admin</router-link>
+              <router-link to="/admin" class="mobile-link" @click="mobileMenuOpen = false">Admin</router-link>
             </li>
             <li v-if="userStore.user" class="mt-2 pt-2 border-t border-white/20">
-              <button @click="logout; mobileMenuOpen = false" class="mobile-link w-full text-left">🚪 Logout</button>
+              <button @click="logout(); mobileMenuOpen = false" class="mobile-link w-full text-left">Logout</button>
             </li>
           </ul>
         </div>
@@ -117,6 +117,14 @@
       </transition>
     </main>
 
+    <nav v-if="showChrome" class="bottom-app-nav md:hidden" aria-label="Primary mobile navigation">
+      <router-link to="/dashboard" class="bottom-app-link">Home</router-link>
+      <router-link to="/assessment" class="bottom-app-link">Assessment</router-link>
+      <router-link to="/finance" class="bottom-app-link">Financing</router-link>
+      <router-link to="/marketplace" class="bottom-app-link">Marketplace</router-link>
+      <router-link to="/contracts" class="bottom-app-link">More</router-link>
+    </nav>
+
     <!-- Footer -->
     <footer v-if="showChrome" class="site-footer transition-colors duration-300" :class="isDarkMode ? 'site-footer--dark' : 'site-footer--light'">
       <div class="footer-inner">
@@ -128,13 +136,12 @@
 
         <!-- Center: nav links -->
         <nav class="footer-nav">
+          <router-link to="/dashboard" class="footer-nav-link">Home</router-link>
+          <router-link to="/assessment" class="footer-nav-link">Assessment</router-link>
+          <router-link to="/finance" class="footer-nav-link">Financing</router-link>
+          <router-link to="/marketplace" class="footer-nav-link">Marketplace</router-link>
+          <router-link to="/contracts" class="footer-nav-link">Contracts</router-link>
           <router-link to="/about" class="footer-nav-link">About</router-link>
-          <router-link to="/kitchen-sink" class="footer-nav-link">UI Kit</router-link>
-          <a href="#" class="footer-nav-link">Features</a>
-          <a href="#" class="footer-nav-link">Pricing</a>
-          <a href="#" class="footer-nav-link">Privacy</a>
-          <a href="#" class="footer-nav-link">Terms</a>
-          <a href="#" class="footer-nav-link">Docs</a>
         </nav>
 
         <!-- Right: social icons (text-based for now) -->
@@ -613,6 +620,55 @@ const logout = async () => {
 .site-footer--dark .footer-social-link:hover {
   color: #E2E8F0;
   background: rgba(255, 255, 255, 0.08);
+}
+
+.bottom-app-nav {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 45;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  padding: 8px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 108, 189, 0.12);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(20px);
+}
+
+.bottom-app-link {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 42px;
+  border-radius: 12px;
+  color: #5F6B7A;
+  text-decoration: none;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.bottom-app-link.router-link-active {
+  background: #0F6CBD;
+  color: #FFFFFF;
+}
+
+.dark-theme .bottom-app-nav {
+  background: rgba(26, 28, 30, 0.92);
+  border-color: rgba(244, 201, 76, 0.16);
+}
+
+.dark-theme .bottom-app-link {
+  color: #CBD5E1;
+}
+
+.dark-theme .bottom-app-link.router-link-active {
+  background: #F4C94C;
+  color: #1A1C1E;
 }
 
 /* On small screens, stack footer sections */
