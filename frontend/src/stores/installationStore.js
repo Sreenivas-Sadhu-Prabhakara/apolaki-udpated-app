@@ -8,11 +8,11 @@ export const useInstallationStore = defineStore('installations', () => {
   const loading = ref(false)
   const error = ref(null)
 
-  const fetchInstallations = async () => {
+  const fetchInstallations = async (options = {}) => {
     loading.value = true
     error.value = null
     try {
-      const response = await api.get('/installations')
+      const response = await api.get('/installations', options)
       installations.value = response.data.data || response.data
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch installations'

@@ -9,11 +9,11 @@ export const useMonitoringStore = defineStore('monitoring', () => {
   const loading = ref(false)
   const error = ref(null)
 
-  const fetchMonitoringData = async (installationId, limit = 50) => {
+  const fetchMonitoringData = async (installationId, limit = 50, options = {}) => {
     loading.value = true
     error.value = null
     try {
-      const response = await api.get(`/installations/${installationId}/monitoring?limit=${limit}`)
+      const response = await api.get(`/installations/${installationId}/monitoring?limit=${limit}`, options)
       monitoringData.value = response.data.data || []
       if (monitoringData.value.length > 0) {
         currentData.value = monitoringData.value[0]

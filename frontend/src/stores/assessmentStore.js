@@ -21,11 +21,11 @@ export const useAssessmentStore = defineStore('assessments', () => {
     }
   }
 
-  const calculateAssessment = async (data) => {
+  const calculateAssessment = async (data, options = {}) => {
     loading.value = true
     error.value = null
     try {
-      const response = await api.post('/assessments/calculate', data)
+      const response = await api.post('/assessments/calculate', data, options)
       const result = response.data.data
       currentAssessment.value = result
       // Add to list

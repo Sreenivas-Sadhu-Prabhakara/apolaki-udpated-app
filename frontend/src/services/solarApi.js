@@ -11,7 +11,8 @@
  */
 
 import axios from 'axios'
-import api from './api'
+
+const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
 
 /**
  * Look up solar potential for a location via backend (cascading providers).
@@ -21,7 +22,11 @@ import api from './api'
  */
 export async function lookupSolarPotential(location) {
   try {
-    const response = await api.post('/solar/lookup', location)
+    const token = localStorage.getItem('token')
+    const response = await axios.post(`${API_BASE}/solar/lookup`, location, {
+      timeout: 12000,
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
     return response.data
   } catch (err) {
     console.warn('Backend solar API unavailable, falling back to client-side NASA POWER:', err.message)

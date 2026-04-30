@@ -101,7 +101,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   const loading = ref(false)
   const error = ref(null)
 
-  const fetchProducts = async (category = null, search = null) => {
+  const fetchProducts = async (category = null, search = null, options = {}) => {
     loading.value = true
     error.value = null
     try {
@@ -116,7 +116,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
         }
       }
       const queryString = params.toString()
-      const response = await api.get(queryString ? `${url}?${queryString}` : url)
+      const response = await api.get(queryString ? `${url}?${queryString}` : url, options)
       products.value = response.data.data || []
       // If API returned empty, use seed data as fallback
       if (products.value.length === 0) {

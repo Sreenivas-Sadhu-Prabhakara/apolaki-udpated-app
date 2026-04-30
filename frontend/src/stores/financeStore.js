@@ -22,11 +22,11 @@ export const useFinanceStore = defineStore('finance', () => {
 
   const netBalance = computed(() => totalIncome.value - totalExpenses.value)
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = async (options = {}) => {
     loading.value = true
     error.value = null
     try {
-      const response = await api.get('/finance/transactions')
+      const response = await api.get('/finance/transactions', options)
       transactions.value = response.data.data || []
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to fetch transactions'
@@ -35,11 +35,11 @@ export const useFinanceStore = defineStore('finance', () => {
     }
   }
 
-  const fetchSummary = async () => {
+  const fetchSummary = async (options = {}) => {
     loading.value = true
     error.value = null
     try {
-      const response = await api.get('/finance/summary')
+      const response = await api.get('/finance/summary', options)
       summary.value = response.data.data || []
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to fetch summary'

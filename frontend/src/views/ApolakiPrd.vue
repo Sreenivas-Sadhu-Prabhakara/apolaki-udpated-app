@@ -218,7 +218,7 @@
         <article class="prd-card prd-form-card">
           <span class="prd-label">Solar Potential Assessment</span>
           <h2>Analyze your location's solar irradiance and potential</h2>
-          <form class="prd-form-grid" @submit.prevent="lookupSolar">
+          <form class="prd-form-grid" @submit.prevent="lookupSolar({ force: true })">
             <label class="prd-col-span">Property Address<input v-model="assessmentForm.address" placeholder="1000, Metro Manila" /></label>
             <label>City<input v-model="assessmentForm.city" placeholder="Manila" /></label>
             <label>Region<input v-model="assessmentForm.state" placeholder="Metro Manila" /></label>
@@ -228,13 +228,27 @@
               <button class="prd-button" :disabled="solarLookupLoading">{{ solarLookupLoading ? 'Analyzing...' : 'Analyze Solar Potential' }}</button>
               <button type="button" class="prd-button prd-button--ghost" @click="assessmentStep = 2">Skip to Details</button>
             </div>
+            <p v-if="assessmentLookupError" class="prd-error-note prd-col-span">{{ assessmentLookupError }}</p>
           </form>
         </article>
 
         <article class="prd-impact prd-roof-card">
-          <span class="prd-label">Pinpoint Your Roof</span>
-          <div class="prd-roof-map">
-            <span></span>
+          <div class="prd-section-title prd-section-title--impact">
+            <div>
+              <span class="prd-label">Philippines Location Map</span>
+              <h2>{{ mapLocation.label }}</h2>
+            </div>
+            <span class="prd-live"><span></span>{{ solarLookupLoading ? 'Fetching live data' : 'Live location' }}</span>
+          </div>
+          <div class="prd-ph-map" :aria-label="`Assessment map for ${mapLocation.label}`">
+            <div class="prd-ph-map__tiles">
+              <img v-for="tile in mapTiles" :key="tile.key" :src="tile.url" alt="" loading="lazy" />
+            </div>
+            <div class="prd-ph-map__marker"><span></span></div>
+            <div class="prd-ph-map__caption">
+              <strong>{{ mapLocation.lat.toFixed(4) }}, {{ mapLocation.lng.toFixed(4) }}</strong>
+              <small>{{ providerLabel }}</small>
+            </div>
           </div>
           <button class="prd-button prd-button--impact" @click="assessmentStep = 2">Confirm Location</button>
         </article>
@@ -246,7 +260,7 @@
             <span class="prd-label">Assessment Confidence</span>
             <h2>Source stack</h2>
           </div>
-          <span class="prd-chip">{{ solarApiData ? providerLabel : 'Ready' }}</span>
+          <span class="prd-chip">{{ solarLookupLoading ? 'Fetching live data' : solarApiData ? providerLabel : 'Ready' }}</span>
         </div>
         <div class="prd-grid prd-grid--sources">
           <div v-for="source in sourceCards" :key="source.name" class="source-item" :class="{ active: source.active }">
@@ -470,7 +484,7 @@
 </template>
 
 <script setup>
-import { computed, defineComponent, h, onMounted, reactive, ref, watch } from 'vue'
+import { computed, defineComponent, h, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { lookupSolarPotential } from '../services/solarApi'
 import { useAssessmentStore } from '../stores/assessmentStore'
@@ -490,6 +504,7 @@ const financeStore = useFinanceStore()
 const installationStore = useInstallationStore()
 const marketplaceStore = useMarketplaceStore()
 const monitoringStore = useMonitoringStore()
+const optionalReadConfig = { skipAuthRedirect: true }
 
 const isDark = computed(() => themeStore.isDarkMode)
 const pageKey = computed(() => {
@@ -643,6 +658,9 @@ const assessmentStep = ref(1)
 const solarLookupLoading = ref(false)
 const solarApiData = ref(null)
 const assessmentResults = ref(null)
+const assessmentLookupError = ref('')
+const lastSolarLookupKey = ref('')
+let solarLookupTimer = null
 
 const installationForm = reactive({ name: '', address: '', capacity: 5.5, panel_count: 12, inverter_type: '' })
 const assessmentForm = reactive({
@@ -724,6 +742,17 @@ const solarBars = computed(() => {
   const max = Math.max(...values)
   return values.map(value => Math.max(12, Math.round((value / max) * 100)))
 })
+const mapLocation = computed(() => {
+  const data = solarApiData.value?.data || {}
+  const lat = Number(data.latitude || 14.5995)
+  const lng = Number(data.longitude || 120.9842)
+  return {
+    lat,
+    lng,
+    label: solarApiData.value ? solarAddress.value : `${assessmentForm.city || 'Manila'}, Philippines`
+  }
+})
+const mapTiles = computed(() => buildMapTiles(mapLocation.value.lat, mapLocation.value.lng, 12))
 
 const installedCost = computed(() => Math.round(financeForm.capacity * 155375))
 const loanPrincipal = computed(() => Math.round(installedCost.value * (1 - financeForm.downPayment / 100)))
@@ -780,24 +809,90 @@ function formatDateTime(date) {
   return date ? new Date(date).toLocaleString() : 'Live'
 }
 
+function solarLookupKey() {
+  return [assessmentForm.address, assessmentForm.city, assessmentForm.state, assessmentForm.zip_code]
+    .map(value => String(value || '').trim().toLowerCase())
+    .join('|')
+}
+
+function lonToTileX(lng, zoom) {
+  return Math.floor(((lng + 180) / 360) * 2 ** zoom)
+}
+
+function latToTileY(lat, zoom) {
+  const radians = lat * Math.PI / 180
+  return Math.floor((1 - Math.log(Math.tan(radians) + 1 / Math.cos(radians)) / Math.PI) / 2 * 2 ** zoom)
+}
+
+function buildMapTiles(lat, lng, zoom) {
+  const centerX = lonToTileX(lng, zoom)
+  const centerY = latToTileY(lat, zoom)
+  const tiles = []
+  for (let row = -1; row <= 1; row += 1) {
+    for (let col = -1; col <= 1; col += 1) {
+      const x = centerX + col
+      const y = centerY + row
+      tiles.push({
+        key: `${zoom}-${x}-${y}`,
+        url: `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`
+      })
+    }
+  }
+  return tiles
+}
+
+function persistAssessmentContext() {
+  localStorage.setItem('apolaki-assessment-context', JSON.stringify({
+    form: { ...assessmentForm },
+    solarApiData: solarApiData.value,
+    assessmentResults: assessmentResults.value
+  }))
+}
+
+function restoreAssessmentContext() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('apolaki-assessment-context') || 'null')
+    if (!saved) return
+    if (saved.form) Object.assign(assessmentForm, saved.form)
+    if (saved.solarApiData) {
+      solarApiData.value = saved.solarApiData
+      lastSolarLookupKey.value = solarLookupKey()
+    }
+    if (saved.assessmentResults) {
+      assessmentResults.value = saved.assessmentResults
+      financeForm.capacity = Number(saved.assessmentResults.capacity || financeForm.capacity)
+      transactionForm.amount = Number(saved.assessmentResults.monthlyBill || transactionForm.amount)
+    }
+  } catch {
+    localStorage.removeItem('apolaki-assessment-context')
+  }
+}
+
 async function loadMonitoring() {
-  if (!installationStore.installations.length) await installationStore.fetchInstallations().catch(() => {})
+  if (!installationStore.installations.length) await installationStore.fetchInstallations(optionalReadConfig).catch(() => {})
   const id = installationStore.installations[0]?.id
-  if (id) await monitoringStore.fetchMonitoringData(id, 25).catch(() => {})
+  if (id) await monitoringStore.fetchMonitoringData(id, 25, optionalReadConfig).catch(() => {})
 }
 
 async function loadDataForPage() {
+  if (['assessment', 'finance'].includes(pageKey.value)) {
+    restoreAssessmentContext()
+  }
   if (['dashboard', 'installations', 'monitoring'].includes(pageKey.value)) {
-    await installationStore.fetchInstallations().catch(() => {})
+    await installationStore.fetchInstallations(optionalReadConfig).catch(() => {})
   }
   if (['dashboard', 'monitoring'].includes(pageKey.value)) {
     await loadMonitoring()
   }
   if (['dashboard', 'finance'].includes(pageKey.value)) {
-    await Promise.all([financeStore.fetchTransactions().catch(() => {}), financeStore.fetchSummary().catch(() => {})])
+    await Promise.all([
+      financeStore.fetchTransactions(optionalReadConfig).catch(() => {}),
+      financeStore.fetchSummary(optionalReadConfig).catch(() => {})
+    ])
   }
-  if (pageKey.value === 'marketplace') await marketplaceStore.fetchProducts('all').catch(() => {})
-  if (pageKey.value === 'contracts') await contractStore.fetchContracts().catch(() => {})
+  if (pageKey.value === 'marketplace') await marketplaceStore.fetchProducts('all', null, optionalReadConfig).catch(() => {})
+  if (pageKey.value === 'contracts') await contractStore.fetchContracts(optionalReadConfig).catch(() => {})
+  if (pageKey.value === 'assessment') await lookupSolar()
 }
 
 async function createInstallation() {
@@ -811,8 +906,13 @@ async function removeInstallation(id) {
   if (confirm('Delete this installation?')) await installationStore.deleteInstallation(id).catch(() => {})
 }
 
-async function lookupSolar() {
+async function lookupSolar(options = {}) {
+  const force = options?.force === true
+  const key = solarLookupKey()
+  if (!force && solarApiData.value && lastSolarLookupKey.value === key) return
+
   solarLookupLoading.value = true
+  assessmentLookupError.value = ''
   try {
     solarApiData.value = await lookupSolarPotential({
       address: assessmentForm.address,
@@ -820,9 +920,13 @@ async function lookupSolar() {
       state: assessmentForm.state,
       zipCode: assessmentForm.zip_code
     })
+    lastSolarLookupKey.value = key
     if (solarApiData.value?.data?.maxArrayAreaSqFt) {
       assessmentForm.roof_area = Math.round(solarApiData.value.data.maxArrayAreaSqFt / 10.764)
     }
+    persistAssessmentContext()
+  } catch {
+    assessmentLookupError.value = 'Live solar data is temporarily unavailable. The assessment can still continue with the regional baseline.'
   } finally {
     solarLookupLoading.value = false
   }
@@ -859,7 +963,7 @@ async function calculateAssessment() {
   }
 
   try {
-    const response = await assessmentStore.calculateAssessment(payload)
+    const response = await assessmentStore.calculateAssessment(payload, { skipAuthRedirect: true })
     const calc = response?.calculation || response?.savings_estimate || {}
     const backendCapacity = Number(response?.recommended_capacity || calc.recommendedCapacity || fallbackCapacity)
     const backendCost = Number(response?.estimated_cost || calc.estimatedCost || fallbackCost)
@@ -883,6 +987,8 @@ async function calculateAssessment() {
   }
 
   financeForm.capacity = Number(assessmentResults.value.capacity)
+  transactionForm.amount = Number(assessmentResults.value.monthlyBill || transactionForm.amount)
+  persistAssessmentContext()
   assessmentStep.value = 2
 }
 
@@ -908,8 +1014,20 @@ async function cancelContract(id) {
   await contractStore.updateContract(id, { status: 'cancelled' }).catch(() => {})
 }
 
-onMounted(loadDataForPage)
+onMounted(() => {
+  restoreAssessmentContext()
+  loadDataForPage()
+})
 watch(pageKey, loadDataForPage)
+watch(
+  () => solarLookupKey(),
+  () => {
+    if (pageKey.value !== 'assessment') return
+    window.clearTimeout(solarLookupTimer)
+    solarLookupTimer = window.setTimeout(() => lookupSolar({ force: true }), 900)
+  }
+)
+onBeforeUnmount(() => window.clearTimeout(solarLookupTimer))
 </script>
 
 <style scoped>
@@ -1503,22 +1621,101 @@ watch(pageKey, loadDataForPage)
   gap: 18px;
 }
 
-.prd-roof-map {
-  min-height: 280px;
-  border-radius: 12px;
-  background:
-    linear-gradient(135deg, rgba(244, 201, 76, 0.18), transparent),
-    repeating-linear-gradient(45deg, #2B3036 0 18px, #23282E 18px 36px);
-  display: grid;
-  place-items: center;
+.prd-section-title--impact .prd-label {
+  color: #F4C94C;
 }
 
-.prd-roof-map span {
-  width: 24px;
-  height: 24px;
+.prd-section-title--impact h2 {
+  color: #FFFFFF;
+  max-width: 420px;
+}
+
+.prd-ph-map {
+  position: relative;
+  min-height: 310px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #D8E8F6;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.prd-ph-map::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at center, transparent 0 28%, rgba(26, 28, 30, 0.08) 58%, rgba(26, 28, 30, 0.34) 100%),
+    linear-gradient(180deg, rgba(26, 28, 30, 0), rgba(26, 28, 30, 0.18));
+  pointer-events: none;
+}
+
+.prd-ph-map__tiles {
+  position: absolute;
+  inset: -10%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+}
+
+.prd-ph-map__tiles img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.prd-ph-map__marker {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.prd-ph-map__marker span {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #FFFFFF;
   border-radius: 50%;
   background: #F4C94C;
-  box-shadow: 0 0 0 12px rgba(244, 201, 76, 0.18);
+  box-shadow: 0 0 0 12px rgba(244, 201, 76, 0.28), 0 12px 26px rgba(26, 28, 30, 0.34);
+}
+
+.prd-ph-map__caption {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 10px;
+  background: rgba(26, 28, 30, 0.84);
+  color: #FFFFFF;
+  padding: 10px 12px;
+  backdrop-filter: blur(10px);
+}
+
+.prd-ph-map__caption strong {
+  font-size: 0.9rem;
+}
+
+.prd-ph-map__caption small {
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 800;
+  text-align: right;
+}
+
+.prd-error-note {
+  border-radius: 10px;
+  background: rgba(220, 38, 38, 0.08);
+  color: #991B1B !important;
+  padding: 10px 12px;
+  font-size: 0.84rem;
+  font-weight: 800;
 }
 
 .prd-insight {
@@ -1647,6 +1844,19 @@ watch(pageKey, loadDataForPage)
   .prd-grid--cards,
   .prd-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .prd-ph-map {
+    min-height: 260px;
+  }
+
+  .prd-ph-map__caption {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .prd-ph-map__caption small {
+    text-align: left;
   }
 
   .flow-line {

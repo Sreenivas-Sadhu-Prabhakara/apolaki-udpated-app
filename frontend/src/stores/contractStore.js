@@ -8,11 +8,11 @@ export const useContractStore = defineStore('contracts', () => {
   const loading = ref(false)
   const error = ref(null)
 
-  const fetchContracts = async () => {
+  const fetchContracts = async (options = {}) => {
     loading.value = true
     error.value = null
     try {
-      const response = await api.get('/contracts')
+      const response = await api.get('/contracts', options)
       contracts.value = response.data.data || []
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to fetch contracts'
