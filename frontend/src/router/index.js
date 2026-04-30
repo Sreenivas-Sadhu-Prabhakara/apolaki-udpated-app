@@ -92,6 +92,12 @@ const routes = [
     component: () => import('../views/About.vue'),
     meta: { requiresAuth: false }
   },
+  {
+    path: '/kitchen-sink',
+    name: 'KitchenSink',
+    component: () => import('../views/KitchenSink.vue'),
+    meta: { requiresAuth: false }
+  },
   // ── Persona Routes ─────────────────────────────────────────────
   {
     path: '/dealer',

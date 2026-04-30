@@ -34,6 +34,7 @@
           <li><router-link to="/marketplace" class="nav-link transition">Marketplace</router-link></li>
           <li><router-link to="/assessment" class="nav-link transition">Assessment</router-link></li>
           <li><router-link to="/contracts" class="nav-link transition">Contracts</router-link></li>
+          <li><router-link to="/kitchen-sink" class="nav-link transition">UI Kit</router-link></li>
 
           <!-- "More" dropdown for role-specific links -->
           <li v-if="hasAdminLinks" class="nav-more-wrapper">
@@ -91,6 +92,7 @@
             <li><router-link to="/marketplace" class="mobile-link" @click="mobileMenuOpen = false">🛒 Marketplace</router-link></li>
             <li><router-link to="/assessment" class="mobile-link" @click="mobileMenuOpen = false">☀️ Assessment</router-link></li>
             <li><router-link to="/contracts" class="mobile-link" @click="mobileMenuOpen = false">📄 Contracts</router-link></li>
+            <li><router-link to="/kitchen-sink" class="mobile-link" @click="mobileMenuOpen = false">UI Kit</router-link></li>
             <li v-if="userStore.hasRole('dealer', 'installer', 'admin', 'superadmin')">
               <router-link to="/dealer" class="mobile-link" @click="mobileMenuOpen = false">🔧 Dealer</router-link>
             </li>
@@ -127,6 +129,7 @@
         <!-- Center: nav links -->
         <nav class="footer-nav">
           <router-link to="/about" class="footer-nav-link">About</router-link>
+          <router-link to="/kitchen-sink" class="footer-nav-link">UI Kit</router-link>
           <a href="#" class="footer-nav-link">Features</a>
           <a href="#" class="footer-nav-link">Pricing</a>
           <a href="#" class="footer-nav-link">Privacy</a>
