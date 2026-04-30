@@ -199,7 +199,9 @@ const handleOtpVerify = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #FFB81C 0%, #F5A700 50%, #D68900 100%);
+  background:
+    radial-gradient(circle at 72% 20%, rgba(244, 201, 76, 0.28), transparent 30%),
+    linear-gradient(135deg, #FDFDFD 0%, #EEF7FF 100%);
   padding: 1rem;
 }
 
@@ -207,8 +209,9 @@ const handleOtpVerify = async () => {
   width: 100%;
   max-width: 440px;
   background-color: white;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  border-radius: 1rem;
+  box-shadow: 0 22px 70px rgba(15, 23, 42, 0.16);
+  border-radius: 2rem;
+  border: 1px solid rgba(15, 108, 189, 0.1);
 }
 
 .logo-section {
@@ -372,7 +375,7 @@ const handleOtpVerify = async () => {
 }
 
 .text-primary {
-  color: var(--primary-color, #FFB81C);
+  color: var(--primary-color, #0F6CBD);
   text-decoration: none;
   font-weight: 600;
 }
@@ -428,7 +431,7 @@ const handleOtpVerify = async () => {
 }
 
 .btn-back:hover {
-  color: #FFB81C;
+  color: #0F6CBD;
 }
 
 .otp-hint {
@@ -440,7 +443,7 @@ const handleOtpVerify = async () => {
 
 /* ── Dark Theme Overrides ── */
 :global(.dark-theme) .login-container {
-  background: linear-gradient(135deg, #1E1B1B 0%, #B45309 50%, #7A3F00 100%);
+  background: linear-gradient(135deg, #111418 0%, #1A1C1E 100%);
 }
 
 :global(.dark-theme) .login-card {

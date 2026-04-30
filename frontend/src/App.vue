@@ -5,7 +5,7 @@
       v-if="!showChrome"
       @click="toggleTheme" 
       class="theme-toggle fixed top-4 right-4 z-40 p-2 rounded-full transition-all"
-      :class="isDarkMode ? 'bg-amber-600 text-white' : 'bg-slate-800 text-amber-400'"
+      :class="isDarkMode ? 'bg-slate-900 text-amber-300' : 'bg-white text-[#0F6CBD]'"
       title="Toggle dark/light theme"
     >
       {{ isDarkMode ? '☀️' : '🌙' }}
@@ -84,7 +84,7 @@
 
       <!-- Mobile Menu Dropdown -->
       <transition name="slide-down">
-        <div v-if="mobileMenuOpen" class="mobile-menu md:hidden" :class="isDarkMode ? 'bg-slate-800' : 'bg-amber-700'">
+        <div v-if="mobileMenuOpen" class="mobile-menu mobile-menu-kinetic md:hidden" :class="isDarkMode ? 'mobile-menu-kinetic--dark' : 'mobile-menu-kinetic--light'">
           <ul class="flex flex-col py-3 px-4 gap-1">
             <li><router-link to="/dashboard" class="mobile-link" @click="mobileMenuOpen = false">📊 Dashboard</router-link></li>
             <li><router-link to="/installations" class="mobile-link" @click="mobileMenuOpen = false">🏠 Installations</router-link></li>
@@ -195,16 +195,16 @@ const showChrome = computed(() => {
 
 const navbarClass = computed(() => {
   if (isDarkMode.value) {
-    return 'bg-gradient-to-r from-slate-800 via-amber-700 to-amber-800 shadow-lg'
+    return 'navbar-kinetic navbar-kinetic--dark'
   }
-  return 'bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 shadow-lg'
+  return 'navbar-kinetic navbar-kinetic--light'
 })
 
 const mainBgClass = computed(() => {
   if (isDarkMode.value) {
-    return 'min-h-screen bg-gradient-to-b from-slate-900 to-slate-800'
+    return 'min-h-screen bg-[#111418]'
   }
-  return 'min-h-screen bg-gradient-to-b from-gray-50 to-gray-100'
+  return 'min-h-screen bg-[#FDFDFD]'
 })
 
 const logout = async () => {
@@ -226,7 +226,21 @@ const logout = async () => {
   position: sticky;
   top: 0;
   z-index: 50;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.navbar-kinetic {
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(15, 108, 189, 0.1);
+}
+
+.navbar-kinetic--light {
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 1px 16px rgba(15, 23, 42, 0.08);
+}
+
+.navbar-kinetic--dark {
+  background: rgba(26, 28, 30, 0.9);
+  box-shadow: 0 1px 20px rgba(0, 0, 0, 0.35);
 }
 
 .nav-container {
@@ -241,7 +255,11 @@ const logout = async () => {
   align-items: center;
   gap: 0.375rem;
   font-weight: bold;
-  color: white;
+  color: #0F6CBD;
+}
+
+.navbar-kinetic--dark .nav-brand {
+  color: #F4C94C;
 }
 
 .nav-menu {
@@ -255,7 +273,7 @@ const logout = async () => {
 
 .nav-link {
   display: block;
-  color: rgba(255, 255, 255, 0.85);
+  color: #334155;
   text-decoration: none;
   font-weight: 500;
   font-size: 0.8125rem;
@@ -266,14 +284,24 @@ const logout = async () => {
 }
 
 .nav-link:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.12);
+  color: #0F6CBD;
+  background: rgba(15, 108, 189, 0.08);
 }
 
 .nav-link.router-link-active {
-  color: #fbbf24;
-  background: rgba(251, 191, 36, 0.12);
+  color: #0F6CBD;
+  background: rgba(15, 108, 189, 0.12);
   font-weight: 600;
+}
+
+.navbar-kinetic--dark .nav-link {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.navbar-kinetic--dark .nav-link:hover,
+.navbar-kinetic--dark .nav-link.router-link-active {
+  color: #F4C94C;
+  background: rgba(244, 201, 76, 0.12);
 }
 
 /* "More" dropdown ─────────────────────────────────── */
@@ -367,12 +395,12 @@ const logout = async () => {
 }
 
 .theme-toggle-light {
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
+  background: rgba(15, 108, 189, 0.1);
+  color: #0F6CBD;
 }
 
 .theme-toggle-light:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(15, 108, 189, 0.16);
 }
 
 .theme-toggle-dark {
@@ -389,7 +417,7 @@ const logout = async () => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+  background: #0F6CBD;
   color: white;
   font-size: 0.75rem;
   font-weight: 700;
@@ -415,13 +443,22 @@ const logout = async () => {
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
-  background: rgba(255, 255, 255, 0.9);
-  color: #b45309;
+  background: #0F6CBD;
+  color: white;
 }
 
 .btn-nav-login:hover,
 .btn-nav-logout:hover {
-  background: white;
+  background: #004883;
+}
+
+.mobile-menu-kinetic--light {
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid rgba(15, 108, 189, 0.1);
+}
+
+.mobile-menu-kinetic--dark {
+  background: #1A1C1E;
 }
 
 .btn-nav-login--dark,

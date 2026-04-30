@@ -281,3 +281,41 @@ onMounted(() => {
   contractStore.fetchContracts()
 })
 </script>
+
+<style scoped>
+.min-h-screen {
+  background: #FDFDFD;
+}
+
+h1 {
+  color: #0F6CBD !important;
+  letter-spacing: 0;
+}
+
+button.bg-orange-600,
+button[class*="bg-orange-600"] {
+  background: #0F6CBD !important;
+  box-shadow: 0 12px 26px rgba(15, 108, 189, 0.2);
+}
+
+button.bg-orange-600:hover,
+button[class*="hover:bg-orange-700"]:hover {
+  background: #004883 !important;
+}
+
+.rounded-xl {
+  border-radius: 0.75rem;
+}
+
+.shadow-sm,
+.shadow-lg {
+  box-shadow: 0 1px 10px rgba(15, 23, 42, 0.08) !important;
+}
+
+:deep(input:focus),
+:deep(select:focus) {
+  border-color: #0F6CBD;
+  box-shadow: 0 0 0 3px rgba(15, 108, 189, 0.18) !important;
+  outline: none;
+}
+</style>

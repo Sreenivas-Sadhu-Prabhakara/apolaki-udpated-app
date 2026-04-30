@@ -11,17 +11,17 @@
 */
 
 :root {
-  /* PRIMARY: Solar Gold - Brand Identity */
-  --solar-gold: #FFB81C;
-  --solar-gold-dark: #F5A700;
-  --solar-gold-light: #FFF5DB;
-  --solar-gold-xlight: #FFFBF0;
+  /* PRIMARY: Kinetic Azure - Brand Identity */
+  --kinetic-azure: #0F6CBD;
+  --kinetic-azure-dark: #004883;
+  --kinetic-azure-light: #D3E3FF;
+  --kinetic-azure-xlight: #EEF7FF;
 
-  /* SECONDARY: Sky Blue - Trust & Clarity */
-  --sky-blue: #0066CC;
-  --sky-blue-dark: #0052A3;
-  --sky-blue-light: #B8DCFF;
-  --sky-blue-xlight: #E0F2FF;
+  /* SECONDARY: Solar Gold - High-contrast accent */
+  --solar-gold: #F4C94C;
+  --solar-gold-dark: #ECC245;
+  --solar-gold-light: #FFE08F;
+  --solar-gold-xlight: #FFF7D6;
 
   /* FUNCTIONAL COLORS */
   /* Success: Green - Positive Actions */
@@ -57,13 +57,13 @@
   --gray-900: #111827;
 
   /* SEMANTIC MAPPINGS */
-  --primary-color: var(--solar-gold);
-  --primary-dark: var(--solar-gold-dark);
-  --primary-light: var(--solar-gold-light);
+  --primary-color: var(--kinetic-azure);
+  --primary-dark: var(--kinetic-azure-dark);
+  --primary-light: var(--kinetic-azure-light);
   
-  --secondary-color: var(--sky-blue);
-  --secondary-dark: var(--sky-blue-dark);
-  --secondary-light: var(--sky-blue-light);
+  --secondary-color: var(--solar-gold);
+  --secondary-dark: var(--solar-gold-dark);
+  --secondary-light: var(--solar-gold-light);
   
   --success-color: var(--success-green);
   --warning-color: var(--warning-orange);
@@ -83,7 +83,7 @@
   --text-placeholder: var(--gray-400);
   
   --bg-primary: #FFFFFF;
-  --bg-secondary: var(--gray-50);
+  --bg-secondary: #FDFDFD;
   --bg-tertiary: var(--gray-100);
 
   /* BORDERS & SHADOWS */
@@ -118,7 +118,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: var(--text-main);
-  background-color: var(--bg-secondary);
+  background-color: #FDFDFD;
 }
 
 #app {
@@ -338,22 +338,22 @@ label {
   outline: none;
 }
 
-/* PRIMARY BUTTON - Solar Gold */
+/* PRIMARY BUTTON - Kinetic Azure */
 .btn-primary {
-  background-color: var(--solar-gold);
+  background-color: var(--kinetic-azure);
   color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(255, 184, 28, 0.25);
+  box-shadow: 0 12px 26px rgba(15, 108, 189, 0.22);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--solar-gold-dark);
-  box-shadow: 0 4px 12px rgba(255, 184, 28, 0.35);
+  background-color: var(--kinetic-azure-dark);
+  box-shadow: 0 16px 34px rgba(15, 108, 189, 0.28);
   transform: translateY(-2px);
 }
 
 .btn-primary:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(255, 184, 28, 0.25);
+  box-shadow: 0 8px 18px rgba(15, 108, 189, 0.2);
 }
 
 .btn-primary:disabled {
@@ -361,22 +361,22 @@ label {
   cursor: not-allowed;
 }
 
-/* SECONDARY BUTTON - Sky Blue */
+/* SECONDARY BUTTON - Solar Gold */
 .btn-secondary {
-  background-color: var(--sky-blue);
-  color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.25);
+  background-color: var(--solar-gold);
+  color: #1A1C1E;
+  box-shadow: 0 2px 8px rgba(244, 201, 76, 0.28);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: var(--sky-blue-dark);
-  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.35);
+  background-color: var(--solar-gold-dark);
+  box-shadow: 0 4px 12px rgba(244, 201, 76, 0.34);
   transform: translateY(-2px);
 }
 
 .btn-secondary:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 102, 204, 0.25);
+  box-shadow: 0 2px 4px rgba(244, 201, 76, 0.25);
 }
 
 .btn-secondary:disabled {
@@ -1206,11 +1206,11 @@ html:not(.dark-theme) .text-red-600 {
 }
 
 html:not(.dark-theme) .text-blue-600 {
-  color: #2563eb !important;
+  color: #0F6CBD !important;
 }
 
 html:not(.dark-theme) .text-orange-600 {
-  color: #ea580c !important;
+  color: #0F6CBD !important;
 }
 
 html:not(.dark-theme) .text-yellow-600 {
@@ -1231,11 +1231,11 @@ html:not(.dark-theme) .bg-red-100 {
 }
 
 html:not(.dark-theme) .bg-blue-100 {
-  background-color: #dbeafe !important;
+  background-color: #D3E3FF !important;
 }
 
 html:not(.dark-theme) .bg-orange-100 {
-  background-color: #ffedd5 !important;
+  background-color: #EEF7FF !important;
 }
 
 html:not(.dark-theme) .bg-yellow-100 {
@@ -1251,11 +1251,11 @@ html:not(.dark-theme) .bg-red-50 {
 }
 
 html:not(.dark-theme) .bg-blue-50 {
-  background-color: #eff6ff !important;
+  background-color: #EEF7FF !important;
 }
 
 html:not(.dark-theme) .bg-orange-50 {
-  background-color: #fff7ed !important;
+  background-color: #EEF7FF !important;
 }
 
 html:not(.dark-theme) .bg-yellow-50 {
@@ -1280,13 +1280,13 @@ html:not(.dark-theme) table tbody tr:hover {
 
 /* Light mode: Buttons */
 html:not(.dark-theme) .btn-primary {
-  background-color: #FFB81C;
+  background-color: #0F6CBD;
   color: #FFFFFF;
 }
 
 html:not(.dark-theme) .btn-outline {
-  border-color: #FFB81C;
-  color: #FFB81C;
+  border-color: #0F6CBD;
+  color: #0F6CBD;
 }
 
 html:not(.dark-theme) .btn-ghost {
@@ -1363,13 +1363,36 @@ html:not(.dark-theme) ::-webkit-scrollbar-thumb:hover {
 /* Light mode: Focus rings */
 html:not(.dark-theme) .focus\:ring-orange-500:focus,
 html:not(.dark-theme) .focus\:ring-blue-500:focus {
-  box-shadow: 0 0 0 3px rgba(255, 184, 28, 0.2) !important;
+  box-shadow: 0 0 0 3px rgba(15, 108, 189, 0.2) !important;
 }
 
 /* Light mode: Spinner */
 html:not(.dark-theme) .spinner {
   border-color: #E5E7EB;
-  border-top-color: #FFB81C;
+  border-top-color: #0F6CBD;
+}
+
+/* Kinetic Azure compatibility overrides for older Tailwind class names. */
+html:not(.dark-theme) .bg-orange-600,
+html:not(.dark-theme) .bg-amber-600,
+html:not(.dark-theme) .bg-amber-700 {
+  background-color: #0F6CBD !important;
+}
+
+html:not(.dark-theme) .hover\:bg-orange-700:hover,
+html:not(.dark-theme) .hover\:bg-amber-700:hover {
+  background-color: #004883 !important;
+}
+
+html:not(.dark-theme) .from-orange-50,
+html:not(.dark-theme) .from-yellow-50 {
+  --tw-gradient-from: #EEF7FF !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(238, 247, 255, 0)) !important;
+}
+
+html:not(.dark-theme) .to-yellow-50,
+html:not(.dark-theme) .to-orange-50 {
+  --tw-gradient-to: #FFF7D6 !important;
 }
 
 /* Light mode: Select elements */

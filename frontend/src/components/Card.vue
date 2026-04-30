@@ -21,19 +21,19 @@ defineProps({
 <style scoped>
 .card {
   background: white;
-  border-radius: 1rem;
+  border-radius: 0.75rem;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 10px rgba(15, 23, 42, 0.08);
   transition: all 0.3s ease;
 }
 
 .card-default {
-  border-top: 4px solid var(--solar-gold, #FFB81C);
+  border-top: 4px solid var(--kinetic-azure, #0F6CBD);
 }
 
 .card-primary {
-  border-top: 4px solid var(--solar-gold, #FFB81C);
-  background: linear-gradient(135deg, rgba(255, 184, 28, 0.02) 0%, transparent 100%);
+  border-top: 4px solid var(--kinetic-azure, #0F6CBD);
+  background: linear-gradient(135deg, rgba(15, 108, 189, 0.04) 0%, transparent 100%);
 }
 
 .card-success {
@@ -62,8 +62,8 @@ defineProps({
 }
 
 .card-clickable:hover {
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
   transform: translateY(-4px);
-  border-color: var(--solar-gold, #FFB81C);
+  border-color: var(--kinetic-azure, #0F6CBD);
 }
 </style>

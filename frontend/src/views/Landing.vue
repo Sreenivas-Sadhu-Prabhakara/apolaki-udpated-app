@@ -775,4 +775,117 @@
 :global(.dark-theme) .testimonial-role {
   color: #64748B;
 }
+
+/* Kinetic Azure refresh */
+.hero {
+  min-height: 86vh;
+  background: #FDFDFD;
+  color: #1A1C1E;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: auto 6vw 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(15, 108, 189, 0.28), transparent);
+}
+
+.hero-bg {
+  background:
+    linear-gradient(135deg, rgba(15, 108, 189, 0.08), transparent 42%),
+    radial-gradient(circle at 76% 34%, rgba(244, 201, 76, 0.22), transparent 28%),
+    linear-gradient(180deg, #FFFFFF 0%, #FDFDFD 100%);
+}
+
+.hero-badge {
+  background: rgba(15, 108, 189, 0.08);
+  border-color: rgba(15, 108, 189, 0.18);
+  color: #0F6CBD;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hero-title {
+  color: #1A1C1E;
+  letter-spacing: 0;
+}
+
+.hero-highlight {
+  background: linear-gradient(135deg, #0F6CBD 0%, #004883 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.hero-description,
+.stat-label,
+.section-header-center p,
+.feature-card > p,
+.step-card p,
+.testimonial-role,
+.cta-content p {
+  color: #64748b;
+}
+
+.btn-hero-primary,
+.btn-cta-primary {
+  background: #0F6CBD;
+  color: white;
+  box-shadow: 0 16px 34px rgba(15, 108, 189, 0.22);
+}
+
+.btn-hero-primary:hover,
+.btn-cta-primary:hover {
+  box-shadow: 0 18px 40px rgba(15, 108, 189, 0.3);
+}
+
+.btn-hero-secondary {
+  border-color: rgba(15, 108, 189, 0.18);
+  color: #0F6CBD;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.btn-hero-secondary:hover {
+  border-color: rgba(15, 108, 189, 0.32);
+  background-color: rgba(15, 108, 189, 0.06);
+}
+
+.stat-number,
+.step-connector,
+.testimonial-stars {
+  color: #0F6CBD;
+}
+
+.features-section,
+.testimonials-section {
+  background: #FDFDFD;
+}
+
+.feature-card,
+.step-card,
+.testimonial-card {
+  border: 0;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 10px rgba(15, 23, 42, 0.08);
+}
+
+.feature-card.featured {
+  border-color: transparent;
+  box-shadow: 0 1px 0 rgba(15, 108, 189, 0.2), 0 14px 40px rgba(15, 108, 189, 0.1);
+}
+
+.feature-badge,
+.step-number,
+.testimonial-avatar {
+  background: #F4C94C;
+  color: #1A1C1E;
+}
+
+.cta-section {
+  background: #1A1C1E;
+}
+
+.btn-cta-secondary {
+  border-color: rgba(255, 255, 255, 0.22);
+}
 </style>

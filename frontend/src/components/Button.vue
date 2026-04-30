@@ -68,35 +68,35 @@ const tag = defineModel('href') ? 'a' : 'button'
 
 /* Variants - Consistent Color System per Design Guide */
 
-/* SOLAR GOLD - Primary Variant */
+/* KINETIC AZURE - Primary Variant */
 .btn-primary {
-  background: linear-gradient(135deg, #FFB81C 0%, #F5A700 100%);
+  background: #0F6CBD;
   color: white;
-  box-shadow: 0 2px 8px rgba(255, 184, 28, 0.25);
+  box-shadow: 0 12px 26px rgba(15, 108, 189, 0.22);
 }
 
 .btn-primary:hover:not(.btn-disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 184, 28, 0.35);
-  background: linear-gradient(135deg, #F5A700 0%, #E59500 100%);
+  box-shadow: 0 16px 34px rgba(15, 108, 189, 0.28);
+  background: #004883;
 }
 
 .btn-primary:active:not(.btn-disabled) {
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(255, 184, 28, 0.25);
+  box-shadow: 0 8px 18px rgba(15, 108, 189, 0.2);
 }
 
 /* SKY BLUE - Secondary Variant */
 .btn-secondary {
-  background: linear-gradient(135deg, #0066CC 0%, #0052A3 100%);
-  color: white;
-  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.25);
+  background: #F4C94C;
+  color: #1A1C1E;
+  box-shadow: 0 2px 8px rgba(244, 201, 76, 0.28);
 }
 
 .btn-secondary:hover:not(.btn-disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.35);
-  background: linear-gradient(135deg, #0052A3 0%, #003D7A 100%);
+  box-shadow: 0 4px 12px rgba(244, 201, 76, 0.34);
+  background: #ECC245;
 }
 
 .btn-secondary:active:not(.btn-disabled) {
@@ -161,14 +161,14 @@ const tag = defineModel('href') ? 'a' : 'button'
 /* OUTLINE - Bordered Style */
 .btn-outline {
   background: transparent;
-  color: #FFB81C;
-  border: 2px solid #FFB81C;
+  color: #0F6CBD;
+  border: 2px solid #0F6CBD;
 }
 
 .btn-outline:hover:not(.btn-disabled) {
-  background: #FFF5DB;
-  color: #F5A700;
-  border-color: #F5A700;
+  background: #EEF7FF;
+  color: #004883;
+  border-color: #004883;
 }
 
 .btn-outline:active:not(.btn-disabled) {
