@@ -1,5 +1,19 @@
 <template>
   <div class="prd-page" :class="{ 'prd-page--dark': isDark }">
+    <nav class="journey-rail" aria-label="Solar journey">
+      <router-link
+        v-for="step in journeySteps"
+        :key="step.key"
+        :to="step.to"
+        class="journey-step"
+        :class="{ 'is-active': step.key === pageKey, 'is-complete': step.order < activeJourneyOrder }"
+      >
+        <span>{{ step.order }}</span>
+        <strong>{{ step.label }}</strong>
+        <small>{{ step.detail }}</small>
+      </router-link>
+    </nav>
+
     <section v-if="pageKey === 'dashboard'" class="prd-stack">
       <PrdHeader eyebrow="Live System Feed" title="Apolaki Intelligence" action="Report" />
 
@@ -90,6 +104,11 @@
           <span class="prd-label">Marketplace</span>
           <strong>Installer packages</strong>
           <p>Compare vetted installers, suppliers, consultants, and maintenance partners.</p>
+        </router-link>
+        <router-link to="/finance" class="prd-card prd-link-card">
+          <span class="prd-label">Financing</span>
+          <strong>Monthly plan</strong>
+          <p>Model loan principal, down payment, and cash-flow impact before selecting partners.</p>
         </router-link>
       </div>
     </section>
@@ -221,6 +240,23 @@
         </article>
       </div>
 
+      <article v-if="assessmentStep === 1" class="prd-card prd-source-card">
+        <div class="prd-section-title">
+          <div>
+            <span class="prd-label">Assessment Confidence</span>
+            <h2>Source stack</h2>
+          </div>
+          <span class="prd-chip">{{ solarApiData ? providerLabel : 'Ready' }}</span>
+        </div>
+        <div class="prd-grid prd-grid--sources">
+          <div v-for="source in sourceCards" :key="source.name" class="source-item" :class="{ active: source.active }">
+            <span>{{ source.name }}</span>
+            <strong>{{ source.status }}</strong>
+            <p>{{ source.description }}</p>
+          </div>
+        </div>
+      </article>
+
       <article v-if="assessmentStep === 1 && solarApiData" class="prd-card">
         <div class="prd-section-title">
           <div>
@@ -273,8 +309,8 @@
         </div>
         <p class="prd-insight">Your solar installment is {{ php(Math.max(0, assessmentResults.monthlyBill - assessmentResults.monthlyInstallment)) }} cheaper than the current monthly bill.</p>
         <div class="prd-card-actions">
-          <router-link class="prd-button" to="/marketplace">Explore Installer Packages</router-link>
           <router-link class="prd-button prd-button--ghost" to="/finance">Explore Financing Options</router-link>
+          <router-link class="prd-button" to="/marketplace">Explore Installer Packages</router-link>
         </div>
       </article>
     </section>
@@ -421,6 +457,15 @@
         </div>
       </article>
     </section>
+
+    <aside v-if="nextAction" class="prd-next-step">
+      <div>
+        <span class="prd-label">Next best action</span>
+        <h2>{{ nextAction.title }}</h2>
+        <p>{{ nextAction.description }}</p>
+      </div>
+      <router-link class="prd-button" :to="nextAction.to">{{ nextAction.label }}</router-link>
+    </aside>
   </div>
 </template>
 
@@ -457,6 +502,60 @@ const pageKey = computed(() => {
   if (route.path.startsWith('/contracts')) return 'contracts'
   return 'dashboard'
 })
+
+const journeySteps = [
+  { key: 'dashboard', order: 1, label: 'Intelligence', detail: 'Baseline', to: '/dashboard' },
+  { key: 'assessment', order: 2, label: 'Assessment', detail: 'Solar fit', to: '/assessment' },
+  { key: 'finance', order: 3, label: 'Financing', detail: 'Cash flow', to: '/finance' },
+  { key: 'marketplace', order: 4, label: 'Marketplace', detail: 'Partners', to: '/marketplace' },
+  { key: 'contracts', order: 5, label: 'Contracts', detail: 'Commit', to: '/contracts' },
+  { key: 'monitoring', order: 6, label: 'Monitoring', detail: 'Operate', to: '/monitoring' }
+]
+
+const activeJourneyOrder = computed(() => {
+  return journeySteps.find(step => step.key === pageKey.value)?.order || 1
+})
+
+const nextAction = computed(() => ({
+  dashboard: {
+    title: 'Start with solar potential',
+    description: 'Move from current performance context into a location-specific assessment.',
+    label: 'Run Assessment',
+    to: '/assessment'
+  },
+  assessment: {
+    title: assessmentResults.value ? 'Compare financing plans' : 'Complete property details',
+    description: assessmentResults.value
+      ? 'Turn the system recommendation into a monthly payment view before choosing a partner.'
+      : 'Confirm usage and property inputs so the recommendation is grounded in the data-source stack.',
+    label: assessmentResults.value ? 'View Financing' : 'Continue Assessment',
+    to: assessmentResults.value ? '/finance' : '/assessment'
+  },
+  finance: {
+    title: 'Choose the delivery partner',
+    description: 'Use the payment model to compare installer and supplier options with the same assumptions.',
+    label: 'Open Marketplace',
+    to: '/marketplace'
+  },
+  marketplace: {
+    title: 'Lock the agreement',
+    description: 'Move from selected partner packages into contracts and signature tracking.',
+    label: 'Review Contracts',
+    to: '/contracts'
+  },
+  contracts: {
+    title: 'Operate the system',
+    description: 'Once contracts are ready, monitor production, storage health, and component status.',
+    label: 'Open Monitoring',
+    to: '/monitoring'
+  },
+  installations: {
+    title: 'Watch live performance',
+    description: 'After the portfolio is configured, use monitoring to manage day-to-day operation.',
+    label: 'Open Monitoring',
+    to: '/monitoring'
+  }
+})[pageKey.value] || null)
 
 const PrdHeader = defineComponent({
   props: {
@@ -584,12 +683,42 @@ const assessmentStepLabel = computed(() => assessmentStep.value === 1 ? 'Step 1 
 const assessmentTitle = computed(() => assessmentStep.value === 1 ? 'Solar Potential Assessment' : 'Property & Usage Details')
 const providerLabel = computed(() => {
   const provider = solarApiData.value?.provider
-  return { google_solar: 'Google Solar', nrel_pvwatts: 'NREL PVWatts', nasa_power: 'NASA POWER', built_in_estimate: 'Built-in Estimate' }[provider] || 'Solar data'
+  return {
+    google_solar: 'Google Cloud Solar API',
+    nrel_pvwatts: 'DREI / NREL PVWatts',
+    drei_solar: 'DREI Solar Resource',
+    nasa_power: 'NASA POWER',
+    built_in_estimate: 'Regional estimate'
+  }[provider] || 'Solar data'
 })
 const solarAddress = computed(() => solarApiData.value?.data?.formattedAddress || `${assessmentForm.zip_code}, ${assessmentForm.state}`)
 const annualSunshine = computed(() => Number(solarApiData.value?.data?.maxSunshineHoursPerYear || solarApiData.value?.data?.annualSunshineHours || 1817).toLocaleString())
 const annualProduction = computed(() => Number(solarApiData.value?.data?.annualProductionKwh || solarApiData.value?.data?.bestConfig?.yearlyEnergyDcKwh || 6594).toLocaleString())
 const peakSunHours = computed(() => Number(solarApiData.value?.data?.estimatedPeakSunHoursPerDay || 4.8).toFixed(1))
+const sourceCards = computed(() => {
+  const provider = solarApiData.value?.provider
+  const available = solarApiData.value?.availableProviders || {}
+  return [
+    {
+      name: 'Google Cloud Solar API',
+      status: provider === 'google_solar' ? 'Primary match' : available.google_solar ? 'Available' : 'Primary source',
+      description: 'Rooftop, sunshine, and panel configuration data when the address is covered.',
+      active: provider === 'google_solar'
+    },
+    {
+      name: 'NASA POWER',
+      status: provider === 'nasa_power' ? 'Active fallback' : available.nasa_power === false ? 'Fallback' : 'Ready',
+      description: 'Satellite climatology for irradiance, temperature, and monthly production shape.',
+      active: provider === 'nasa_power'
+    },
+    {
+      name: 'DREI / NREL PVWatts',
+      status: ['nrel_pvwatts', 'drei_solar'].includes(provider) ? 'Active fallback' : (available.drei_solar || available.nrel_pvwatts) ? 'Available' : 'Regional baseline',
+      description: 'Bankable PV performance baseline for yield and capacity-factor sanity checks.',
+      active: ['nrel_pvwatts', 'drei_solar'].includes(provider)
+    }
+  ]
+})
 const solarBars = computed(() => {
   const values = solarApiData.value?.data?.monthlyProductionKwh || [420, 480, 550, 580, 520, 460, 430, 410, 450, 470, 450, 410]
   const max = Math.max(...values)
@@ -700,19 +829,23 @@ async function lookupSolar() {
 }
 
 async function calculateAssessment() {
-  const capacity = Math.max(3, Math.round((assessmentForm.annual_usage / 1350) * 10) / 10)
-  const cost = Math.round(capacity * 155375)
-  const monthlyBill = Math.round((assessmentForm.annual_usage / 12) * assessmentForm.rate)
-  const monthlyInstallment = Math.round((cost * 0.8 * 0.0075) / (1 - Math.pow(1.0075, -60)))
-  assessmentResults.value = {
-    capacity: capacity.toFixed(2),
-    cost,
-    monthlyBill,
-    monthlyInstallment,
-    payback: Math.max(1, (cost / Math.max(1, monthlyBill * 12 - monthlyInstallment * 12))).toFixed(1)
+  if (!solarApiData.value) {
+    await lookupSolar()
   }
-  assessmentStep.value = 2
-  await assessmentStore.calculateAssessment({
+
+  const data = solarApiData.value?.data || {}
+  const bestConfig = data.bestConfig || {}
+  const sourceAnnualProduction = Number(bestConfig.yearlyEnergyDcKwh || data.annualProductionKwh || 0)
+  const sourceCapacity = Number(bestConfig.capacityKw || 5)
+  const yieldPerKw = sourceAnnualProduction && sourceCapacity
+    ? sourceAnnualProduction / sourceCapacity
+    : Number(peakSunHours.value || 4.8) * 365 * 0.8
+  const fallbackCapacity = Math.max(3, Math.round((assessmentForm.annual_usage / Math.max(1, yieldPerKw)) * 10) / 10)
+  const fallbackCost = Math.round(fallbackCapacity * 155375)
+  const monthlyBill = Math.round((assessmentForm.annual_usage / 12) * assessmentForm.rate)
+  const fallbackMonthlyInstallment = Math.round((fallbackCost * 0.8 * 0.0075) / (1 - Math.pow(1.0075, -60)))
+
+  const payload = {
     address: assessmentForm.address,
     city: assessmentForm.city,
     state: assessmentForm.state,
@@ -723,7 +856,34 @@ async function calculateAssessment() {
     sunExposure: assessmentForm.sun_exposure,
     obstructionLevel: assessmentForm.obstruction_level,
     financingOption: 'loan'
-  }).catch(() => {})
+  }
+
+  try {
+    const response = await assessmentStore.calculateAssessment(payload)
+    const calc = response?.calculation || response?.savings_estimate || {}
+    const backendCapacity = Number(response?.recommended_capacity || calc.recommendedCapacity || fallbackCapacity)
+    const backendCost = Number(response?.estimated_cost || calc.estimatedCost || fallbackCost)
+    const backendInstallment = Number(calc.financing?.monthlyPayment || fallbackMonthlyInstallment)
+
+    assessmentResults.value = {
+      capacity: backendCapacity.toFixed(2),
+      cost: backendCost,
+      monthlyBill,
+      monthlyInstallment: backendInstallment,
+      payback: Number(calc.paybackYears || Math.max(1, backendCost / Math.max(1, monthlyBill * 12 - backendInstallment * 12))).toFixed(1)
+    }
+  } catch {
+    assessmentResults.value = {
+      capacity: fallbackCapacity.toFixed(2),
+      cost: fallbackCost,
+      monthlyBill,
+      monthlyInstallment: fallbackMonthlyInstallment,
+      payback: Math.max(1, (fallbackCost / Math.max(1, monthlyBill * 12 - fallbackMonthlyInstallment * 12))).toFixed(1)
+    }
+  }
+
+  financeForm.capacity = Number(assessmentResults.value.capacity)
+  assessmentStep.value = 2
 }
 
 async function createTransaction() {
@@ -754,10 +914,10 @@ watch(pageKey, loadDataForPage)
 
 <style scoped>
 .prd-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 56px);
   background: #FDFDFD;
   color: #1A1C1E;
-  padding: 32px 20px 96px;
+  padding: 24px 20px 56px;
 }
 
 .prd-page--dark {
@@ -770,6 +930,96 @@ watch(pageKey, loadDataForPage)
   margin: 0 auto;
   display: grid;
   gap: 22px;
+}
+
+.journey-rail {
+  width: min(1180px, 100%);
+  margin: 0 auto 22px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.journey-step {
+  min-height: 74px;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  border-radius: 12px;
+  padding: 12px;
+  color: #5F6B7A;
+  text-decoration: none;
+  background: #FFFFFF;
+  box-shadow: 0 1px 10px rgba(15, 23, 42, 0.06);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.journey-step:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+}
+
+.journey-step span {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #EDF5FC;
+  color: #0F6CBD;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.journey-step strong {
+  color: #1A1C1E;
+  font-size: 0.88rem;
+}
+
+.journey-step small {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.journey-step.is-active {
+  background: #0F6CBD;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.journey-step.is-active span {
+  background: #F4C94C;
+  color: #1A1C1E;
+}
+
+.journey-step.is-active strong {
+  color: #FFFFFF;
+}
+
+.journey-step.is-complete {
+  background: #F3F7FB;
+}
+
+.prd-page--dark .journey-step {
+  background: #1A1C1E;
+  color: #94A3B8;
+}
+
+.prd-page--dark .journey-step strong {
+  color: #F8FAFC;
+}
+
+.prd-page--dark .journey-step.is-active {
+  background: #F4C94C;
+  color: rgba(26, 28, 30, 0.72);
+}
+
+.prd-page--dark .journey-step.is-active span {
+  background: #1A1C1E;
+  color: #F4C94C;
+}
+
+.prd-page--dark .journey-step.is-active strong {
+  color: #1A1C1E;
 }
 
 .prd-header,
@@ -826,6 +1076,10 @@ watch(pageKey, loadDataForPage)
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.prd-grid--sources {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .prd-card,
 .prd-impact {
   border-radius: 12px;
@@ -870,6 +1124,30 @@ watch(pageKey, loadDataForPage)
 }
 
 .prd-impact p {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.prd-next-step {
+  width: min(1180px, 100%);
+  margin: 22px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-radius: 12px;
+  background: #1A1C1E;
+  color: #FFFFFF;
+  padding: 22px;
+  box-shadow: 0 1px 18px rgba(15, 23, 42, 0.14);
+}
+
+.prd-next-step h2 {
+  margin: 4px 0 0;
+  font-size: 1.35rem;
+}
+
+.prd-next-step p {
+  margin: 8px 0 0;
   color: rgba(255, 255, 255, 0.72);
 }
 
@@ -1047,8 +1325,40 @@ watch(pageKey, loadDataForPage)
   padding: 16px;
 }
 
+.source-item {
+  border-radius: 12px;
+  background: #F3F7FB;
+  padding: 16px;
+  border: 1px solid transparent;
+}
+
+.source-item.active {
+  background: #EDF5FC;
+  border-color: rgba(15, 108, 189, 0.22);
+}
+
+.source-item span {
+  color: #0F6CBD;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.source-item strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.05rem;
+}
+
+.source-item p {
+  margin-top: 8px;
+  font-size: 0.84rem;
+}
+
 .prd-page--dark .prd-weather div,
-.prd-page--dark .prd-mini-stat {
+.prd-page--dark .prd-mini-stat,
+.prd-page--dark .source-item {
   background: rgba(255, 255, 255, 0.07);
 }
 
@@ -1290,23 +1600,41 @@ watch(pageKey, loadDataForPage)
   .prd-grid--analytics,
   .prd-grid--assessment,
   .prd-grid--finance,
-  .prd-grid--marketplace {
+  .prd-grid--marketplace,
+  .prd-grid--sources {
     grid-template-columns: 1fr;
   }
 
   .prd-grid--cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .journey-rail {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
   .prd-page {
-    padding: 22px 14px 112px;
+    padding: 18px 14px 104px;
+  }
+
+  .journey-rail {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scroll-snap-type: x proximity;
+  }
+
+  .journey-step {
+    min-width: 132px;
+    scroll-snap-align: start;
   }
 
   .prd-header,
   .prd-section-title,
   .prd-impact--compact,
+  .prd-next-step,
   .prd-card-actions,
   .prd-form-actions,
   .prd-market-footer {

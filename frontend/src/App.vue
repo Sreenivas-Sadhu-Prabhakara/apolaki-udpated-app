@@ -125,31 +125,22 @@
       <router-link to="/contracts" class="bottom-app-link">More</router-link>
     </nav>
 
-    <!-- Footer -->
     <footer v-if="showChrome" class="site-footer transition-colors duration-300" :class="isDarkMode ? 'site-footer--dark' : 'site-footer--light'">
       <div class="footer-inner">
-        <!-- Left: brand + copyright -->
         <div class="footer-left">
           <span class="footer-brand">☀️ Apolaki Solar</span>
-          <span class="footer-copy">&copy; {{ new Date().getFullYear() }} All rights reserved.</span>
+          <span class="footer-copy">Solar intelligence, financing, partners, and contracts in one operating flow.</span>
         </div>
 
-        <!-- Center: nav links -->
         <nav class="footer-nav">
           <router-link to="/dashboard" class="footer-nav-link">Home</router-link>
           <router-link to="/assessment" class="footer-nav-link">Assessment</router-link>
           <router-link to="/finance" class="footer-nav-link">Financing</router-link>
           <router-link to="/marketplace" class="footer-nav-link">Marketplace</router-link>
           <router-link to="/contracts" class="footer-nav-link">Contracts</router-link>
-          <router-link to="/about" class="footer-nav-link">About</router-link>
         </nav>
 
-        <!-- Right: social icons (text-based for now) -->
-        <div class="footer-social">
-          <a href="#" class="footer-social-link" title="Twitter">𝕏</a>
-          <a href="#" class="footer-social-link" title="GitHub">⌘</a>
-          <a href="#" class="footer-social-link" title="LinkedIn">in</a>
-        </div>
+        <span class="footer-copy">&copy; {{ new Date().getFullYear() }}</span>
       </div>
     </footer>
   </div>
@@ -512,29 +503,30 @@ const logout = async () => {
 /* Compact sticky-bottom footer — NEVER overlaps content or dropdowns */
 .site-footer {
   margin-top: auto;
-  border-top: 1px solid;
-  padding: 0.625rem 0;
+  border-top: 1px solid rgba(15, 108, 189, 0.08);
+  padding: 1.15rem 0;
   font-size: 0.75rem;
   position: relative;
-  z-index: 1; /* low z-index so dropdowns/selects always float above */
+  z-index: 1;
+  flex-shrink: 0;
 }
 
 .site-footer--light {
-  background: #111827;
-  border-color: #1f2937;
-  color: #9ca3af;
+  background: #F7FAFC;
+  border-color: rgba(15, 108, 189, 0.08);
+  color: #5F6B7A;
 }
 
 .site-footer--dark {
-  background: #0F172A;
-  border-color: #1E293B;
-  color: #64748B;
+  background: #0C1014;
+  border-color: rgba(244, 201, 76, 0.12);
+  color: #94A3B8;
 }
 
 .footer-inner {
   max-width: 80rem;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -545,13 +537,14 @@ const logout = async () => {
 .footer-left {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 0.75rem;
+  min-width: 260px;
 }
 
 .footer-brand {
   font-weight: 700;
   font-size: 0.8125rem;
-  color: #d1d5db;
+  color: #0F6CBD;
 }
 
 .site-footer--dark .footer-brand {
@@ -566,60 +559,27 @@ const logout = async () => {
 .footer-nav {
   display: flex;
   align-items: center;
-  gap: 0.125rem;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .footer-nav-link {
   color: inherit;
   text-decoration: none;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
   transition: color 0.15s, background 0.15s;
 }
 
 .footer-nav-link:hover {
-  color: #f9fafb;
-  background: rgba(255, 255, 255, 0.06);
+  color: #0F6CBD;
+  background: rgba(15, 108, 189, 0.08);
 }
 
 .site-footer--dark .footer-nav-link:hover {
   color: #F1F5F9;
   background: rgba(255, 255, 255, 0.06);
-}
-
-/* Social links */
-.footer-social {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.footer-social-link {
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  color: #9ca3af;
-  text-decoration: none;
-  font-size: 0.75rem;
-  font-weight: 700;
-  transition: color 0.15s, background 0.15s;
-}
-
-.footer-social-link:hover {
-  color: #f9fafb;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.site-footer--dark .footer-social-link {
-  color: #64748B;
-}
-
-.site-footer--dark .footer-social-link:hover {
-  color: #E2E8F0;
-  background: rgba(255, 255, 255, 0.08);
 }
 
 .bottom-app-nav {
@@ -671,23 +631,9 @@ const logout = async () => {
   color: #1A1C1E;
 }
 
-/* On small screens, stack footer sections */
-@media (max-width: 640px) {
-  .footer-inner {
-    flex-direction: column;
-    text-align: center;
-    gap: 0.5rem;
-    padding: 0.25rem 1rem;
-  }
-
-  .footer-nav {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .footer-left {
-    flex-direction: column;
-    gap: 0.125rem;
+@media (max-width: 768px) {
+  .site-footer {
+    display: none;
   }
 }
 

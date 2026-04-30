@@ -2,7 +2,7 @@
  * Solar API Service
  * Calls the backend /api/solar/lookup which integrates:
  *   1. Google Solar API (primary, requires GOOGLE_SOLAR_API_KEY)
- *   2. NREL PVWatts API (fallback, requires NREL_API_KEY)
+ *   2. DREI / NREL PVWatts API (fallback, requires NREL_API_KEY)
  *   3. NASA POWER API (free, no key needed — satellite irradiance data)
  *   4. Built-in regional estimates (no key needed)
  *
