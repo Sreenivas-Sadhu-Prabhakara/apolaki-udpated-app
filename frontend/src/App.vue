@@ -124,25 +124,6 @@
       <router-link to="/marketplace" class="bottom-app-link">Marketplace</router-link>
       <router-link to="/contracts" class="bottom-app-link">More</router-link>
     </nav>
-
-    <footer v-if="showChrome" class="site-footer transition-colors duration-300" :class="isDarkMode ? 'site-footer--dark' : 'site-footer--light'">
-      <div class="footer-inner">
-        <div class="footer-left">
-          <span class="footer-brand">☀️ Apolaki Solar</span>
-          <span class="footer-copy">Solar intelligence, financing, partners, and contracts in one operating flow.</span>
-        </div>
-
-        <nav class="footer-nav">
-          <router-link to="/dashboard" class="footer-nav-link">Home</router-link>
-          <router-link to="/assessment" class="footer-nav-link">Assessment</router-link>
-          <router-link to="/finance" class="footer-nav-link">Financing</router-link>
-          <router-link to="/marketplace" class="footer-nav-link">Marketplace</router-link>
-          <router-link to="/contracts" class="footer-nav-link">Contracts</router-link>
-        </nav>
-
-        <span class="footer-copy">&copy; {{ new Date().getFullYear() }}</span>
-      </div>
-    </footer>
   </div>
 </template>
 
@@ -494,92 +475,10 @@ const logout = async () => {
   transform: scale(1.1);
 }
 
-/* ── Main & Footer ──────────────────────────────────── */
+/* ── Main ───────────────────────────────────────────── */
 .main-content {
   flex: 1;
   padding: 0;
-}
-
-/* Compact sticky-bottom footer — NEVER overlaps content or dropdowns */
-.site-footer {
-  margin-top: auto;
-  border-top: 1px solid rgba(15, 108, 189, 0.08);
-  padding: 1.15rem 0;
-  font-size: 0.75rem;
-  position: relative;
-  z-index: 1;
-  flex-shrink: 0;
-}
-
-.site-footer--light {
-  background: #F7FAFC;
-  border-color: rgba(15, 108, 189, 0.08);
-  color: #5F6B7A;
-}
-
-.site-footer--dark {
-  background: #0C1014;
-  border-color: rgba(244, 201, 76, 0.12);
-  color: #94A3B8;
-}
-
-.footer-inner {
-  max-width: 80rem;
-  margin: 0 auto;
-  padding: 0 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.footer-left {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 260px;
-}
-
-.footer-brand {
-  font-weight: 700;
-  font-size: 0.8125rem;
-  color: #0F6CBD;
-}
-
-.site-footer--dark .footer-brand {
-  color: #CBD5E1;
-}
-
-.footer-copy {
-  opacity: 0.7;
-}
-
-/* Footer nav links */
-.footer-nav {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.footer-nav-link {
-  color: inherit;
-  text-decoration: none;
-  padding: 0.35rem 0.55rem;
-  border-radius: 999px;
-  transition: color 0.15s, background 0.15s;
-}
-
-.footer-nav-link:hover {
-  color: #0F6CBD;
-  background: rgba(15, 108, 189, 0.08);
-}
-
-.site-footer--dark .footer-nav-link:hover {
-  color: #F1F5F9;
-  background: rgba(255, 255, 255, 0.06);
 }
 
 .bottom-app-nav {
@@ -629,12 +528,6 @@ const logout = async () => {
 .dark-theme .bottom-app-link.router-link-active {
   background: #F4C94C;
   color: #1A1C1E;
-}
-
-@media (max-width: 768px) {
-  .site-footer {
-    display: none;
-  }
 }
 
 /* ── Transitions ────────────────────────────────────── */

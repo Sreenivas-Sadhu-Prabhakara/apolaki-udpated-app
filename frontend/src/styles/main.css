@@ -1449,17 +1449,11 @@ html:not(.dark-theme) .border-slate-700 {
 
 /* ======================================== */
 
-/* Ensure selects/dropdowns always render above footer */
+/* Ensure selects/dropdowns always render above surrounding chrome */
 select,
 .assessment select,
 [class*="dropdown"],
 [role="listbox"] {
   position: relative;
   z-index: 10;
-}
-
-/* Prevent footer from overlapping any interactive elements */
-.site-footer,
-footer {
-  z-index: 1 !important;
 }
