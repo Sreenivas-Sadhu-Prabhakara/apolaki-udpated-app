@@ -461,6 +461,16 @@ const logout = async () => {
   background: #1A1C1E;
 }
 
+.mobile-menu-kinetic--light .mobile-link {
+  color: #334155;
+}
+
+.mobile-menu-kinetic--light .mobile-link:hover,
+.mobile-menu-kinetic--light .mobile-link.router-link-active {
+  color: #0F6CBD;
+  background: rgba(15, 108, 189, 0.08);
+}
+
 .btn-nav-login--dark,
 .btn-nav-logout--dark {
   background: rgba(251, 191, 36, 0.2);

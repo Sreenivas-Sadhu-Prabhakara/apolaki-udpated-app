@@ -1010,7 +1010,9 @@ label {
    ======================================== */
 
 .dark-theme .navbar {
-  background: linear-gradient(to right, #1E1B1B, #B45309, #B45309) !important;
+  background: rgba(26, 28, 30, 0.9) !important;
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(244, 201, 76, 0.12);
 }
 
 .dark-theme .nav-link {
@@ -1023,8 +1025,8 @@ label {
 }
 
 .dark-theme .nav-link.router-link-active {
-  color: #FBBF24;
-  background: rgba(251, 191, 36, 0.12);
+  color: #F4C94C;
+  background: rgba(244, 201, 76, 0.12);
 }
 
 .dark-theme .nav-link-emergency {
@@ -1071,7 +1073,7 @@ label {
 }
 
 .dark-theme .main-content {
-  background: linear-gradient(to bottom, #0F172A, #1E293B) !important;
+  background: #111418 !important;
 }
 
 /* ========================================
@@ -1086,7 +1088,7 @@ html:not(.dark-theme) {
 }
 
 html:not(.dark-theme) .main-content {
-  background: linear-gradient(to bottom, #F9FAFB, #F3F4F6) !important;
+  background: #FDFDFD !important;
 }
 
 html:not(.dark-theme) .card {
@@ -1321,7 +1323,9 @@ html:not(.dark-theme) .alert-info {
 
 /* Light mode: Navbar */
 html:not(.dark-theme) .navbar {
-  background: linear-gradient(to right, #f59e0b, #d97706, #b45309) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(15, 108, 189, 0.1);
 }
 
 html:not(.dark-theme) .nav-dropdown {
@@ -1339,7 +1343,7 @@ html:not(.dark-theme) .dropdown-link:hover {
 
 /* Light mode: Mobile menu */
 html:not(.dark-theme) .mobile-menu {
-  background-color: #d97706 !important;
+  background-color: rgba(255, 255, 255, 0.96) !important;
 }
 
 /* Light mode: Scrollbar */
