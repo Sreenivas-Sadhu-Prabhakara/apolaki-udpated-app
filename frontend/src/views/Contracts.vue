@@ -7,8 +7,15 @@
           <h1 class="text-3xl font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">📄 Contract Management</h1>
           <p class="mt-2" :class="isDark ? 'text-slate-400' : 'text-gray-600'">View, sign, and manage your solar contracts</p>
         </div>
-        <button @click="showCreateForm = true" class="bg-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-700 transition">
-          + New Contract
+        <button 
+          @click="showCreateForm = true" 
+          class="relative bg-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-700 transition overflow-hidden group"
+          :class="{'animate-pulse-select shadow-blue-400/50 scale-105': showCreateForm}"
+        >
+          <span class="relative z-10 transition-transform duration-300 transform group-active:scale-95 group-active:-rotate-2">
+            + New Contract
+          </span>
+          <div v-if="showCreateForm" class="absolute inset-0 bg-white/20 animate-ping"></div>
         </button>
       </div>
 
@@ -317,5 +324,22 @@ button[class*="hover:bg-orange-700"]:hover {
   border-color: #0F6CBD;
   box-shadow: 0 0 0 3px rgba(15, 108, 189, 0.18) !important;
   outline: none;
+}
+
+/* Animation for button select */
+@keyframes pulse-select {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-pulse-select {
+  animation: pulse-select 0.6s ease-in-out infinite;
 }
 </style>
