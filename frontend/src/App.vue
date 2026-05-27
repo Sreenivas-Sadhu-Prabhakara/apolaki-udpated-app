@@ -61,39 +61,6 @@
           </li>
         </ul>
 
-        <!-- Fallback Navigation for Medium tablets between sm and lg -->
-        <ul class="nav-menu hidden md:flex lg:hidden items-center gap-0.5">
-          <li><router-link to="/dashboard" class="nav-link transition">Intelligence</router-link></li>
-          <li><router-link to="/assessment" class="nav-link transition">Assessment</router-link></li>
-          <li><router-link to="/marketplace" class="nav-link transition">Marketplace</router-link></li>
-          <li><router-link to="/installations" class="nav-link transition">Installations</router-link></li>
-          <li class="nav-more-wrapper">
-            <button @click="moreMenuOpen = !moreMenuOpen" class="nav-link nav-more-btn transition">
-              More ▾
-            </button>
-            <transition name="dropdown">
-              <ul v-if="moreMenuOpen" class="nav-dropdown" @mouseleave="moreMenuOpen = false">
-                <li><router-link to="/finance" class="dropdown-link" @click="moreMenuOpen = false">Financing</router-link></li>
-                <li><router-link to="/contracts" class="dropdown-link" @click="moreMenuOpen = false">Contracts</router-link></li>
-                <li><router-link to="/monitoring" class="dropdown-link" @click="moreMenuOpen = false">Monitoring</router-link></li>
-                <li v-if="hasRoleLinks" class="dropdown-divider"></li>
-                <li v-if="userStore.hasRole('dealer', 'installer', 'admin', 'superadmin')">
-                  <router-link to="/dealer" class="dropdown-link" @click="moreMenuOpen = false">🔧 Dealer Portal</router-link>
-                </li>
-                <li v-if="userStore.hasRole('operations', 'admin', 'superadmin')">
-                  <router-link to="/operations" class="dropdown-link" @click="moreMenuOpen = false">🛠️ Operations</router-link>
-                </li>
-                <li v-if="userStore.hasRole('admin', 'superadmin')">
-                  <router-link to="/admin" class="dropdown-link" @click="moreMenuOpen = false">👤 Admin</router-link>
-                </li>
-                <li v-if="userStore.hasRole('superadmin')">
-                  <router-link to="/superadmin" class="dropdown-link dropdown-link--emergency" @click="moreMenuOpen = false">🚨 Break-Glass</router-link>
-                </li>
-              </ul>
-            </transition>
-          </li>
-        </ul>
-
         <!-- Right-side actions: theme toggle, user -->
         <div class="nav-user flex items-center gap-2 shrink-0">
           <!-- Theme toggle inside navbar -->
@@ -120,14 +87,6 @@
       <transition name="slide-down">
         <div v-if="mobileMenuOpen" class="mobile-menu mobile-menu-kinetic md:hidden" :class="isDarkMode ? 'mobile-menu-kinetic--dark' : 'mobile-menu-kinetic--light'">
           <ul class="flex flex-col py-3 px-4 gap-1">
-            <li><router-link to="/dashboard" class="mobile-link" @click="mobileMenuOpen = false">💡 1. Intelligence</router-link></li>
-            <li><router-link to="/assessment" class="mobile-link" @click="mobileMenuOpen = false">📋 2. Assessment</router-link></li>
-            <li><router-link to="/finance" class="mobile-link" @click="mobileMenuOpen = false">💰 3. Financing</router-link></li>
-            <li><router-link to="/marketplace" class="mobile-link" @click="mobileMenuOpen = false">🏪 4. Marketplace</router-link></li>
-            <li><router-link to="/contracts" class="mobile-link" @click="mobileMenuOpen = false">📄 5. Contracts</router-link></li>
-            <li><router-link to="/monitoring" class="mobile-link" @click="mobileMenuOpen = false">📊 6. Monitoring</router-link></li>
-            <li><router-link to="/installations" class="mobile-link" @click="mobileMenuOpen = false">📦 Installations</router-link></li>
-            <li v-if="hasRoleLinks" class="mt-2 pt-2 border-t border-white/20"></li>
             <li v-if="userStore.hasRole('dealer', 'installer', 'admin', 'superadmin')">
               <router-link to="/dealer" class="mobile-link" @click="mobileMenuOpen = false">🔧 Dealer Portal</router-link>
             </li>
