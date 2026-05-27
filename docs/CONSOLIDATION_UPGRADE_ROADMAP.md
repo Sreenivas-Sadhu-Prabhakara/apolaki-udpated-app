@@ -17,7 +17,7 @@ This document serves as our master checklist and progress tracker. We will imple
 
 | Milestone | PRD Title | Status | Target Date / Session |
 | :--- | :--- | :---: | :--- |
-| **PRD 1** | [Menu Consolidation & App Shell Polish](#-prd-1-menu-consolidation--app-shell-polish) | ⏳ PENDING | *Next Up* |
+| **PRD 1** | [Menu Consolidation & App Shell Polish](#-prd-1-menu-consolidation--app-shell-polish) | ✅ COMPLETE | 2026-05-27 |
 | **PRD 2** | [High-Conversion AI-Driven Assessment Flow](#-prd-2-high-conversion-ai-driven-assessment-flow) | ⏳ PENDING | *To Be Planned* |
 | **PRD 3** | [Dynamic Solar Financing & EMI Planner](#-prd-3-dynamic-solar-financing--emi-planner) | ⏳ PENDING | *To Be Planned* |
 | **PRD 4** | [Vetted Installer & Supplier Marketplace](#-prd-4-vetted-installer--supplier-marketplace) | ⏳ PENDING | *To Be Planned* |
@@ -33,17 +33,48 @@ Consolidate the multiple desktop and mobile menus (Top Header Menu, Mobile Botto
 
 ### PRD 1 Scope & Requirements
 
-- [ ] **Desktop Header Clean-up:**
+- [x] **Desktop Header Clean-up:**
   - Reduce direct nav links to: Dashboard, Marketplace, Installations.
   - Relocate Assessment, Financing, and Contracts to context-appropriate wrappers or standard options.
   - Keep the "More" dropdown restricted purely to role-specific dealer/operations/admin tools.
-- [ ] **Mobile Bottom App-Nav Refresh:**
+- [x] **Mobile Bottom App-Nav Refresh:**
   - Standardize exactly 5 clear bottom items: Home (Dashboard), Assessment, Marketplace, Installations, Profile.
   - Remove redundant list layouts.
-- [ ] **Eliminate Mobile Hamburger Clutter:**
+- [x] **Eliminate Mobile Hamburger Clutter:**
   - De-duplicate links. Ensure the hamburger is either removed or slimmed down to only contain secondary settings, theme toggles, and role links.
 - [ ] **Journey Rail Preparation:**
   - Replace the global top journey rail setup in `ApolakiPrd.vue` with local context steps so it doesn't distract from other pages.
+
+### PRD 1 Implementation Details
+
+**Completed (2026-05-27):**
+
+1. **Desktop Navigation (`md:` breakpoint and up):**
+   - Primary links reduced to 3: Dashboard, Marketplace, Installations
+   - Secondary links (Assessment, Financing, Contracts, Monitoring) moved into "More ▾" dropdown
+   - Role-based links (Dealer Portal, Operations, Admin, Break-Glass) consolidated in "More" dropdown
+   - Clear visual separation and hierarchy
+
+2. **Mobile Hamburger Menu:**
+   - Displays all navigation items with emoji icons for clarity
+   - Includes Assessment, Marketplace, Installations, Financing, Monitoring, Contracts
+   - Role-based links clearly visible when applicable
+   - Logout button at bottom
+
+3. **Mobile Bottom Navigation Bar (5 fixed items):**
+   - Home (🏠) → Dashboard
+   - Assessment (📋) → Assessment Flow
+   - Marketplace (🏪) → Provider Search
+   - Installations (📦) → Installation List
+   - Profile (👤) → User Profile
+   - Fixed positioning, always visible on mobile devices
+   - Active state highlighting with bright blue background
+
+4. **Consolidated Styling:**
+   - Consistent transitions and hover states
+   - Dark mode support for all navigation elements
+   - Emoji icons for better mobile usability
+   - Responsive design verified
 
 ---
 
