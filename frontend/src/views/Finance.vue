@@ -19,6 +19,12 @@
             :class="activeTab === 'ledger' ? 'bg-[#0F6CBD] text-white' : (isDark ? 'bg-slate-800 text-slate-300' : 'bg-white text-gray-700 border border-gray-200')">
             📑 Transaction Ledger
           </button>
+          <button @click="activeTab = 'saved'" 
+            class="px-4 py-2.5 rounded-lg font-medium text-sm transition-all shadow-sm relative"
+            :class="activeTab === 'saved' ? 'bg-amber-500 text-white' : (isDark ? 'bg-slate-800 text-slate-300' : 'bg-white text-gray-700 border border-gray-200')">
+            💾 Saved Simulations
+            <span v-if="assessmentStore.assessments.length" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">{{ assessmentStore.assessments.length }}</span>
+          </button>
         </div>
       </div>
 
@@ -91,6 +97,19 @@
                   <span class="text-[10px] text-gray-400 block mt-0.5">Estimated Net Gain</span>
                 </div>
               </div>
+
+              <!-- Save Simulation CTA -->
+              <button @click="saveCurrentSimulation"
+                :disabled="assessmentStore.saving"
+                class="mt-4 w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2"
+                :class="saveSuccess ? 'bg-emerald-500 text-white' : 'bg-amber-500 hover:bg-amber-400 text-slate-900'">
+                <span v-if="assessmentStore.saving">⏳ Saving...</span>
+                <span v-else-if="saveSuccess">✅ Simulation Saved!</span>
+                <span v-else>💾 Save This Simulation</span>
+              </button>
+              <p v-if="assessmentStore.lastSaved" class="text-[10px] text-center mt-1 text-gray-400">
+                Last saved: {{ formatDate(assessmentStore.lastSaved) }}
+              </p>
             </div>
           </div>
         </div>
@@ -443,6 +462,68 @@
           </table>
         </div>
       </div>
+
+      <!-- TAB 3: SAVED SIMULATIONS -->
+      <div v-if="activeTab === 'saved'" class="space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">💾 My Saved Simulations</h2>
+            <p class="text-sm mt-1" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Retrieve and compare your past financing scenarios across sessions.</p>
+          </div>
+          <button @click="assessmentStore.fetchAssessments()" class="text-sm font-medium flex items-center gap-1" :class="isDark ? 'text-amber-400 hover:text-amber-300' : 'text-orange-600 hover:text-orange-800'">
+            🔄 Refresh
+          </button>
+        </div>
+
+        <div v-if="assessmentStore.loading" class="text-center py-20" :class="isDark ? 'text-slate-400' : 'text-gray-500'">
+          Loading saved simulations...
+        </div>
+
+        <div v-else-if="!assessmentStore.assessments.length" class="text-center py-20 rounded-2xl border" :class="isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-100'">
+          <div class="text-5xl mb-4">🗂️</div>
+          <h3 class="text-lg font-semibold" :class="isDark ? 'text-slate-200' : 'text-gray-700'">No simulations saved yet</h3>
+          <p class="mt-2 text-sm" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Use the Interactive Calculator and hit <strong>💾 Save This Simulation</strong> to store results here.</p>
+          <button @click="activeTab = 'advisor'" class="mt-4 px-5 py-2 bg-[#0F6CBD] text-white rounded-lg text-sm font-semibold hover:bg-blue-600 transition">
+            Go to Calculator
+          </button>
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div v-for="item in assessmentStore.assessments" :key="item.id"
+            class="rounded-2xl border p-5 flex flex-col gap-3 transition hover:shadow-lg cursor-pointer"
+            :class="isDark ? 'bg-slate-900 border-slate-700 hover:border-amber-500/50' : 'bg-white border-gray-100 shadow-sm hover:border-blue-300'"
+            @click="loadSavedSimulation(item)">
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-amber-500">Saved Scenario</span>
+                <h3 class="font-bold mt-0.5" :class="isDark ? 'text-slate-100' : 'text-slate-800'">{{ item.description || 'Solar Simulation' }}</h3>
+              </div>
+              <span class="text-xs px-2 py-1 rounded-full font-semibold" :class="isDark ? 'bg-slate-800 text-slate-300' : 'bg-gray-100 text-gray-600'">
+                {{ formatDate(item.created_at || item.createdAt) }}
+              </span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="rounded-lg p-3" :class="isDark ? 'bg-slate-800' : 'bg-gray-50'">
+                <p class="text-[10px] text-gray-400 font-medium uppercase tracking-wide">System Size</p>
+                <p class="font-bold text-sm" :class="isDark ? 'text-slate-100' : 'text-slate-700'">{{ item.recommended_capacity || item.annualUsage ? (item.recommended_capacity || '—') + ' kWp' : '—' }}</p>
+              </div>
+              <div class="rounded-lg p-3" :class="isDark ? 'bg-slate-800' : 'bg-gray-50'">
+                <p class="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Financing</p>
+                <p class="font-bold text-sm capitalize" :class="isDark ? 'text-slate-100' : 'text-slate-700'">{{ item.financing_option || item.financingOption || 'Loan' }}</p>
+              </div>
+              <div class="rounded-lg p-3" :class="isDark ? 'bg-slate-800' : 'bg-gray-50'">
+                <p class="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Est. Savings</p>
+                <p class="font-bold text-sm text-emerald-500">{{ formatCurrency(item.monthly_savings || item.monthlySavings || 0) }}/mo</p>
+              </div>
+              <div class="rounded-lg p-3" :class="isDark ? 'bg-slate-800' : 'bg-gray-50'">
+                <p class="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Payback</p>
+                <p class="font-bold text-sm" :class="isDark ? 'text-amber-400' : 'text-slate-700'">{{ item.payback_years || item.paybackYears || '—' }} yrs</p>
+              </div>
+            </div>
+            <button class="mt-1 text-xs font-semibold text-[#0F6CBD] hover:underline text-left">▶ Load this scenario into calculator →</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -450,13 +531,16 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useFinanceStore } from '../stores/financeStore'
+import { useFinancingAssessmentStore } from '../stores/financingAssessmentStore'
 import { useThemeStore } from '../stores/themeStore'
 import { formatCurrency } from '../utils/currency'
 
 const financeStore = useFinanceStore()
+const assessmentStore = useFinancingAssessmentStore()
 const themeStore = useThemeStore()
 const showAddForm = ref(false)
 const createSuccess = ref(false)
+const saveSuccess = ref(false)
 const activeTab = ref('advisor')
 
 // Interactive Calculator states
@@ -669,8 +753,40 @@ async function handleCreateTransaction() {
 async function loadData() {
   await Promise.all([
     financeStore.fetchTransactions(),
-    financeStore.fetchSummary()
+    financeStore.fetchSummary(),
+    assessmentStore.fetchAssessments()
   ])
+}
+
+async function saveCurrentSimulation() {
+  saveSuccess.value = false
+  await assessmentStore.saveAssessment({
+    description: `${systemSizeKW.value} kWp Solar — ${new Date().toLocaleDateString()}`,
+    annualUsage: Math.round(systemSizeKW.value * 125 * 12),
+    recommendedCapacity: systemSizeKW.value,
+    financingOption: loanDownPaymentPct.value === 100 ? 'cash' : loanDownPaymentPct.value === 0 ? 'lease' : 'loan',
+    monthlySavings: Math.round(estimatedMonthlySavings.value),
+    paybackYears: computedPaybackYears.value,
+    roofArea: systemSizeKW.value * 6,
+    sunExposure: 'high',
+    obstructionLevel: 'low',
+    roofCondition: 'good',
+    address: 'Philippines',
+    city: 'Manila',
+    state: 'NCR',
+    zipCode: '1000',
+  })
+  saveSuccess.value = true
+  setTimeout(() => { saveSuccess.value = false }, 3000)
+}
+
+function loadSavedSimulation(item) {
+  if (item.recommended_capacity) systemSizeKW.value = parseFloat(item.recommended_capacity)
+  const option = item.financing_option || item.financingOption || 'loan'
+  if (option === 'cash') loanDownPaymentPct.value = 100
+  else if (option === 'lease') loanDownPaymentPct.value = 0
+  else loanDownPaymentPct.value = 20
+  activeTab.value = 'advisor'
 }
 
 onMounted(loadData)
