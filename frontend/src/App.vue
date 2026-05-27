@@ -26,25 +26,26 @@
           <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
 
-        <!-- Main Menu -->
+        <!-- Consolidated Main Menu (3 primary actions) -->
         <ul class="nav-menu hidden md:flex items-center gap-0.5">
           <li><router-link to="/dashboard" class="nav-link transition">Dashboard</router-link></li>
-          <li><router-link to="/installations" class="nav-link transition">Installations</router-link></li>
-          <li><router-link to="/monitoring" class="nav-link transition">Monitoring</router-link></li>
           <li><router-link to="/marketplace" class="nav-link transition">Marketplace</router-link></li>
-          <li><router-link to="/assessment" class="nav-link transition">Assessment</router-link></li>
-          <li><router-link to="/finance" class="nav-link transition">Financing</router-link></li>
-          <li><router-link to="/contracts" class="nav-link transition">Contracts</router-link></li>
+          <li><router-link to="/installations" class="nav-link transition">Installations</router-link></li>
 
-          <!-- "More" dropdown for role-specific links -->
-          <li v-if="hasAdminLinks" class="nav-more-wrapper">
+          <!-- "More" dropdown for secondary + role-specific links -->
+          <li class="nav-more-wrapper">
             <button @click="moreMenuOpen = !moreMenuOpen" class="nav-link nav-more-btn transition">
               More ▾
             </button>
             <transition name="dropdown">
               <ul v-if="moreMenuOpen" class="nav-dropdown" @mouseleave="moreMenuOpen = false">
+                <li><router-link to="/assessment" class="dropdown-link" @click="moreMenuOpen = false">Assessment</router-link></li>
+                <li><router-link to="/finance" class="dropdown-link" @click="moreMenuOpen = false">Financing</router-link></li>
+                <li><router-link to="/contracts" class="dropdown-link" @click="moreMenuOpen = false">Contracts</router-link></li>
+                <li><router-link to="/monitoring" class="dropdown-link" @click="moreMenuOpen = false">Monitoring</router-link></li>
+                <li v-if="hasRoleLinks" class="dropdown-divider"></li>
                 <li v-if="userStore.hasRole('dealer', 'installer', 'admin', 'superadmin')">
-                  <router-link to="/dealer" class="dropdown-link" @click="moreMenuOpen = false">🔧 Dealer</router-link>
+                  <router-link to="/dealer" class="dropdown-link" @click="moreMenuOpen = false">🔧 Dealer Portal</router-link>
                 </li>
                 <li v-if="userStore.hasRole('operations', 'admin', 'superadmin')">
                   <router-link to="/operations" class="dropdown-link" @click="moreMenuOpen = false">🛠️ Operations</router-link>
@@ -82,25 +83,26 @@
         </div>
       </div>
 
-      <!-- Mobile Menu Dropdown -->
+      <!-- Mobile Menu Dropdown (consolidated) -->
       <transition name="slide-down">
         <div v-if="mobileMenuOpen" class="mobile-menu mobile-menu-kinetic md:hidden" :class="isDarkMode ? 'mobile-menu-kinetic--dark' : 'mobile-menu-kinetic--light'">
           <ul class="flex flex-col py-3 px-4 gap-1">
-            <li><router-link to="/dashboard" class="mobile-link" @click="mobileMenuOpen = false">Dashboard</router-link></li>
-            <li><router-link to="/installations" class="mobile-link" @click="mobileMenuOpen = false">Installations</router-link></li>
-            <li><router-link to="/monitoring" class="mobile-link" @click="mobileMenuOpen = false">Monitoring</router-link></li>
-            <li><router-link to="/marketplace" class="mobile-link" @click="mobileMenuOpen = false">Marketplace</router-link></li>
-            <li><router-link to="/assessment" class="mobile-link" @click="mobileMenuOpen = false">Assessment</router-link></li>
-            <li><router-link to="/finance" class="mobile-link" @click="mobileMenuOpen = false">Financing</router-link></li>
-            <li><router-link to="/contracts" class="mobile-link" @click="mobileMenuOpen = false">Contracts</router-link></li>
+            <li><router-link to="/dashboard" class="mobile-link" @click="mobileMenuOpen = false">🏠 Home</router-link></li>
+            <li><router-link to="/assessment" class="mobile-link" @click="mobileMenuOpen = false">📋 Assessment</router-link></li>
+            <li><router-link to="/marketplace" class="mobile-link" @click="mobileMenuOpen = false">🏪 Marketplace</router-link></li>
+            <li><router-link to="/installations" class="mobile-link" @click="mobileMenuOpen = false">📦 Installations</router-link></li>
+            <li><router-link to="/finance" class="mobile-link" @click="mobileMenuOpen = false">💰 Financing</router-link></li>
+            <li><router-link to="/monitoring" class="mobile-link" @click="mobileMenuOpen = false">📊 Monitoring</router-link></li>
+            <li><router-link to="/contracts" class="mobile-link" @click="mobileMenuOpen = false">📄 Contracts</router-link></li>
+            <li v-if="hasRoleLinks" class="mt-2 pt-2 border-t border-white/20"></li>
             <li v-if="userStore.hasRole('dealer', 'installer', 'admin', 'superadmin')">
-              <router-link to="/dealer" class="mobile-link" @click="mobileMenuOpen = false">Dealer</router-link>
+              <router-link to="/dealer" class="mobile-link" @click="mobileMenuOpen = false">🔧 Dealer Portal</router-link>
             </li>
             <li v-if="userStore.hasRole('operations', 'admin', 'superadmin')">
-              <router-link to="/operations" class="mobile-link" @click="mobileMenuOpen = false">Operations</router-link>
+              <router-link to="/operations" class="mobile-link" @click="mobileMenuOpen = false">🛠️ Operations</router-link>
             </li>
             <li v-if="userStore.hasRole('admin', 'superadmin')">
-              <router-link to="/admin" class="mobile-link" @click="mobileMenuOpen = false">Admin</router-link>
+              <router-link to="/admin" class="mobile-link" @click="mobileMenuOpen = false">👤 Admin</router-link>
             </li>
             <li v-if="userStore.user" class="mt-2 pt-2 border-t border-white/20">
               <button @click="logout(); mobileMenuOpen = false" class="mobile-link w-full text-left">Logout</button>
@@ -117,12 +119,23 @@
       </transition>
     </main>
 
+    <!-- Mobile Bottom Navigation Bar (5 primary actions only) -->
     <nav v-if="showChrome" class="bottom-app-nav md:hidden" aria-label="Primary mobile navigation">
-      <router-link to="/dashboard" class="bottom-app-link">Home</router-link>
-      <router-link to="/assessment" class="bottom-app-link">Assessment</router-link>
-      <router-link to="/finance" class="bottom-app-link">Financing</router-link>
-      <router-link to="/marketplace" class="bottom-app-link">Marketplace</router-link>
-      <router-link to="/contracts" class="bottom-app-link">More</router-link>
+      <router-link to="/dashboard" class="bottom-app-link" title="Home">
+        <span>🏠 Home</span>
+      </router-link>
+      <router-link to="/assessment" class="bottom-app-link" title="Assessment">
+        <span>📋 Assessment</span>
+      </router-link>
+      <router-link to="/marketplace" class="bottom-app-link" title="Marketplace">
+        <span>🏪 Marketplace</span>
+      </router-link>
+      <router-link to="/installations" class="bottom-app-link" title="Installations">
+        <span>📦 Installations</span>
+      </router-link>
+      <router-link to="/profile" class="bottom-app-link" title="Profile">
+        <span>👤 Profile</span>
+      </router-link>
     </nav>
   </div>
 </template>
@@ -152,8 +165,8 @@ const userInitials = computed(() => {
   return (first + last).toUpperCase()
 })
 
-// Whether to show the "More" dropdown
-const hasAdminLinks = computed(() => {
+// Whether to show the "More" dropdown with role-specific links
+const hasRoleLinks = computed(() => {
   return userStore.hasRole('dealer', 'installer', 'operations', 'admin', 'superadmin')
 })
 
@@ -335,6 +348,12 @@ const logout = async () => {
   color: #dc2626;
 }
 
+.dropdown-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 0.25rem 0;
+}
+
 /* Dropdown transitions */
 .dropdown-enter-active,
 .dropdown-leave-active {
@@ -491,8 +510,8 @@ const logout = async () => {
   z-index: 45;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 4px;
-  padding: 8px;
+  gap: 6px;
+  padding: 10px;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(15, 108, 189, 0.12);
@@ -502,20 +521,31 @@ const logout = async () => {
 
 .bottom-app-link {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 42px;
+  min-height: 48px;
   border-radius: 12px;
   color: #5F6B7A;
   text-decoration: none;
-  font-size: 0.68rem;
-  font-weight: 900;
+  font-size: 0.65rem;
+  font-weight: 600;
   letter-spacing: 0.02em;
+  transition: all 0.2s ease;
+  gap: 2px;
+  padding: 4px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.bottom-app-link:active {
+  transform: scale(0.95);
 }
 
 .bottom-app-link.router-link-active {
   background: #0F6CBD;
   color: #FFFFFF;
+  font-weight: 700;
 }
 
 .dark-theme .bottom-app-nav {
