@@ -110,25 +110,6 @@
         <router-view />
       </transition>
     </main>
-
-    <!-- Mobile Bottom Navigation Bar (Consolidated 5 primary steps + Profile) -->
-    <nav v-if="showChrome" class="bottom-app-nav md:hidden" aria-label="Primary mobile navigation">
-      <router-link to="/dashboard" class="bottom-app-link" title="Intelligence">
-        <span>💡 Intelligence</span>
-      </router-link>
-      <router-link to="/assessment" class="bottom-app-link" title="Assessment">
-        <span>📋 Assessment</span>
-      </router-link>
-      <router-link to="/marketplace" class="bottom-app-link" title="Marketplace">
-        <span>🏪 Marketplace</span>
-      </router-link>
-      <router-link to="/installations" class="bottom-app-link" title="Installations">
-        <span>📦 Portfolio</span>
-      </router-link>
-      <router-link to="/profile" class="bottom-app-link" title="Profile">
-        <span>👤 Profile</span>
-      </router-link>
-    </nav>
   </div>
 </template>
 
@@ -492,66 +473,6 @@ const logout = async () => {
 .main-content {
   flex: 1;
   padding: 0;
-}
-
-.bottom-app-nav {
-  position: fixed;
-  left: 12px;
-  right: 12px;
-  bottom: 12px;
-  z-index: 45;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
-  padding: 10px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(15, 108, 189, 0.12);
-  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
-  backdrop-filter: blur(20px);
-}
-
-.bottom-app-link {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  min-height: 48px;
-  border-radius: 12px;
-  color: #5F6B7A;
-  text-decoration: none;
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  transition: all 0.2s ease;
-  gap: 2px;
-  padding: 4px;
-  text-align: center;
-  line-height: 1.2;
-}
-
-.bottom-app-link:active {
-  transform: scale(0.95);
-}
-
-.bottom-app-link.router-link-active {
-  background: #0F6CBD;
-  color: #FFFFFF;
-  font-weight: 700;
-}
-
-.dark-theme .bottom-app-nav {
-  background: rgba(26, 28, 30, 0.92);
-  border-color: rgba(244, 201, 76, 0.16);
-}
-
-.dark-theme .bottom-app-link {
-  color: #CBD5E1;
-}
-
-.dark-theme .bottom-app-link.router-link-active {
-  background: #F4C94C;
-  color: #1A1C1E;
 }
 
 /* ── Transitions ────────────────────────────────────── */
