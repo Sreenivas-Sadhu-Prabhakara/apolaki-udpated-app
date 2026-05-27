@@ -1,0 +1,119 @@
+# APOLAKI PLATFORM CONSOLIDATION & UPGRADE ROADMAP
+
+This document serves as our master checklist and progress tracker. We will implement these PRDs **one by one, across different chat sessions**. Before closing each session or starting a new one, the current progress of each phase should be updated here.
+
+---
+
+## 🗺️ MASTER METRIC & CONSOLIDATION MAP
+
+### Navigation Schema Consolidation
+
+- **Desktop Layout:** Horizontal header containing only 3 consolidated primary actions: **Dashboard**, **Marketplace**, and **Installations**, plus a structured Profile/More dropdown.
+- **Mobile Layout:** Consistent bottom navigation bar with exactly 5 primary touchpoints: **Home (Dashboard)**, **Assessment**, **Marketplace**, **Installations**, and **Profile**. Eliminates cluttered side-pagers and redundant links.
+
+---
+
+## 📈 PROGRESS TRACKER
+
+| Milestone | PRD Title | Status | Target Date / Session |
+| :--- | :--- | :---: | :--- |
+| **PRD 1** | [Menu Consolidation & App Shell Polish](#-prd-1-menu-consolidation--app-shell-polish) | ⏳ PENDING | *Next Up* |
+| **PRD 2** | [High-Conversion AI-Driven Assessment Flow](#-prd-2-high-conversion-ai-driven-assessment-flow) | ⏳ PENDING | *To Be Planned* |
+| **PRD 3** | [Dynamic Solar Financing & EMI Planner](#-prd-3-dynamic-solar-financing--emi-planner) | ⏳ PENDING | *To Be Planned* |
+| **PRD 4** | [Vetted Installer & Supplier Marketplace](#-prd-4-vetted-installer--supplier-marketplace) | ⏳ PENDING | *To Be Planned* |
+| **PRD 5** | [Energy Flow Dashboard & Telemetry Panel](#-prd-5-energy-flow-dashboard--telemetry-panel) | ⏳ PENDING | *To Be Planned* |
+
+---
+
+## 📋 [PRD 1] Menu Consolidation & App Shell Polish
+
+### PRD 1 Goal
+
+Consolidate the multiple desktop and mobile menus (Top Header Menu, Mobile Bottom Bar, Mobile Hamburger dropdown, and local Journey Rail) into a single, cohesive, modern responsive navigation wrapper inside `App.vue`.
+
+### PRD 1 Scope & Requirements
+
+- [ ] **Desktop Header Clean-up:**
+  - Reduce direct nav links to: Dashboard, Marketplace, Installations.
+  - Relocate Assessment, Financing, and Contracts to context-appropriate wrappers or standard options.
+  - Keep the "More" dropdown restricted purely to role-specific dealer/operations/admin tools.
+- [ ] **Mobile Bottom App-Nav Refresh:**
+  - Standardize exactly 5 clear bottom items: Home (Dashboard), Assessment, Marketplace, Installations, Profile.
+  - Remove redundant list layouts.
+- [ ] **Eliminate Mobile Hamburger Clutter:**
+  - De-duplicate links. Ensure the hamburger is either removed or slimmed down to only contain secondary settings, theme toggles, and role links.
+- [ ] **Journey Rail Preparation:**
+  - Replace the global top journey rail setup in `ApolakiPrd.vue` with local context steps so it doesn't distract from other pages.
+
+---
+
+## 📋 [PRD 2] High-Conversion AI-Driven Assessment Flow
+
+### PRD 2 Goal
+
+Upgrade the existing elementary assessment step into an AI-driven, financing-first structured decision wizard, focusing on saving-swaps first rather than upfront ROI.
+
+### PRD 2 Scope & Requirements
+
+- [ ] **Financing-First Intent Capture Header:**
+  - Hook: *"Replace your electricity bill with a lower monthly payment."*
+  - Interactive value slider showing instant simulated swap examples (e.g. Current Bill ₱12k $\rightarrow$ Solar Plan ₱7.5k).
+- [ ] **Interactive Guided Steps (30s completion):**
+  - *Step 1:* Dynamic PHP Bill slider & entry form.
+  - *Step 2:* Philippine Province/City drop-down menu + optional GPS location detector.
+  - *Step 3:* Smart Property / Roof space confirmation (Residential vs SME).
+- [ ] **System Intelligence Processing Screen:**
+  - Deliberate 2.5-second calculating state screen rotating active messages: *"Analyzing area sun peak index..."*, *"Optimizing monthly plan..."*.
+- [ ] **The "Payment Swap" Hero Card:**
+  - Highlighting net savings above all else (e.g., "Save ₱x Monthly" is the largest visual metric).
+- [ ] **Dynamic Lead Capture:**
+  - Keep contact inquiries (Name, Phone number) hidden until AFTER results are calculated to build confidence.
+
+---
+
+## 📋 [PRD 3] Dynamic Solar Financing & EMI Planner
+
+### PRD 3 Goal
+
+Move the financing panel out of the blocky `ApolakiPrd.vue` mock handler. Create an interactive single-page view allowing details-oriented cash-flow exploration.
+
+### PRD 3 Scope & Requirements
+
+- [ ] **Interactive EMI Sliders:**
+  - Adjust Downpayment, Tenure (3, 5, 7, 10 years), and view real-time changes in monthly payments.
+- [ ] **Equity Accrual Graphs:**
+  - Simple local SVG-based chart showing customer progress from utility dependencies to asset ownership.
+- [ ] **Draft Subscriptions & Contracts:**
+  - Instant pre-filled draft subscription agreements matching the simulated assessment variables.
+
+---
+
+## 📋 [PRD 4] Vetted Installer & Supplier Marketplace
+
+### PRD 4 Goal
+
+Build a gorgeous marketplace experience where users can match and request quotations from verified local installer networks.
+
+### PRD 4 Scope & Requirements
+
+- [ ] **Categorized Search & Filter Tabs:**
+  - Drill-down items for: Vetted Installers, Material Suppliers, Solar Consultants, Maintenance Crews.
+- [ ] **Province-Based matching:**
+  - Automatically filter and bubble up providers registered within the province input inside the user's Assessment config.
+- [ ] **Quotation Handshake Form:**
+  - One-tap request dispatch containing assessment variables to selected providers.
+
+---
+
+## 📋 [PRD 5] Energy Flow Dashboard & Telemetry Panel
+
+### PRD 5 Goal
+
+Deliver premium dashboards tracking live system telemetry, system efficiency, and solar generation.
+
+### PRD 5 Scope & Requirements
+
+- [ ] **Dynamic Live Flow Map:**
+  - Smooth live canvas or animated CSS lines representing real-time movement between solar modules, household consumer loads, storage, and grid exports.
+- [ ] **Telemetry Readout Panels:**
+  - Deep-dive telemetry historical feeds showing inverter currents, AC inputs, temperature status, and overall health logs.
