@@ -1,19 +1,5 @@
 <template>
   <div class="prd-page" :class="{ 'prd-page--dark': isDark }">
-    <nav class="journey-rail" aria-label="Solar journey">
-      <router-link
-        v-for="step in journeySteps"
-        :key="step.key"
-        :to="step.to"
-        class="journey-step"
-        :class="{ 'is-active': step.key === pageKey, 'is-complete': step.order < activeJourneyOrder }"
-      >
-        <span>{{ step.order }}</span>
-        <strong>{{ step.label }}</strong>
-        <small>{{ step.detail }}</small>
-      </router-link>
-    </nav>
-
     <section v-if="pageKey === 'dashboard'" class="prd-stack">
       <PrdHeader eyebrow="Live System Feed" title="Apolaki Intelligence" action="Report" />
 
@@ -1637,7 +1623,7 @@ onBeforeUnmount(() => window.clearTimeout(solarLookupTimer))
   overflow: hidden;
   background: #D8E8F6;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0  0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .prd-ph-map::after {
