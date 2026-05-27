@@ -20,7 +20,7 @@ This document serves as our master checklist and progress tracker. We will imple
 | **PRD 1** | [Menu Consolidation & App Shell Polish](#-prd-1-menu-consolidation--app-shell-polish) | ✅ COMPLETE | 2026-05-27 |
 | **PRD 2** | [Dynamic Solar Financing & EMI Planner](#-prd-2-dynamic-solar-financing--emi-planner) | ✅ COMPLETE | 2026-05-27 |
 | **PRD 3** | [High-Conversion AI-Driven Assessment Flow](#-prd-3-high-conversion-ai-driven-assessment-flow) | 🔄 IN PROGRESS | 2026-05-27 |
-| **PRD 4** | [Vetted Installer & Supplier Marketplace](#-prd-4-vetted-installer--supplier-marketplace) | ⏳ PENDING | *To Be Planned* |
+| **PRD 4** | [Vetted Installer & Supplier Marketplace](#-prd-4-vetted-installer--supplier-marketplace) | ✅ COMPLETE | 2026-05-27 |
 | **PRD 5** | [Energy Flow Dashboard & Telemetry Panel](#-prd-5-energy-flow-dashboard--telemetry-panel) | ⏳ PENDING | *To Be Planned* |
 
 ---
@@ -135,11 +135,11 @@ Build a gorgeous marketplace experience where users can match and request quotat
 
 ### PRD 4 Scope & Requirements
 
-- [ ] **Categorized Search & Filter Tabs:**
+- [x] **Categorized Search & Filter Tabs:**
   - Drill-down items for: Vetted Installers, Material Suppliers, Solar Consultants, Maintenance Crews.
-- [ ] **Province-Based matching:**
+- [x] **Province-Based matching:**
   - Automatically filter and bubble up providers registered within the province input inside the user's Assessment config.
-- [ ] **Quotation Handshake Form:**
+- [x] **Quotation Handshake Form:**
   - One-tap request dispatch containing assessment variables to selected providers.
 
 ---

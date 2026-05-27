@@ -50,9 +50,104 @@
           {{ cat.label }}
         </button>
       </div>
+      
+      <!-- Marketplace Tabs -->
+      <div class="flex border-b mb-6" :class="isDark ? 'border-slate-700' : 'border-gray-200'">
+        <button 
+          @click="activeTab = 'equipment'" 
+          class="px-6 py-3 font-medium text-sm transition-colors border-b-2"
+          :class="activeTab === 'equipment' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+        >
+          📦 Equipment & Products
+        </button>
+        <button 
+          @click="activeTab = 'installers'" 
+          class="px-6 py-3 font-medium text-sm transition-colors border-b-2"
+          :class="activeTab === 'installers' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+        >
+          🛠️ Vetted Installers & Services
+        </button>
+      </div>
+
+      <div v-if="activeTab === 'installers'">
+        <!-- Installer/Service Filters -->
+        <div class="flex flex-wrap gap-3 mb-6 items-center">
+            <span class="text-sm font-medium text-gray-500">Service Type:</span>
+            <button
+              v-for="type in serviceTypes"
+              :key="type.value"
+              @click="activeServiceType = type.value"
+              :class="[
+                'px-3 py-1.5 rounded-full text-xs font-medium transition',
+                activeServiceType === type.value
+                  ? 'bg-blue-600 text-white'
+                  : isDark ? 'bg-slate-800 text-slate-300 border border-slate-600 hover:bg-slate-700' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
+              ]"
+            >
+              {{ type.label }}
+            </button>
+            
+            <div class="ml-auto flex items-center gap-2">
+                <span class="text-sm font-medium text-gray-500">📍 Region:</span>
+                <select v-model="selectedProvince" class="rounded-lg border px-3 py-1.5 text-sm" :class="isDark ? 'bg-slate-800 border-slate-600 text-white' : 'bg-white border-gray-300'">
+                    <option value="all">Any Region</option>
+                    <option value="NCR">Metro Manila (NCR)</option>
+                    <option value="Bulacan">Bulacan</option>
+                    <option value="Cavite">Cavite</option>
+                    <option value="Laguna">Laguna</option>
+                    <option value="Cebu">Cebu</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Installers List -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div v-for="installer in filteredInstallers" :key="installer.id" 
+                 class="border rounded-xl p-5 hover:shadow-lg transition flex flex-col"
+                 :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'">
+                
+                <div class="flex gap-4">
+                    <div class="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center text-2xl flex-shrink-0">
+                        {{ installer.icon || '👷' }}
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-lg" :class="isDark ? 'text-white' : 'text-gray-900'">{{ installer.name }}</h3>
+                            <span v-if="installer.verified" class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium flex items-center gap-1">
+                                ✓ Verified
+                            </span>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1 flex items-center gap-1">
+                            📍 {{ installer.provinces.join(', ') }}
+                        </p>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="text-yellow-500 text-sm">★ {{ installer.rating.toFixed(1) }}</span>
+                            <span class="text-xs text-gray-400">({{ installer.reviewCount }} reviews)</span>
+                            <span class="text-xs text-gray-400 mx-1">•</span>
+                            <span class="text-xs font-medium px-2 py-0.5 rounded bg-gray-100 text-gray-600">{{ installer.typeLabel }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="mt-4 text-sm line-clamp-2 text-gray-600" :class="isDark ? 'text-gray-400' : ''">
+                    {{ installer.description }}
+                </p>
+                
+                <div class="mt-auto pt-4 flex gap-3">
+                    <button @click="openQuoteModal(installer)" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 rounded-lg text-sm transition">
+                        Request Quotation
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div v-if="filteredInstallers.length === 0" class="text-center py-16 text-gray-500">
+            No service providers found for the selected area.
+        </div>
+      </div>
 
       <!-- Wishlist Panel -->
-      <div v-if="showWishlist" class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
+      <div v-if="showWishlist && activeTab === 'equipment'" class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold text-gray-900">❤️ My Wishlist</h2>
           <button @click="showWishlist = false" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
@@ -202,7 +297,7 @@
       </div>
 
       <!-- Products Grid -->
-      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div v-else-if="activeTab === 'equipment'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <div
           v-for="product in filteredProducts"
           :key="product.id"
@@ -241,15 +336,60 @@
         </div>
       </div>
 
-      <div v-if="!marketplaceStore.loading && !marketplaceStore.error && !selectedProduct && filteredProducts.length === 0" class="text-center py-20 text-gray-400">
+      <div v-if="activeTab === 'equipment' && !marketplaceStore.loading && !marketplaceStore.error && !selectedProduct && filteredProducts.length === 0" class="text-center py-20 text-gray-400">
         No products found. Try adjusting your search or filters.
+      </div>
+
+      <!-- Quotation Modal -->
+      <div v-if="quoteInstaller" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden" :class="isDark ? 'bg-slate-900 border border-slate-700' : ''">
+          <div class="p-6 border-b" :class="isDark ? 'border-slate-700' : 'border-gray-200'">
+            <div class="flex justify-between items-center">
+              <h2 class="text-xl font-bold" :class="isDark ? 'text-white' : 'text-gray-900'">Request Quotation</h2>
+              <button @click="quoteInstaller = null" class="text-gray-500 hover:text-gray-700 transition transform hover:scale-110">✕</button>
+            </div>
+            <p class="text-sm text-gray-500 mt-1">Send a handshake request to <strong class="text-gray-700">{{ quoteInstaller.name }}</strong></p>
+          </div>
+          
+          <div class="p-6 space-y-4">
+            <!-- Simulated form pulling from Assessment config -->
+            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4">
+                <p class="text-sm text-blue-800 flex items-start gap-2">
+                    <span class="mt-0.5">💡</span>
+                    <span>This request will automatically include your current system size estimate and roof type from your last Assessment.</span>
+                </p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium mb-1" :class="isDark ? 'text-slate-300' : 'text-gray-700'">Project Timeline</label>
+              <select class="w-full border rounded-lg px-4 py-2 text-sm" :class="isDark ? 'bg-slate-800 border-slate-600 text-white' : 'bg-white border-gray-300'">
+                <option>Ready to start immediately</option>
+                <option>Within 1-3 months</option>
+                <option>Just exploring options</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium mb-1" :class="isDark ? 'text-slate-300' : 'text-gray-700'">Additional Notes</label>
+              <textarea rows="3" class="w-full border rounded-lg px-4 py-2 text-sm" :class="isDark ? 'bg-slate-800 border-slate-600 text-white' : 'bg-white border-gray-300'" placeholder="Tell them about your specific requirements..."></textarea>
+            </div>
+          </div>
+          
+          <div class="p-6 border-t flex justify-end gap-3" :class="isDark ? 'border-slate-700 bg-slate-800/50' : 'border-gray-200 bg-gray-50'">
+            <button @click="quoteInstaller = null" class="px-4 py-2 text-sm font-medium rounded-lg border hover:bg-gray-100 transition" :class="isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-gray-300 text-gray-700'">Cancel</button>
+            <button @click="submitQuotation" class="px-6 py-2 text-sm font-medium rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition flex items-center gap-2">
+              <span v-if="submittingQuote">Sending...</span>
+              <span v-else>Send Request ✉️</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useMarketplaceStore } from '../stores/marketplaceStore'
 import { useThemeStore } from '../stores/themeStore'
 import { formatCurrency } from '../utils/currency'
@@ -267,10 +407,105 @@ const selectedProduct = ref(null)
 const productReviews = ref([])
 const showReviewForm = ref(false)
 
-const reviewForm = reactive({
-  rating: 0,
-  title: '',
-  comment: ''
+const activeTab = ref('equipment') // 'equipment' or 'installers'
+const activeServiceType = ref('all')
+const selectedProvince = ref('all')
+const quoteInstaller = ref(null)
+const submittingQuote = ref(false)
+
+// Use saved province from Assessment if available (Requirement: automatically filter based on province input inside the user's Assessment config)
+onMounted(() => {
+    try {
+        const stored = localStorage.getItem('financingAssessmentState')
+        if (stored) {
+            const assessment = JSON.parse(stored)
+            if (assessment.province && ['NCR', 'Bulacan', 'Cavite', 'Laguna', 'Cebu'].includes(assessment.province)) {
+                selectedProvince.value = assessment.province
+            }
+        }
+    } catch (e) {
+        console.warn('Could not read assessment province for marketplace filter', e)
+    }
+})
+
+const serviceTypes = [
+  { value: 'all', label: 'All Services' },
+  { value: 'installer', label: '🛠 Vetted Installers' },
+  { value: 'supplier', label: '📦 Material Suppliers' },
+  { value: 'consultant', label: '📋 Solar Consultants' },
+  { value: 'maintenance', label: '🔧 Maintenance Crews' }
+]
+
+// Mock data for installers
+const installersList = [
+    {
+        id: 'i1',
+        name: 'SunPower PH',
+        type: 'installer',
+        typeLabel: 'Vetted Installer',
+        icon: '👷‍♂️',
+        verified: true,
+        rating: 4.8,
+        reviewCount: 124,
+        provinces: ['NCR', 'Bulacan', 'Laguna'],
+        description: 'Premium Tier 1 solar installations for residential and commercial. PCAB licensed and fully insured.'
+    },
+    {
+        id: 'i2',
+        name: 'EcoEnergy Materials',
+        type: 'supplier',
+        typeLabel: 'Material Supplier',
+        icon: '🏭',
+        verified: true,
+        rating: 4.9,
+        reviewCount: 89,
+        provinces: ['NCR', 'Cebu', 'Laguna', 'Cavite'],
+        description: 'Wholesale distributor of tier-1 JA Solar panels and Growatt inverters.'
+    },
+    {
+        id: 'i3',
+        name: 'BrightFuture Consultants',
+        type: 'consultant',
+        typeLabel: 'Solar Consultant',
+        icon: '👨‍💼',
+        verified: false,
+        rating: 4.5,
+        reviewCount: 32,
+        provinces: ['NCR', 'Cavite'],
+        description: 'Independent structural engineering and ROI assessment for commercial roofing.'
+    },
+    {
+        id: 'i4',
+        name: 'QuickFix Solar Maintenance',
+        type: 'maintenance',
+        typeLabel: 'Maintenance Crew',
+        icon: '🔧',
+        verified: true,
+        rating: 4.7,
+        reviewCount: 215,
+        provinces: ['NCR', 'Bulacan'],
+        description: '24/7 emergency inverter repairs, panel cleaning, and annual maintenance contracts.'
+    },
+    {
+        id: 'i5',
+        name: 'Visayas Solar Master',
+        type: 'installer',
+        typeLabel: 'Vetted Installer',
+        icon: '👷',
+        verified: true,
+        rating: 4.6,
+        reviewCount: 56,
+        provinces: ['Cebu'],
+        description: 'Top rated installation team based in Cebu City. Specializes in hybrid setups.'
+    }
+]
+
+const filteredInstallers = computed(() => {
+    return installersList.filter(installer => {
+        const typeMatch = activeServiceType.value === 'all' || installer.type === activeServiceType.value
+        const provinceMatch = selectedProvince.value === 'all' || installer.provinces.includes(selectedProvince.value)
+        return typeMatch && provinceMatch
+    })
 })
 
 const categories = [
@@ -373,6 +608,20 @@ async function handleSubmitReview() {
   } catch (e) {
     console.error('Review error:', e)
   }
+}
+
+function openQuoteModal(installer) {
+    quoteInstaller.value = installer
+}
+
+function submitQuotation() {
+    submittingQuote.value = true
+    // Simulate API call
+    setTimeout(() => {
+        submittingQuote.value = false
+        quoteInstaller.value = null
+        alert('Quotation request sent successfully! The provider will contact you shortly.')
+    }, 1200)
 }
 
 onMounted(async () => {
