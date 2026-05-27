@@ -74,7 +74,7 @@ const routes = [
   {
     path: '/assessment',
     name: 'Assessment',
-    component: () => import('../views/ApolakiPrd.vue'),
+    component: () => import('../views/Assessment.vue'),
     meta: { requiresAuth: true }
   },
   {
