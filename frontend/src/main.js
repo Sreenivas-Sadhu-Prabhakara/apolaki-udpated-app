@@ -9,10 +9,14 @@ const app = createApp(App)
 const pinia = createPinia()
 
 app.use(pinia)
-app.use(router)
 
-// Restore user session from localStorage before first navigation
+// Check the server-owned session cookie before the first navigation.
 const userStore = useUserStore()
-userStore.restoreSession()
 
-app.mount('#app')
+async function bootstrap() {
+  await userStore.restoreSession()
+  app.use(router)
+  app.mount('#app')
+}
+
+bootstrap()

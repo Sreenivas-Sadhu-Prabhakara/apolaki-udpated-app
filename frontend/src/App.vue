@@ -167,6 +167,8 @@ const toggleTheme = () => {
 
 const showChrome = computed(() => {
   return !route.path.startsWith('/login') &&
+    !route.path.startsWith('/auth-callback') &&
+    !route.path.startsWith('/consent') &&
     !route.path.startsWith('/signup') &&
     !route.path.startsWith('/forgot-password') &&
     !route.path.startsWith('/reset-password')

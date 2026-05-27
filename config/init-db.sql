@@ -72,6 +72,24 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Application consent decisions, separate from OAuth identity grants
+CREATE TABLE IF NOT EXISTS user_consents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  consent_key VARCHAR(100) NOT NULL,
+  consent_version VARCHAR(20) NOT NULL,
+  decision VARCHAR(20) NOT NULL CHECK (decision IN ('granted', 'declined', 'revoked')),
+  purpose TEXT NOT NULL,
+  data_scope JSONB DEFAULT '[]',
+  granted_at TIMESTAMP,
+  revoked_at TIMESTAMP,
+  actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  source VARCHAR(50) NOT NULL DEFAULT 'onboarding',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, consent_key, consent_version)
+);
+
 -- ============================================================================
 -- Solar Installation & Performance Tables
 -- ============================================================================
@@ -247,6 +265,8 @@ CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_session_token ON sessions(session_token);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_user_consents_user_id ON user_consents(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_consents_lookup ON user_consents(user_id, consent_key, decision);
 CREATE INDEX IF NOT EXISTS idx_solar_installations_user_id ON solar_installations(user_id);
 CREATE INDEX IF NOT EXISTS idx_monitoring_data_installation_id ON monitoring_data(installation_id);
 CREATE INDEX IF NOT EXISTS idx_monitoring_data_timestamp ON monitoring_data(timestamp);

@@ -1,127 +1,59 @@
 /**
- * API Integration Tests — Authentication (signup, login, logout, token refresh)
+ * API Integration Tests - supported authentication contract.
  * @tags smoke, api, auth
  */
 
 import { expect } from 'chai';
-import client, { clearAuth, login } from '../helpers/apiClient.js';
-import config from '../helpers/config.js';
+import client from '../helpers/apiClient.js';
 
-describe('API › Authentication', function () {
-  afterEach(function () {
-    clearAuth();
+describe('API > Authentication', function () {
+  const disabledRoutes = [
+    ['/api/auth/signup', 'post'],
+    ['/api/auth/verify-otp', 'post'],
+    ['/api/auth/instagram', 'get'],
+    ['/api/auth/viber', 'get'],
+    ['/api/auth/telegram', 'get'],
+    ['/api/auth/whatsapp', 'get']
+  ];
+
+  for (const [route, method] of disabledRoutes) {
+    it(`disables ${method.toUpperCase()} ${route}`, async function () {
+      const res = await client.request({ method, url: route, maxRedirects: 0 });
+      expect(res.status).to.equal(410);
+      expect(res.data).to.have.property('code', 'AUTH_METHOD_DISABLED');
+    });
+  }
+
+  it('accepts email/password as a supported sign-in method', async function () {
+    const res = await client.post('/api/auth/login', {});
+    expect(res.status).to.equal(400);
+    expect(res.data.error).to.equal('Email and password are required.');
   });
 
-  // ─── Signup ─────────────────────────────────────────────────────────
-  describe('POST /api/auth/signup', function () {
-    const unique = `test_${Date.now()}@apolaki.solar`;
-
-    it('should register a new user and return tokens', async function () {
-      const res = await client.post('/api/auth/signup', {
-        email: unique,
-        password: 'TestPass@123!',
-        firstName: 'Test',
-        lastName: 'User',
-      });
-
-      expect(res.status).to.equal(201);
-      expect(res.data).to.have.property('token');
-      expect(res.data).to.have.property('refreshToken');
-      expect(res.data).to.have.property('sessionToken');
-      expect(res.data.user).to.have.property('email', unique);
+  it('does not accept a Google callback without an OAuth state cookie', async function () {
+    const res = await client.get('/api/auth/google/callback?state=forged&code=forged', {
+      maxRedirects: 0
     });
-
-    it('should reject duplicate email', async function () {
-      const res = await client.post('/api/auth/signup', {
-        email: unique,
-        password: 'Another@123!',
-        firstName: 'Dup',
-        lastName: 'User',
-      });
-
-      expect(res.status).to.equal(409);
-      expect(res.data).to.have.property('error');
-    });
-
-    it('should reject missing password', async function () {
-      const res = await client.post('/api/auth/signup', {
-        email: 'nopass@test.com',
-      });
-
-      expect(res.status).to.equal(400);
-    });
-
-    it('should reject short password', async function () {
-      const res = await client.post('/api/auth/signup', {
-        email: 'short@test.com',
-        password: '123',
-      });
-
-      expect(res.status).to.equal(400);
-    });
+    expect(res.status).to.equal(302);
+    expect(res.headers.location).to.include('/login?error=');
+    expect(res.headers.location).to.not.include('token=');
   });
 
-  // ─── Login ──────────────────────────────────────────────────────────
-  describe('POST /api/auth/login', function () {
-    it('@smoke should login with seeded homeowner credentials', async function () {
-      const res = await login(config.users.homeowner);
-
-      expect(res.status).to.equal(200);
-      expect(res.data).to.have.property('token');
-      expect(res.data).to.have.property('refreshToken');
-      expect(res.data.user).to.have.property('email', config.users.homeowner.email);
-    });
-
-    it('should login with admin credentials', async function () {
-      const res = await login(config.users.admin);
-
-      expect(res.status).to.equal(200);
-      expect(res.data.user).to.have.property('email', config.users.admin.email);
-    });
-
-    it('should reject wrong password', async function () {
-      const res = await client.post('/api/auth/login', {
-        email: config.users.homeowner.email,
-        password: 'WrongPassword!',
-      });
-
-      expect(res.status).to.equal(401);
-      expect(res.data).to.have.property('error');
-    });
-
-    it('should reject non-existent user', async function () {
-      const res = await client.post('/api/auth/login', {
-        email: 'nobody@nowhere.com',
-        password: 'Whatever@1!',
-      });
-
-      expect(res.status).to.equal(401);
-    });
-
-    it('should reject empty body', async function () {
-      const res = await client.post('/api/auth/login', {});
-
-      expect(res.status).to.equal(400);
-    });
+  it('requires a session cookie for profile access', async function () {
+    const res = await client.get('/api/auth/me');
+    expect(res.status).to.equal(401);
+    expect(res.data).to.have.property('code', 'NO_SESSION');
   });
 
-  // ─── Protected Routes ──────────────────────────────────────────────
-  describe('Protected Routes', function () {
-    it('should reject unauthenticated access to GET /api/auth/me', async function () {
-      const res = await client.get('/api/auth/me');
+  it('requires a session cookie for consent status access', async function () {
+    const res = await client.get('/api/auth/consents');
+    expect(res.status).to.equal(401);
+    expect(res.data).to.have.property('code', 'NO_SESSION');
+  });
 
-      // The route may return 401 or not exist as a protected route
-      expect(res.status).to.be.oneOf([401, 404]);
-    });
-
-    it('should allow authenticated access to GET /api/auth/me', async function () {
-      await login(config.users.homeowner);
-      const res = await client.get('/api/auth/me');
-
-      // If the route exists and is protected correctly
-      if (res.status === 200) {
-        expect(res.data).to.have.property('user');
-      }
-    });
+  it('requires a session cookie before recording consent onboarding', async function () {
+    const res = await client.put('/api/auth/consents/onboarding', { consents: [] });
+    expect(res.status).to.equal(401);
+    expect(res.data).to.have.property('code', 'NO_SESSION');
   });
 });

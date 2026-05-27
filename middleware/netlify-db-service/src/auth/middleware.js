@@ -1,30 +1,44 @@
 /**
- * Authentication Middleware
- * Verifies JWT tokens and protects routes
+ * Authentication and authorization middleware.
+ * Application authentication uses an opaque, server-owned session cookie.
  */
 
-import { users } from '../db.js';
-import { extractTokenFromHeader, verifyToken } from './jwt.js';
+import { sessions, users } from '../db.js';
+import { normalizeRole } from './access-control.js';
 
-/**
- * Middleware to verify JWT token
- */
+export const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || 'apolaki_session';
+
+function readCookie(req, name) {
+  const value = req.headers.cookie
+    ?.split(';')
+    .map(cookie => cookie.trim().split('='))
+    .find(([key]) => key === name)?.[1];
+  return value ? decodeURIComponent(value) : null;
+}
+
 export async function authenticateToken(req, res, next) {
   try {
-    const authHeader = req.headers.authorization;
-    const token = extractTokenFromHeader(authHeader);
+    if (req.user) return next();
 
-    if (!token) {
+    const sessionToken = readCookie(req, SESSION_COOKIE_NAME);
+    if (!sessionToken) {
       return res.status(401).json({
         success: false,
-        error: 'No token provided',
-        code: 'NO_TOKEN'
+        error: 'Authentication required',
+        code: 'NO_SESSION'
       });
     }
 
-    const decoded = verifyToken(token);
-    const user = await users.getById(decoded.id);
+    const session = await sessions.getByToken(sessionToken);
+    if (!session) {
+      return res.status(401).json({
+        success: false,
+        error: 'Session expired',
+        code: 'SESSION_EXPIRED'
+      });
+    }
 
+    const user = await users.getById(session.user_id);
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -41,32 +55,18 @@ export async function authenticateToken(req, res, next) {
       });
     }
 
-    // Attach user to request
     req.user = user;
-    req.decoded = decoded;
-
+    req.authSessionToken = sessionToken;
     next();
   } catch (error) {
-    if (error.message.includes('expired')) {
-      return res.status(401).json({
-        success: false,
-        error: 'Token expired',
-        code: 'TOKEN_EXPIRED'
-      });
-    }
-
     res.status(401).json({
       success: false,
-      error: 'Invalid token',
-      message: error.message,
-      code: 'INVALID_TOKEN'
+      error: 'Invalid session',
+      code: 'INVALID_SESSION'
     });
   }
 }
 
-/**
- * Middleware to check user role
- */
 export function authorizeRole(...allowedRoles) {
   return (req, res, next) => {
     if (!req.user) {
@@ -77,13 +77,12 @@ export function authorizeRole(...allowedRoles) {
       });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    if (!allowedRoles.includes(normalizeRole(req.user.role)) &&
+        !allowedRoles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
         error: 'Forbidden: Insufficient permissions',
-        code: 'INSUFFICIENT_PERMISSIONS',
-        required: allowedRoles,
-        actual: req.user.role
+        code: 'INSUFFICIENT_PERMISSIONS'
       });
     }
 
@@ -91,74 +90,36 @@ export function authorizeRole(...allowedRoles) {
   };
 }
 
-/**
- * Middleware to verify ownership
- */
 export function verifyOwnership(resourceField = 'id') {
   return async (req, res, next) => {
-    try {
-      const resourceId = req.params[resourceField];
-      const userId = req.user.id;
-
-      // For users, verify they're accessing their own profile
-      if (resourceField === 'userId' || req.path.includes('/users/')) {
-        if (resourceId !== userId && req.user.role !== 'admin') {
-          return res.status(403).json({
-            success: false,
-            error: 'Forbidden: Cannot access other user\'s data',
-            code: 'FORBIDDEN_ACCESS'
-          });
-        }
-      }
-
-      next();
-    } catch (error) {
-      res.status(500).json({
+    const resourceId = req.params[resourceField];
+    if ((resourceField === 'userId' || req.path.includes('/users/')) &&
+      resourceId !== req.user.id &&
+      req.user.role !== 'admin' &&
+      req.user.role !== 'superadmin') {
+      return res.status(403).json({
         success: false,
-        error: 'Ownership verification failed',
-        message: error.message
+        error: 'Forbidden: Cannot access other user data',
+        code: 'FORBIDDEN_ACCESS'
       });
     }
+    next();
   };
 }
 
-/**
- * Middleware for error handling
- */
 export function errorHandler(err, req, res, next) {
   console.error('Error:', err);
-
-  if (err.name === 'JsonWebTokenError') {
-    return res.status(401).json({
-      success: false,
-      error: 'Invalid token',
-      code: 'INVALID_TOKEN'
-    });
-  }
-
-  if (err.name === 'TokenExpiredError') {
-    return res.status(401).json({
-      success: false,
-      error: 'Token expired',
-      code: 'TOKEN_EXPIRED'
-    });
-  }
-
   res.status(500).json({
     success: false,
-    error: err.message || 'Internal server error',
+    error: 'Internal server error',
     code: 'INTERNAL_ERROR'
   });
 }
 
-/**
- * Middleware for request validation
- */
 export function validateRequest(schema) {
   return async (req, res, next) => {
     try {
-      const validated = await schema.parseAsync(req.body);
-      req.validatedBody = validated;
+      req.validatedBody = await schema.parseAsync(req.body);
       next();
     } catch (error) {
       res.status(400).json({

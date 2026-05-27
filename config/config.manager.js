@@ -88,7 +88,7 @@ class ConfigManager {
     this.config.cors = {
       origin: corsOrigins,
       credentials: this.parseBoolean(process.env.CORS_CREDENTIALS || 'true'),
-      methods: (process.env.CORS_METHODS || 'GET,POST,PUT,DELETE,OPTIONS').split(','),
+      methods: (process.env.CORS_METHODS || 'GET,POST,PUT,PATCH,DELETE,OPTIONS').split(','),
       allowedHeaders: (process.env.CORS_ALLOWED_HEADERS || 'Origin,X-Requested-With,Content-Type,Accept,Authorization').split(','),
     };
 

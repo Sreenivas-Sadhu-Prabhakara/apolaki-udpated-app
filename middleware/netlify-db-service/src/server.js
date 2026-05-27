@@ -41,30 +41,29 @@ try {
 
 import cors from 'cors';
 import express from 'express';
-import sessionModule from 'express-session';
 import passportModule from 'passport';
 import { initializePassport } from './auth/passport.js';
+import { enforceApiPolicy } from './auth/policy.js';
 import routesModule from './routes.js';
 import authRoutesModule from './routes/auth.js';
 import personaRoutesModule from './routes/personas.js';
 
 // Handle CJS/ESM interop — esbuild bundling on Netlify can wrap default exports
-const session = sessionModule.default || sessionModule;
 const passport = passportModule.default || passportModule;
 const routes = routesModule.default || routesModule;
 const authRoutes = authRoutesModule.default || authRoutesModule;
 const personaRoutes = personaRoutesModule.default || personaRoutesModule;
 
 const app = express();
+app.disable('x-powered-by');
 
 // Get configuration values
 const config = configManager.getAll();
 const PORT = config.app.port;
 const isProduction = config.app.environment === 'production';
 
-// In production on Netlify, use permissive CORS since frontend & functions share the same origin
 const corsOptions = {
-  origin: isProduction ? true : config.cors.origin,  // true = reflect request origin
+  origin: config.cors.origin,
   credentials: config.cors.credentials,
   methods: config.cors.methods,
   allowedHeaders: config.cors.allowedHeaders
@@ -80,31 +79,13 @@ app.use(express.urlencoded({ extended: true }));
 // CORS configuration
 app.use(cors(corsOptions));
 
-// Session configuration
-const sessionConfig = config.session;
-
 // Trust proxy in production (Netlify/AWS puts a reverse proxy in front)
 if (isProduction) {
   app.set('trust proxy', 1);
 }
 
-app.use(
-  session({
-    secret: sessionConfig.secret,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: isProduction ? true : sessionConfig.secure,
-      httpOnly: sessionConfig.httpOnly,
-      sameSite: isProduction ? 'lax' : sessionConfig.sameSite,
-      maxAge: sessionConfig.maxAge
-    }
-  })
-);
-
 // Passport initialization
 app.use(passport.initialize());
-app.use(passport.session());
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -138,6 +119,8 @@ app.get('/health', async (req, res) => {
 });
 
 // Auth routes
+app.use('/api', enforceApiPolicy);
+
 app.use('/api/auth', authRoutes);
 
 // Persona routes
@@ -154,10 +137,7 @@ app.get('/', (req, res) => {
     description: 'Backend API service with OAuth authentication using Netlify Neon database',
     authentication: {
       local: {
-        signup: 'POST /api/auth/signup',
-        login: 'POST /api/auth/login',
-        logout: 'POST /api/auth/logout',
-        refresh: 'POST /api/auth/refresh'
+        signIn: 'POST /api/auth/login'
       },
       oauth: {
         google: {
@@ -167,24 +147,16 @@ app.get('/', (req, res) => {
         facebook: {
           authorize: 'GET /api/auth/facebook',
           callback: 'GET /api/auth/facebook/callback'
-        },
-        instagram: {
-          authorize: 'GET /api/auth/instagram',
-          callback: 'GET /api/auth/instagram/callback'
-        },
-        viber: {
-          authorize: 'GET /api/auth/viber',
-          callback: 'GET /api/auth/viber/callback'
-        },
-        telegram: {
-          authorize: 'GET /api/auth/telegram',
-          callback: 'GET /api/auth/telegram/callback'
         }
       },
       profile: {
         getProfile: 'GET /api/auth/me',
+        getConsents: 'GET /api/auth/consents',
+        completeConsentOnboarding: 'PUT /api/auth/consents/onboarding',
+        updateConsent: 'PATCH /api/auth/consents/:consentKey',
         getProviders: 'GET /api/auth/providers',
-        disconnectProvider: 'DELETE /api/auth/providers/:provider'
+        disconnectProvider: 'DELETE /api/auth/providers/:provider',
+        logout: 'POST /api/auth/logout'
       }
     },
     endpoints: {

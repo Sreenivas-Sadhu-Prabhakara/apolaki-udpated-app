@@ -22,10 +22,9 @@ const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
  */
 export async function lookupSolarPotential(location) {
   try {
-    const token = localStorage.getItem('token')
     const response = await axios.post(`${API_BASE}/solar/lookup`, location, {
       timeout: 12000,
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
+      withCredentials: true
     })
     return response.data
   } catch (err) {

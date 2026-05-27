@@ -20,6 +20,22 @@ import {
 
 const router = express.Router();
 
+function safeUser(user) {
+  if (!user) return user;
+  return {
+    id: user.id,
+    email: user.email,
+    firstName: user.first_name,
+    lastName: user.last_name,
+    phone: user.phone,
+    profilePictureUrl: user.profile_picture_url,
+    role: user.role,
+    active: user.active,
+    createdAt: user.created_at,
+    updatedAt: user.updated_at
+  };
+}
+
 // ============================================
 // USER ROUTES
 // ============================================
@@ -47,7 +63,7 @@ router.post('/users', async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'User created successfully',
-      data: user
+      data: safeUser(user)
     });
   } catch (error) {
     console.error('Error creating user:', error);
@@ -68,7 +84,7 @@ router.get('/users', async (req, res) => {
     res.json({
       success: true,
       count: allUsers.length,
-      data: allUsers
+      data: allUsers.map(safeUser)
     });
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -76,6 +92,51 @@ router.get('/users', async (req, res) => {
       success: false,
       error: error.message
     });
+  }
+});
+
+/**
+ * GET /api/users/profile
+ * Get authenticated user's profile
+ */
+router.get('/users/profile', authenticateToken, async (req, res) => {
+  try {
+    const user = await users.getById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      data: safeUser(user)
+    });
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * PUT /api/users/profile
+ * Update authenticated user's profile
+ */
+router.put('/users/profile', authenticateToken, async (req, res) => {
+  try {
+    const { firstName, lastName } = req.body;
+    const user = await users.update(req.user.id, { firstName, lastName });
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: safeUser(user)
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -96,7 +157,7 @@ router.get('/users/:id', async (req, res) => {
 
     res.json({
       success: true,
-      data: user
+      data: safeUser(user)
     });
   } catch (error) {
     console.error('Error fetching user:', error);
@@ -131,7 +192,7 @@ router.put('/users/:id', async (req, res) => {
     res.json({
       success: true,
       message: 'User updated successfully',
-      data: user
+      data: safeUser(user)
     });
   } catch (error) {
     console.error('Error updating user:', error);
@@ -1677,73 +1738,6 @@ router.get('/users/:userId/finance/transactions', async (req, res) => {
       success: false,
       error: error.message
     });
-  }
-});
-
-// ============================================
-// USER PROFILE ROUTES
-// ============================================
-
-/**
- * GET /api/users/profile
- * Get authenticated user's profile
- */
-router.get('/users/profile', authenticateToken, async (req, res) => {
-  try {
-    const user = await users.getById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found' });
-    }
-
-    res.json({
-      success: true,
-      data: {
-        id: user.id,
-        email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        phone: user.phone,
-        profilePictureUrl: user.profile_picture_url,
-        role: user.role,
-        active: user.active,
-        createdAt: user.created_at,
-        updatedAt: user.updated_at
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching profile:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * PUT /api/users/profile
- * Update authenticated user's profile
- */
-router.put('/users/profile', authenticateToken, async (req, res) => {
-  try {
-    const { firstName, lastName } = req.body;
-    const user = await users.update(req.user.id, { firstName, lastName });
-
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found' });
-    }
-
-    res.json({
-      success: true,
-      message: 'Profile updated successfully',
-      data: {
-        id: user.id,
-        email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        phone: user.phone,
-        role: user.role
-      }
-    });
-  } catch (error) {
-    console.error('Error updating profile:', error);
-    res.status(500).json({ success: false, error: error.message });
   }
 });
 

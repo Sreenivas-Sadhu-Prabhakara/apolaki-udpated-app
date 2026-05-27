@@ -124,6 +124,40 @@ function getSqlInstance() {
  * requiring a manual schema.sql import.
  */
 let schemaEnsured = false;
+let consentSchemaEnsured = false;
+
+async function ensureConsentSchema() {
+  if (consentSchemaEnsured) return;
+
+  const sqlInstance = getSqlInstance();
+  try {
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS user_consents (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        consent_key VARCHAR(100) NOT NULL,
+        consent_version VARCHAR(20) NOT NULL,
+        decision VARCHAR(20) NOT NULL CHECK (decision IN ('granted', 'declined', 'revoked')),
+        purpose TEXT NOT NULL,
+        data_scope JSONB DEFAULT '[]',
+        granted_at TIMESTAMP,
+        revoked_at TIMESTAMP,
+        actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        source VARCHAR(50) NOT NULL DEFAULT 'onboarding',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, consent_key, consent_version)
+      )
+    `;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_user_consents_user_id ON user_consents(user_id)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_user_consents_lookup ON user_consents(user_id, consent_key, decision)`;
+    consentSchemaEnsured = true;
+  } catch (error) {
+    consentSchemaEnsured = false;
+    throw error;
+  }
+}
+
 async function ensureSchema() {
   if (schemaEnsured) return;
   schemaEnsured = true;
@@ -140,6 +174,7 @@ async function ensureSchema() {
     `;
     
     if (tableCheck[0]?.exists) {
+      await ensureConsentSchema();
       console.log('✅ Database schema already exists');
       return;
     }
@@ -394,6 +429,7 @@ async function ensureSchema() {
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_sessions_session_token ON sessions(session_token)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_oauth_providers_user_id ON oauth_providers(user_id)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_solar_installations_user_id ON solar_installations(user_id)`;
+    await ensureConsentSchema();
 
     console.log('✅ Database schema created successfully');
   } catch (error) {
@@ -402,7 +438,7 @@ async function ensureSchema() {
   }
 }
 
-export { ensureInitialized, ensureSchema, initializeDatabase };
+export { ensureConsentSchema, ensureInitialized, ensureSchema, initializeDatabase };
 
 /**
  * User operations
@@ -737,6 +773,14 @@ export const maintenanceLog = {
       WHERE installation_id = ${installationId}
       ORDER BY performed_date DESC
     `;
+  },
+
+  async getById(id) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      SELECT * FROM maintenance_log WHERE id = ${id}
+    `;
+    return result[0];
   },
 
   /**
@@ -1358,6 +1402,54 @@ export const auditLogs = {
 };
 
 /**
+ * Application consent operations
+ */
+export const userConsents = {
+  async getByUserId(userId) {
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`
+      SELECT * FROM user_consents
+      WHERE user_id = ${userId}
+      ORDER BY created_at ASC
+    `;
+  },
+
+  async upsert({ userId, consentKey, consentVersion, decision, purpose, dataScope, actorId, source }) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      INSERT INTO user_consents (
+        user_id, consent_key, consent_version, decision, purpose, data_scope,
+        granted_at, revoked_at, actor_id, source
+      )
+      VALUES (
+        ${userId}, ${consentKey}, ${consentVersion}, ${decision}, ${purpose}, ${JSON.stringify(dataScope)},
+        CASE WHEN ${decision} = 'granted' THEN CURRENT_TIMESTAMP ELSE NULL END,
+        CASE WHEN ${decision} = 'revoked' THEN CURRENT_TIMESTAMP ELSE NULL END,
+        ${actorId}, ${source}
+      )
+      ON CONFLICT (user_id, consent_key, consent_version)
+      DO UPDATE SET
+        decision = EXCLUDED.decision,
+        purpose = EXCLUDED.purpose,
+        data_scope = EXCLUDED.data_scope,
+        granted_at = CASE
+          WHEN EXCLUDED.decision = 'granted' THEN CURRENT_TIMESTAMP
+          ELSE user_consents.granted_at
+        END,
+        revoked_at = CASE
+          WHEN EXCLUDED.decision = 'revoked' THEN CURRENT_TIMESTAMP
+          ELSE NULL
+        END,
+        actor_id = EXCLUDED.actor_id,
+        source = EXCLUDED.source,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING *
+    `;
+    return result[0];
+  }
+};
+
+/**
  * Break-Glass Sessions operations (superadmin emergency access)
  */
 export const breakGlassSessions = {
@@ -1495,5 +1587,6 @@ export default {
   oauthProviders,
   sessions,
   auditLogs,
+  userConsents,
   breakGlassSessions
 };

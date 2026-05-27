@@ -9,6 +9,7 @@
  */
 
 import expressModule from 'express';
+import { ASSIGNABLE_ROLES, CONSENT_VERSION, getPermissionsForRole, normalizeRole } from '../auth/access-control.js';
 import { authenticateToken, authorizeRole } from '../auth/middleware.js';
 import { auditLogs, breakGlassSessions, ensureInitialized, maintenanceLog, solarInstallations, users } from '../db.js';
 
@@ -18,7 +19,7 @@ const express = expressModule.default || expressModule;
 const router = express.Router();
 
 // ─── Constants ──────────────────────────────────────────────────────────
-const VALID_ROLES = ['customer', 'dealer', 'operations', 'admin', 'superadmin', 'installer'];
+const VALID_ROLES = ASSIGNABLE_ROLES;
 const BREAK_GLASS_DURATION_MINUTES = 60;
 
 // ─── Helper ─────────────────────────────────────────────────────────────
@@ -37,7 +38,7 @@ function getClientIp(req) {
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const user = req.user;
-    const role = user.role || 'customer';
+    const role = normalizeRole(user.role);
 
     const permissions = getPermissionsForRole(role);
 
@@ -146,17 +147,33 @@ router.post('/dealer/commission', authenticateToken, authorizeRole('dealer', 'in
  */
 router.get('/operations/alerts', authenticateToken, authorizeRole('operations', 'admin', 'superadmin'), async (req, res) => {
   try {
-    // Return all pending/scheduled maintenance as "alerts"
     const sqlInstance = ensureInitialized();
-    // We don't have a direct getAll on maintenanceLog, so query via sql tagged template
-    // Use the getByInstallation with a broad query - but let's just get all pending
-    const alerts = await sqlInstance`
-      SELECT m.*, si.name as installation_name
-      FROM maintenance_log m
-      JOIN solar_installations si ON m.installation_id = si.id
-      WHERE m.status IN ('scheduled', 'in_progress')
-      ORDER BY m.performed_date ASC
-    `;
+    const elevated = ['admin', 'superadmin'].includes(normalizeRole(req.user.role));
+    const alerts = elevated
+      ? await sqlInstance`
+          SELECT m.*, si.name as installation_name
+          FROM maintenance_log m
+          JOIN solar_installations si ON m.installation_id = si.id
+          WHERE m.status IN ('scheduled', 'in_progress')
+          ORDER BY m.performed_date ASC
+        `
+      : await sqlInstance`
+          SELECT m.*, si.name as installation_name
+          FROM maintenance_log m
+          JOIN solar_installations si ON m.installation_id = si.id
+          JOIN user_consents monitoring
+            ON monitoring.user_id = si.user_id
+            AND monitoring.consent_key = 'installation_monitoring'
+            AND monitoring.consent_version = ${CONSENT_VERSION}
+            AND monitoring.decision = 'granted'
+          JOIN user_consents sharing
+            ON sharing.user_id = si.user_id
+            AND sharing.consent_key = 'partner_sharing'
+            AND sharing.consent_version = ${CONSENT_VERSION}
+            AND sharing.decision = 'granted'
+          WHERE m.status IN ('scheduled', 'in_progress')
+          ORDER BY m.performed_date ASC
+        `;
 
     res.json({ success: true, count: alerts.length, data: alerts });
   } catch (error) {
@@ -426,72 +443,5 @@ router.get('/superadmin/break-glass', authenticateToken, authorizeRole('superadm
     res.status(500).json({ success: false, error: error.message });
   }
 });
-
-// ============================================================================
-// PERMISSION HELPER
-// ============================================================================
-
-function getPermissionsForRole(role) {
-  const permissions = {
-    customer: [
-      'view:dashboard',
-      'view:installations',
-      'view:monitoring',
-      'view:marketplace',
-      'create:assessment',
-      'view:contracts',
-      'view:finance',
-      'trade:energy',
-    ],
-    dealer: [
-      'view:dashboard',
-      'view:installations',
-      'create:installation',
-      'commission:installation',
-      'view:contracts',
-      'create:contract',
-      'view:quotes',
-      'create:quote',
-    ],
-    installer: [ // legacy alias for dealer
-      'view:dashboard',
-      'view:installations',
-      'create:installation',
-      'commission:installation',
-      'view:contracts',
-      'create:contract',
-    ],
-    operations: [
-      'view:dashboard',
-      'view:installations',
-      'view:monitoring',
-      'view:alerts',
-      'resolve:alerts',
-      'create:maintenance',
-      'update:maintenance',
-      'dispatch:crew',
-    ],
-    admin: [
-      'view:dashboard',
-      'view:installations',
-      'view:monitoring',
-      'view:marketplace',
-      'manage:users',
-      'assign:roles',
-      'view:audit-logs',
-      'view:billing',
-      'manage:org-settings',
-    ],
-    superadmin: [
-      'all', // superadmin has all permissions
-      'break-glass:activate',
-      'break-glass:action',
-      'break-glass:end',
-      'manage:superadmins',
-    ],
-  };
-
-  return permissions[role] || permissions.customer;
-}
 
 export default router;

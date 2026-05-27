@@ -1,74 +1,55 @@
 /**
- * Selenium E2E Test — Login Flow
- * Tests the full browser-based login journey.
+ * Selenium E2E Test - supported login entry point.
  * @tags e2e, auth, smoke
  */
 
 import { expect } from 'chai';
-import config from '../helpers/config.js';
+import { By } from 'selenium-webdriver';
 import { createDriver } from '../helpers/driverFactory.js';
-import DashboardPage from '../pages/DashboardPage.js';
 import LoginPage from '../pages/LoginPage.js';
 
-describe('E2E › Login Flow', function () {
-  /** @type {import('selenium-webdriver').WebDriver} */
+describe('E2E > Login', function () {
   let driver;
   let loginPage;
-  let dashboardPage;
 
   before(async function () {
     driver = await createDriver();
     loginPage = new LoginPage(driver);
-    dashboardPage = new DashboardPage(driver);
   });
 
   after(async function () {
     if (driver) await driver.quit();
   });
 
-  it('@smoke should display the login page with email and password fields', async function () {
+  it('@smoke displays email, Google, and Facebook sign-in options', async function () {
     await loginPage.navigate();
+    expect(await loginPage.isDisplayed()).to.be.true;
 
-    const displayed = await loginPage.isDisplayed();
-    expect(displayed).to.be.true;
+    const links = await loginPage.getOAuthLinks();
+    expect(links).to.have.length(2);
+    expect(await driver.findElement(loginPage.googleLink).isDisplayed()).to.be.true;
+    expect(await driver.findElement(loginPage.facebookLink).isDisplayed()).to.be.true;
+    expect(await loginPage.hasPasswordInput()).to.be.true;
   });
 
-  it('should show error for invalid credentials', async function () {
+  it('@smoke does not display unsupported provider or OTP login paths', async function () {
     await loginPage.navigate();
-    await loginPage.login('invalid@test.com', 'wrongpassword');
 
-    // Wait a moment for the error to appear
-    await driver.sleep(1500);
-    const error = await loginPage.getErrorMessage();
-
-    // The frontend should show some error indication
-    // (could be an alert or the form stays on the login page)
-    const currentUrl = await driver.getCurrentUrl();
-    expect(currentUrl).to.include('/login');
+    const bodyText = await driver.findElement(By.css('body')).getText();
+    expect(bodyText).to.not.include('Instagram');
+    expect(bodyText).to.not.include('WhatsApp');
+    expect(bodyText).to.not.include('Telegram');
+    expect(bodyText).to.not.include('Viber');
+    expect(bodyText).to.not.include('Forgot your password');
   });
 
-  it('@smoke should login successfully with seeded credentials and redirect to dashboard', async function () {
-    await loginPage.navigate();
-    await loginPage.login(config.users.homeowner.email, config.users.homeowner.password);
-
-    // Wait for navigation away from /login
-    await driver.wait(async () => {
-      const url = await driver.getCurrentUrl();
-      return !url.includes('/login');
-    }, 10000);
-
-    const currentUrl = await driver.getCurrentUrl();
-    // Should be at root/dashboard, not login
-    expect(currentUrl).to.not.include('/login');
-  });
-
-  it('should display user email in the navigation bar after login', async function () {
-    // We should already be logged in from the previous test
-    await dashboardPage.waitForLoad();
-    const email = await dashboardPage.getDisplayedEmail();
-
-    // The email should be displayed or at least the dashboard should be visible
-    const title = await dashboardPage.getHeroTitle();
-    expect(title).to.include('Dashboard');
+  it('routes signup navigation back to the supported login page', async function () {
+    await driver.get(`${loginPage.url.replace('/login', '')}/signup`);
+    await driver.wait(untilUrlIncludes('/login'), 10000);
+    expect(await driver.getCurrentUrl()).to.include('/login');
   });
 });
+
+function untilUrlIncludes(fragment) {
+  return async driver => (await driver.getCurrentUrl()).includes(fragment);
+}

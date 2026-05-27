@@ -78,7 +78,7 @@
           </div>
           <div>
             <span :class="isDark ? 'text-slate-500' : 'text-gray-400'">Session</span>
-            <p :class="isDark ? 'text-slate-300' : 'text-gray-700'">{{ userStore.sessionToken ? 'Active' : 'Inactive' }}</p>
+            <p :class="isDark ? 'text-slate-300' : 'text-gray-700'">{{ userStore.isAuthenticated ? 'Active' : 'Inactive' }}</p>
           </div>
         </div>
       </div>

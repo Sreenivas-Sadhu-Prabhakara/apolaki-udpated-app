@@ -3,22 +3,11 @@ import { useUserStore } from '../stores/userStore'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
   }
 })
-
-// Request interceptor to add token
-api.interceptors.request.use(
-  (config) => {
-    const userStore = useUserStore()
-    if (userStore.token) {
-      config.headers.Authorization = `Bearer ${userStore.token}`
-    }
-    return config
-  },
-  (error) => Promise.reject(error)
-)
 
 // Response interceptor to handle errors
 api.interceptors.response.use(
@@ -26,7 +15,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401 && !error.config?.skipAuthRedirect) {
       const userStore = useUserStore()
-      userStore.logout()
+      userStore.clearSession()
       window.location.href = '/login'
     }
     return Promise.reject(error)

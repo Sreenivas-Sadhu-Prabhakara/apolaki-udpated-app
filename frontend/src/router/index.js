@@ -12,7 +12,7 @@ const routes = [
     path: '/dashboard',
     name: 'Dashboard',
     component: () => import('../views/ApolakiPrd.vue'),
-    meta: { requiresAuth: false }
+    meta: { requiresAuth: true }
   },
   {
     path: '/login',
@@ -23,26 +23,29 @@ const routes = [
   {
     path: '/signup',
     name: 'Signup',
-    component: () => import('../views/Signup.vue'),
-    meta: { requiresAuth: false }
+    redirect: '/login'
   },
   {
     path: '/forgot-password',
     name: 'ForgotPassword',
-    component: () => import('../views/ForgotPassword.vue'),
-    meta: { requiresAuth: false }
+    redirect: '/login'
   },
   {
     path: '/reset-password',
     name: 'ResetPassword',
-    component: () => import('../views/ResetPassword.vue'),
-    meta: { requiresAuth: false }
+    redirect: '/login'
   },
   {
     path: '/auth-callback',
     name: 'AuthCallback',
     component: () => import('../views/AuthCallback.vue'),
     meta: { requiresAuth: false }
+  },
+  {
+    path: '/consent',
+    name: 'ConsentOnboarding',
+    component: () => import('../views/ConsentOnboarding.vue'),
+    meta: { requiresAuth: true, allowsPendingConsent: true }
   },
   {
     path: '/installations',
@@ -140,11 +143,14 @@ router.beforeEach((to, from, next) => {
 
   if (to.meta.requiresAuth && !userStore.isAuthenticated) {
     next('/login')
+  } else if (to.meta.requiresAuth && !to.meta.allowsPendingConsent && !userStore.onboardingComplete) {
+    next('/consent')
+  } else if (to.name === 'ConsentOnboarding' && userStore.onboardingComplete) {
+    next('/assessment')
   } else if (to.meta.publicOnly && userStore.isAuthenticated) {
-    // Authenticated users landing on public-only pages go to solar assessment
-    next('/assessment')
+    next(userStore.onboardingComplete ? '/assessment' : '/consent')
   } else if ((to.name === 'Login' || to.name === 'Signup') && userStore.isAuthenticated) {
-    next('/assessment')
+    next(userStore.onboardingComplete ? '/assessment' : '/consent')
   } else if (to.meta.allowedRoles && !to.meta.allowedRoles.includes(userStore.userRole)) {
     // Role-based guard: redirect to dashboard if user lacks permission
     next('/dashboard')

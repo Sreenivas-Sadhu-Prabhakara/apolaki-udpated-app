@@ -1,0 +1,186 @@
+# APOLAKI — AI WORKFLOW PRD (IMPROVEMENT VERSION)
+
+## 1. PURPOSE
+
+Upgrade the existing assessment flow into an AI-driven decision workflow that:
+- Converts user input → financial insight → action
+- Adapts based on user outcomes
+- Maximizes lead conversion via financing-first narrative
+
+---
+
+## 2. WORKFLOW MODEL
+
+Workflow Type: Structured AI Workflow (Node-based, conditional)
+
+FLOW:
+Intent → Input → Processing → Insight → Decision → Action → Feedback → Loop
+
+---
+
+## 3. WORKFLOW NODES (EARS FORMAT)
+
+---
+
+### NODE 1 — INTENT CAPTURE
+
+WHEN user lands on assessment page  
+THE SYSTEM SHALL display financing-first hook:
+
+- “Replace your electricity bill with a lower monthly payment”
+- Example transformation (₱X → ₱Y)
+
+AND provide CTA:
+- “See My New Monthly Cost”
+
+---
+
+### NODE 2 — INPUT CAPTURE
+
+WHEN user enters assessment  
+THE SYSTEM SHALL collect:
+
+- monthly_bill (required)
+- location (auto-detect or dropdown)
+- property_type (default residential)
+
+AND SHALL:
+- show progress indicator (Step 1–3)
+- validate inputs before proceeding
+
+---
+
+### NODE 3 — PROCESSING (AI PERCEPTION LAYER)
+
+WHEN input is submitted  
+THE SYSTEM SHALL:
+
+- display processing screen (2–3 seconds)
+- show dynamic messages:
+  - “Analyzing usage”
+  - “Calculating solar potential”
+  - “Optimizing monthly payment”
+
+AND SHALL simulate intelligence perception
+
+---
+
+### NODE 4 — FINANCIAL MODELING
+
+WHEN processing completes  
+THE SYSTEM SHALL compute:
+
+- system_size (kW)
+- solar_payment (EMI)
+- current_bill
+- monthly_savings
+- payback_years
+
+CONDITION:
+IF monthly_savings > 0  
+→ mark as HIGH CONVERSION
+
+ELSE  
+→ mark as LOW CONVERSION
+
+---
+
+### NODE 5 — INSIGHT DELIVERY
+
+WHEN results are displayed  
+THE SYSTEM SHALL prioritize:
+
+PRIMARY:
+- Payment swap view:
+  current_bill → solar_payment
+
+SECONDARY:
+- monthly_savings
+- payback
+- confidence_score
+
+AND SHALL:
+- present narrative: “You save ₱X monthly”
+
+---
+
+### NODE 6 — DECISION TRIGGER
+
+WHEN user sees results  
+THE SYSTEM SHALL:
+
+IF HIGH CONVERSION  
+→ show strong CTA:
+   “Get My Lower Monthly Plan Installed”
+
+IF MEDIUM  
+→ show financing explanation
+
+IF LOW  
+→ show alternative messaging
+
+---
+
+### NODE 7 — ACTION CAPTURE (LEAD)
+
+WHEN user clicks CTA  
+THE SYSTEM SHALL collect:
+
+- name
+- phone
+
+AND SHALL:
+- assign lead_id
+- store assessment linkage
+
+---
+
+### NODE 8 — HUMAN-IN-LOOP
+
+WHEN lead is created  
+THE SYSTEM SHALL:
+
+- assign installer manually
+- trigger contact workflow
+
+---
+
+### NODE 9 — FEEDBACK LOOP
+
+WHEN lead lifecycle progresses  
+THE SYSTEM SHALL capture:
+
+- assessment_completed
+- result_viewed
+- cta_clicked
+- lead_submitted
+- conversion_status
+
+AND SHALL:
+- update model assumptions
+- refine UX decisions
+
+---
+
+## 4. SYSTEM BEHAVIOR RULES
+
+- Minimal input → maximal insight
+- Always prioritize monthly savings over ROI
+- Delay lead capture until value is shown
+- Introduce perception layer (processing step)
+
+---
+
+## 5. SUCCESS METRICS
+
+- Assessment completion > 70%
+- CTA click > 30%
+- Lead conversion > 20%
+
+---
+
+## 6. NON-FUNCTIONAL REQUIREMENTS
+
+- Response time < 2s (excluding intentional delay)
+- Mobile-first UX
+- Event tracking enabled

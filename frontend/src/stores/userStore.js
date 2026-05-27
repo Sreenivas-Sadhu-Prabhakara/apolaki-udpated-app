@@ -4,110 +4,94 @@ import api from '../services/api'
 
 export const useUserStore = defineStore('user', () => {
   const user = ref(null)
-  const token = ref(localStorage.getItem('token') || null)
-  const refreshToken = ref(localStorage.getItem('refreshToken') || null)
-  const sessionToken = ref(localStorage.getItem('sessionToken') || null)
   const loading = ref(false)
   const error = ref(null)
   const connectedProviders = ref([])
+  const consentStatus = ref(null)
 
-  const isAuthenticated = computed(() => !!token.value && !!user.value)
+  const isAuthenticated = computed(() => !!user.value)
   const userRole = computed(() => user.value?.role || 'customer')
-
+  const onboardingComplete = computed(() => consentStatus.value?.onboardingComplete || false)
   const hasRole = (...roles) => roles.includes(userRole.value)
+
+  const clearSession = () => {
+    user.value = null
+    connectedProviders.value = []
+    consentStatus.value = null
+    localStorage.removeItem('token')
+    localStorage.removeItem('refreshToken')
+    localStorage.removeItem('sessionToken')
+    localStorage.removeItem('user')
+  }
+
+  const getProfile = async ({ silent = false } = {}) => {
+    try {
+      const response = await api.get('/auth/me', { skipAuthRedirect: silent })
+      user.value = response.data.user
+      connectedProviders.value = response.data.user.providers || []
+      consentStatus.value = response.data.consentStatus
+      error.value = null
+      return response.data.user
+    } catch (err) {
+      clearSession()
+      if (!silent) {
+        error.value = err.response?.data?.error || 'Failed to load your authenticated session.'
+      }
+      return null
+    }
+  }
+
+  const restoreSession = async () => {
+    clearSession()
+    await getProfile({ silent: true })
+  }
 
   const login = async (email, password) => {
     loading.value = true
     error.value = null
     try {
       const response = await api.post('/auth/login', { email, password })
-      setAuthTokens(response.data)
       user.value = response.data.user
       connectedProviders.value = response.data.user.providers || []
-      return true
+      consentStatus.value = response.data.consentStatus
+      return response.data.user
     } catch (err) {
-      error.value = err.response?.data?.error || 'Login failed'
-      return false
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const signup = async (email, password, firstName, lastName, phone) => {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await api.post('/auth/signup', {
-        email,
-        password,
-        firstName,
-        lastName,
-        phone
-      })
-      setAuthTokens(response.data)
-      user.value = response.data.user
-      return true
-    } catch (err) {
-      error.value = err.response?.data?.error || 'Signup failed'
-      return false
+      error.value = err.response?.data?.error || 'Sign in failed.'
+      return null
     } finally {
       loading.value = false
     }
   }
 
   const logout = async () => {
+    loading.value = true
     try {
-      await api.post('/auth/logout')
-    } catch (err) {
-      console.error('Logout error:', err)
+      await api.post('/auth/logout', null, { skipAuthRedirect: true })
     } finally {
-      user.value = null
-      token.value = null
-      refreshToken.value = null
-      sessionToken.value = null
-      connectedProviders.value = []
-      localStorage.removeItem('token')
-      localStorage.removeItem('refreshToken')
-      localStorage.removeItem('sessionToken')
-      localStorage.removeItem('user')
+      clearSession()
+      loading.value = false
     }
   }
 
-  const setAuthTokens = (authData) => {
-    token.value = authData.token
-    refreshToken.value = authData.refreshToken
-    sessionToken.value = authData.sessionToken
-    localStorage.setItem('token', authData.token)
-    localStorage.setItem('refreshToken', authData.refreshToken)
-    localStorage.setItem('sessionToken', authData.sessionToken)
-    if (authData.user) {
-      localStorage.setItem('user', JSON.stringify(authData.user))
-    }
+  const getConsentStatus = async () => {
+    const response = await api.get('/auth/consents')
+    consentStatus.value = response.data.consentStatus
+    return consentStatus.value
   }
 
-  const refreshAuthToken = async () => {
+  const completeConsentOnboarding = async (consents) => {
+    loading.value = true
+    error.value = null
     try {
-      const response = await api.post('/auth/refresh', {
-        refreshToken: refreshToken.value
-      })
-      setAuthTokens(response.data)
-      return true
+      const response = await api.put('/auth/consents/onboarding', { consents })
+      consentStatus.value = response.data.consentStatus
+      if (user.value) user.value.onboardingComplete = consentStatus.value.onboardingComplete
+      return consentStatus.value
     } catch (err) {
-      error.value = 'Session expired. Please log in again.'
-      await logout()
-      return false
-    }
-  }
-
-  const getProfile = async () => {
-    try {
-      const response = await api.get('/auth/me')
-      user.value = response.data.user
-      connectedProviders.value = response.data.user.providers || []
-      return response.data.user
-    } catch (err) {
-      error.value = 'Failed to fetch profile'
+      error.value = err.response?.data?.error || 'Unable to record your consent choices.'
       return null
+    } finally {
+      loading.value = false
     }
   }
 
@@ -122,98 +106,23 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  const restoreSession = () => {
-    const storedUser = localStorage.getItem('user')
-    if (storedUser && token.value) {
-      user.value = JSON.parse(storedUser)
-    }
-  }
-
-  const handleOAuthCallback = async (params) => {
-    const { token: newToken, refreshToken: newRefreshToken, sessionToken: newSessionToken } = params
-    if (newToken) {
-      token.value = newToken
-      refreshToken.value = newRefreshToken
-      sessionToken.value = newSessionToken
-      localStorage.setItem('token', newToken)
-      localStorage.setItem('refreshToken', newRefreshToken)
-      localStorage.setItem('sessionToken', newSessionToken)
-      await getProfile()
-      return true
-    }
-    return false
-  }
-
-  const verifyOtp = async (email, otp) => {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await api.post('/auth/verify-otp', { email, otp })
-      setAuthTokens(response.data)
-      user.value = response.data.user
-      return true
-    } catch (err) {
-      error.value = err.response?.data?.error || 'OTP verification failed'
-      return false
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const sendWhatsAppOtp = async (phone) => {
-    loading.value = true
-    error.value = null
-    try {
-      await api.post('/auth/whatsapp/send-otp', { phone })
-      return true
-    } catch (err) {
-      error.value = err.response?.data?.error || 'Failed to send WhatsApp OTP'
-      return false
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const verifyWhatsAppOtp = async (phone, otp) => {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await api.post('/auth/whatsapp/verify-otp', { phone, otp })
-      setAuthTokens(response.data)
-      user.value = response.data.user
-      connectedProviders.value = response.data.user?.providers || []
-      return true
-    } catch (err) {
-      error.value = err.response?.data?.error || 'WhatsApp OTP verification failed'
-      return false
-    } finally {
-      loading.value = false
-    }
-  }
-
   return {
     user,
-    token,
-    refreshToken,
-    sessionToken,
     loading,
     error,
+    connectedProviders,
+    consentStatus,
     isAuthenticated,
     userRole,
+    onboardingComplete,
     hasRole,
-    connectedProviders,
-    login,
-    signup,
-    logout,
+    clearSession,
     getProfile,
-    disconnectProvider,
-    refreshAuthToken,
-    setAuthTokens,
     restoreSession,
-    handleOAuthCallback,
-    verifyOtp,
-    sendWhatsAppOtp,
-    verifyWhatsAppOtp
+    login,
+    logout,
+    getConsentStatus,
+    completeConsentOnboarding,
+    disconnectProvider
   }
 })
-
