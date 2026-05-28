@@ -15,10 +15,13 @@
     <nav v-if="showChrome" class="navbar sticky top-0 z-50 transition-colors duration-300" :class="navbarClass">
       <div class="nav-container max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
         <!-- Brand -->
-        <div class="nav-brand flex items-center gap-1.5 shrink-0">
-          <div class="text-2xl">☀️</div>
-          <h1 class="text-lg font-bold hidden lg:block" :class="isDarkMode ? 'text-slate-100' : 'text-[#0F6CBD]'">Apolaki</h1>
-        </div>
+        <BrandLogo
+          to="/dashboard"
+          size="sm"
+          text="Apolaki"
+          class="nav-brand shrink-0"
+          :class="isDarkMode ? 'text-slate-100' : 'text-[#0F6CBD]'"
+        />
 
         <!-- Mobile Hamburger Button -->
         <button @click="mobileMenuOpen = !mobileMenuOpen" class="hamburger-btn md:hidden p-2 rounded-lg transition" :class="isDarkMode ? 'text-white hover:bg-white/10' : 'text-[#0F6CBD] hover:bg-black/10'" aria-label="Toggle menu">
@@ -118,6 +121,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from './stores/themeStore'
 import { useUserStore } from './stores/userStore'
+import BrandLogo from './components/BrandLogo.vue'
 
 const route = useRoute()
 const router = useRouter()

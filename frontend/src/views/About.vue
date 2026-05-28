@@ -4,7 +4,7 @@
 
       <!-- Header -->
       <div class="text-center mb-12">
-        <div class="text-5xl mb-4">☀️</div>
+        <BrandLogo size="xl" text="Apolaki Solar" class="mb-4 text-[#0F6CBD]" />
         <h1 class="text-4xl font-bold text-gray-900">About Apolaki Solar</h1>
         <p class="mt-3 text-lg text-gray-600 max-w-2xl mx-auto">
           Empowering individuals and small businesses to make informed solar energy decisions
@@ -100,10 +100,8 @@
       <section class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
         <h2 class="text-2xl font-bold text-gray-900 mb-6">🏆 Credits</h2>
         <div class="space-y-4">
-          <div class="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-            <div class="w-12 h-12 bg-linear-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0">
-              A
-            </div>
+            <div class="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+            <BrandLogo size="sm" :wordmark="false" class="shrink-0 text-[#0F6CBD]" />
             <div>
               <h4 class="font-bold text-gray-900">Apolaki Development Team</h4>
               <p class="text-sm text-gray-600">Platform design, architecture, and development</p>
@@ -170,6 +168,8 @@
 </template>
 
 <script setup>
+import BrandLogo from '../components/BrandLogo.vue'
+
 const version = '2.0.0'
 
 const techStack = {

@@ -24,7 +24,7 @@ const routes = [
     path: '/admin-login',
     name: 'AdminLogin',
     component: () => import('../views/AdminLogin.vue'),
-    meta: { requiresAuth: true, allowedRoles: ['admin', 'superadmin'], allowsPendingConsent: true }
+    meta: { requiresAuth: false }
   },
   {
     path: '/signup',

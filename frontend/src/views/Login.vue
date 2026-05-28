@@ -2,8 +2,7 @@
   <div class="login-container">
     <section class="login-card" aria-labelledby="login-title">
       <div class="brand">
-        <div class="sun" aria-hidden="true"></div>
-        <span>Apolaki Solar</span>
+        <BrandLogo size="md" text="Apolaki Solar" />
       </div>
 
       <h1 id="login-title">Sign in to continue</h1>
@@ -63,6 +62,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import BrandLogo from '../components/BrandLogo.vue'
 import OAuthLogin from '../components/OAuthLogin.vue'
 import { useUserStore } from '../stores/userStore'
 
@@ -110,18 +110,7 @@ async function handleLogin() {
   align-items: center;
   color: #0f6cbd;
   display: flex;
-  font-size: 0.95rem;
-  font-weight: 700;
-  gap: 0.55rem;
   margin-bottom: 1.7rem;
-}
-
-.sun {
-  background: #ffca4f;
-  border-radius: 100%;
-  box-shadow: 0 0 0 5px rgba(255, 202, 79, 0.22);
-  height: 1rem;
-  width: 1rem;
 }
 
 h1 {
