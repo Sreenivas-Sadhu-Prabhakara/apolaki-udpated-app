@@ -137,6 +137,9 @@
                     <button @click="openQuoteModal(installer)" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 rounded-lg text-sm transition">
                         Request Quotation
                     </button>
+                    <button @click="router.push(`/messaging?installerId=${installer.id}`)" class="px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg text-sm transition" title="Message Installer">
+                        💬
+                    </button>
                 </div>
             </div>
         </div>
@@ -390,10 +393,12 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useMarketplaceStore } from '../stores/marketplaceStore'
 import { useThemeStore } from '../stores/themeStore'
 import { formatCurrency } from '../utils/currency'
 
+const router = useRouter()
 const marketplaceStore = useMarketplaceStore()
 const themeStore = useThemeStore()
 const isDark = computed(() => themeStore.isDarkMode)

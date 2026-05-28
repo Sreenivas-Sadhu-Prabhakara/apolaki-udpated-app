@@ -9,6 +9,12 @@
       <div class="detail-header">
         <router-link to="/installations" class="btn btn-sm btn-outline">← Back</router-link>
         <h1>{{ installationStore.currentInstallation.name }}</h1>
+        <button 
+          @click="router.push(`/messaging?installerId=${installationStore.currentInstallation.installer_id || 'i1'}`)" 
+          class="btn btn-sm btn-primary ml-auto flex items-center gap-2"
+        >
+          <span>💬</span> Message Installer
+        </button>
       </div>
 
       <div class="detail-grid">
@@ -77,10 +83,11 @@
 
 <script setup>
 import { onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useInstallationStore } from '../stores/installationStore'
 
 const route = useRoute()
+const router = useRouter()
 const installationStore = useInstallationStore()
 
 onMounted(async () => {
@@ -200,6 +207,10 @@ onMounted(async () => {
 
 .mt-4 {
   margin-top: 1rem;
+}
+
+.ml-auto {
+  margin-left: auto;
 }
 
 @media (max-width: 768px) {

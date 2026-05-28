@@ -38,6 +38,9 @@
           <li><router-link to="/contracts" class="nav-link transition">5. Contracts</router-link></li>
           <li><router-link to="/monitoring" class="nav-link transition">6. Monitoring</router-link></li>
           <li><router-link to="/installations" class="nav-link transition">Installations</router-link></li>
+          <li><router-link to="/messaging" class="nav-link transition flex items-center gap-1.5">
+            Messages <span v-if="unreadCount" class="unread-dot"></span>
+          </router-link></li>
 
           <!-- "More" dropdown for secondary + role-specific links -->
           <li class="nav-more-wrapper">
@@ -99,6 +102,9 @@
             <li v-if="userStore.hasRole('admin', 'superadmin')">
               <router-link to="/admin" class="mobile-link" @click="mobileMenuOpen = false">👤 Admin</router-link>
             </li>
+            <li v-if="userStore.user">
+              <router-link to="/messaging" class="mobile-link" @click="mobileMenuOpen = false">💬 Messages</router-link>
+            </li>
             <li v-if="userStore.user" class="mt-2 pt-2 border-t border-white/20">
               <button @click="logout(); mobileMenuOpen = false" class="mobile-link w-full text-left">Logout</button>
             </li>
@@ -121,17 +127,24 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from './stores/themeStore'
 import { useUserStore } from './stores/userStore'
+import { useMessagingStore } from './stores/messagingStore'
 import BrandLogo from './components/BrandLogo.vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const themeStore = useThemeStore()
+const messagingStore = useMessagingStore()
 const mobileMenuOpen = ref(false)
 const moreMenuOpen = ref(false)
 
 // Computed so templates can use it reactively
 const isDarkMode = computed(() => themeStore.isDarkMode)
+
+// PRD 9: Simple unread notification count
+const unreadCount = computed(() => {
+  return messagingStore.conversations.reduce((sum, conv) => sum + (conv.unread_count || 0), 0)
+})
 
 // User initials for the avatar circle
 const userInitials = computed(() => {
@@ -147,7 +160,22 @@ const hasRoleLinks = computed(() => {
   return userStore.hasRole('dealer', 'installer', 'operations', 'admin', 'superadmin')
 })
 
-onMounted(() => {
+onMounted(async () => {
+  // PRD 9: Service Worker for Web Push Notifications
+  if ('serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.register('/service-worker.js')
+      console.log('Service Worker registered with scope:', registration.scope)
+    } catch (error) {
+      console.warn('Service Worker registration failed:', error)
+    }
+  }
+
+  // Load initial messaging state if authenticated
+  if (userStore.isAuthenticated) {
+    messagingStore.fetchConversations()
+  }
+  
   themeStore.init()
 })
 
@@ -569,5 +597,18 @@ const logout = async () => {
 .slide-down-leave-from {
   max-height: 600px;
   opacity: 1;
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--warning-orange);
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 0 2px white;
+}
+
+:global(.dark-theme) .unread-dot {
+  box-shadow: 0 0 0 2px #1A1C1E;
 }
 </style>

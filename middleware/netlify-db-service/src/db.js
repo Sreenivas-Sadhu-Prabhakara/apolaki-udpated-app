@@ -266,9 +266,24 @@ async function ensureMessagingSchema() {
         encrypted_body TEXT NOT NULL,
         encryption_metadata JSONB DEFAULT '{}',
         attachment_count INTEGER DEFAULT 0,
+        read_at TIMESTAMP,
+        delivered_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         edited_at TIMESTAMP,
         deleted_at TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        subscription_json JSONB NOT NULL,
+        platform VARCHAR(50) DEFAULT 'web',
+        user_agent TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, subscription_json)
       )
     `;
 
@@ -305,6 +320,8 @@ async function ensureMessagingSchema() {
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_conversations_consumer ON messaging_conversations(consumer_id, status)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_conversations_installer ON messaging_conversations(installer_id, status)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_messages_conversation ON messaging_messages(conversation_id, created_at)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_messages_read ON messaging_messages(conversation_id, read_at) WHERE read_at IS NULL`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_attachments_message ON messaging_attachments(message_id)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_in_app_notifications_user ON in_app_notifications(user_id, read_at, created_at DESC)`;
     messagingSchemaEnsured = true;
@@ -1951,6 +1968,36 @@ export const passwordResetTokens = {
   }
 };
 
+/**
+ * Web Push Subscription operations
+ */
+export const pushSubscriptions = {
+  async upsert(userId, subscriptionJson, platform = 'web', userAgent = '') {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      INSERT INTO push_subscriptions (user_id, subscription_json, platform, user_agent)
+      VALUES (${userId}, ${JSON.stringify(subscriptionJson)}, ${platform}, ${userAgent})
+      ON CONFLICT (user_id, subscription_json)
+      DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  async getByUserId(userId) {
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`SELECT * FROM push_subscriptions WHERE user_id = ${userId}`;
+  },
+
+  async delete(userId, subscriptionJson) {
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`
+      DELETE FROM push_subscriptions 
+      WHERE user_id = ${userId} AND subscription_json = ${JSON.stringify(subscriptionJson)}
+    `;
+  }
+};
+
 export default {
   get sql() { return getSqlInstance(); },
   users,
@@ -1966,5 +2013,7 @@ export default {
   sessions,
   auditLogs,
   userConsents,
-  breakGlassSessions
+  breakGlassSessions,
+  messaging,
+  pushSubscriptions
 };

@@ -7,15 +7,48 @@
  */
 
 import expressModule from 'express';
+import webpush from 'web-push';
 import { CONSENT_VERSION, normalizeRole } from '../auth/access-control.js';
 import { authenticateToken, authorizeRole } from '../auth/middleware.js';
-import { auditLogs, messaging, userConsents, users } from '../db.js';
+import { auditLogs, messaging, userConsents, users, pushSubscriptions } from '../db.js';
 
 const express = expressModule.default || expressModule;
 const router = express.Router();
 
 const PRIVILEGED_ROLES = new Set(['admin', 'superadmin']);
 const INSTALLER_MESSAGING_CONSENT = 'installer_messaging';
+
+// PRD 9: Web Push Configuration
+const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+const vapidEmail = process.env.VAPID_EMAIL || 'admin@apolaki.local';
+
+if (vapidPublicKey && vapidPrivateKey) {
+  webpush.setVapidDetails(
+    `mailto:${vapidEmail}`,
+    vapidPublicKey,
+    vapidPrivateKey
+  );
+}
+
+async function sendPushNotification(userId, payload) {
+  const subscriptions = await pushSubscriptions.getByUserId(userId);
+  const results = await Promise.allSettled(subscriptions.map(async (sub) => {
+    try {
+      await webpush.sendNotification(
+        sub.subscription_json,
+        JSON.stringify(payload)
+      );
+    } catch (error) {
+      if (error.statusCode === 404 || error.statusCode === 410) {
+        // Subscription expired or removed
+        await pushSubscriptions.delete(userId, sub.subscription_json);
+      }
+      throw error;
+    }
+  }));
+  return results;
+}
 
 function getClientIp(req) {
   return req.headers['x-forwarded-for']?.split(',')[0] || req.ip || 'unknown';
@@ -83,6 +116,22 @@ function sanitizeAttachment(attachment) {
   };
 }
 
+router.post('/push-subscription', authenticateToken, async (req, res) => {
+  const { subscription, platform = 'web' } = req.body || {};
+  if (!subscription) {
+    return res.status(400).json({ success: false, error: 'subscription object is required.' });
+  }
+
+  await pushSubscriptions.upsert(
+    req.user.id,
+    subscription,
+    platform,
+    req.get('user-agent')
+  );
+
+  res.status(201).json({ success: true, message: 'Push subscription registered.' });
+});
+
 router.get('/security-banner', authenticateToken, (_req, res) => {
   res.json({
     success: true,
@@ -90,7 +139,7 @@ router.get('/security-banner', authenticateToken, (_req, res) => {
       title: 'Protected in-app messaging',
       body: 'Messages and attachments are protected with end-to-end style encrypted envelopes. Apolaki discourages moving installer communication to external apps until sufficient trust controls are enabled.',
       auditNotice: 'Admin review is governed, logged, and limited to support, quality control, safety, dispute, or legal workflows.',
-      externalChannels: 'Email, SMS, WhatsApp, and push notifications are intentionally disabled for the MVP.'
+      externalChannels: 'Push notifications are enabled. Email, SMS, and WhatsApp stay intentionally disabled for the MVP.'
     }
   });
 });
@@ -271,6 +320,14 @@ router.post('/conversations/:conversationId/messages', authenticateToken, async 
     resourceType: 'messaging_conversation',
     resourceId: conversation.id
   });
+
+  // PRD 9: Send Web Push notification
+  sendPushNotification(recipientId, {
+    title: 'New Message - Apolaki',
+    body: 'You have a new protected message from ' + (normalizeRole(req.user.role) === 'dealer' ? 'your installer.' : 'a customer.'),
+    url: `/messaging?id=${conversation.id}`,
+    conversationId: conversation.id
+  }).catch(err => console.warn('Web Push delivery failed:', err.message));
 
   await audit(req, 'MESSAGING_MESSAGE_SENT', 'messaging_message', message.id, 'success', {
     conversationId: conversation.id,
