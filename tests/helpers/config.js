@@ -9,6 +9,7 @@ const config = {
   // ── Service URLs ───────────────────────────────────────────────────────
   api: {
     baseUrl: process.env.API_BASE_URL || 'http://localhost:3001',
+    adminBaseUrl: process.env.ADMIN_API_BASE_URL || 'http://localhost:3002',
   },
   frontend: {
     baseUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -21,7 +22,7 @@ const config = {
   users: {
     admin: {
       email: process.env.TEST_ADMIN_EMAIL || 'admin@apolaki.solar',
-      password: process.env.TEST_ADMIN_PASSWORD || 'Admin@12345!',
+      password: process.env.TEST_ADMIN_PASSWORD || 'admin123',
     },
     homeowner: {
       email: process.env.TEST_USER_EMAIL || 'homeowner@apolaki.solar',

@@ -53,7 +53,7 @@ describe('Persona › User (Customer/Prosumer)', function () {
     await login(config.users.homeowner);
     const res = await client.get('/api/personas/admin/users');
 
-    expect(res.status).to.equal(403);
+    expect(res.status).to.equal(410);
     expect(res.data).to.have.property('error');
   });
 
@@ -73,7 +73,7 @@ describe('Persona › User (Customer/Prosumer)', function () {
       justification: 'Attempting unauthorized access',
     });
 
-    expect(res.status).to.equal(403);
+    expect(res.status).to.equal(410);
   });
 });
 
@@ -129,7 +129,7 @@ describe('Persona › Dealer', function () {
     await login(config.users.dealer);
     const res = await client.get('/api/personas/admin/users');
 
-    expect(res.status).to.equal(403);
+    expect(res.status).to.equal(410);
   });
 
   it('should NOT be able to resolve operations alerts', async function () {
@@ -183,204 +183,42 @@ describe('Persona › Operations', function () {
     await login(config.users.operations);
     const res = await client.get('/api/personas/admin/users');
 
-    expect(res.status).to.equal(403);
+    expect(res.status).to.equal(410);
   });
 });
 
 // ============================================================================
-// 4. ADMIN PERSONA
+// 4. ADMIN PERSONA MIGRATION
 // ============================================================================
-describe('Persona › Admin', function () {
+describe('Persona › Admin Control Plane Migration', function () {
   afterEach(function () {
     clearAuth();
   });
 
-  it('should login as admin and get persona info', async function () {
+  it('still returns persona metadata for admin users', async function () {
     await login(config.users.admin);
     const res = await client.get('/api/personas/me');
 
     expect(res.status).to.equal(200);
     expect(res.data.data).to.have.property('role', 'admin');
     expect(res.data.data.permissions).to.include('manage:users');
-    expect(res.data.data.permissions).to.include('assign:roles');
   });
 
-  it('should list all users', async function () {
-    await login(config.users.admin);
-    const res = await client.get('/api/personas/admin/users');
+  for (const endpoint of [
+    { method: 'get', path: '/api/personas/roles' },
+    { method: 'get', path: '/api/personas/admin/users' },
+    { method: 'get', path: '/api/personas/admin/audit-logs' },
+    { method: 'put', path: `/api/personas/admin/users/${config.ids.users.viewer}/role`, body: { role: 'dealer' } },
+    { method: 'post', path: '/api/personas/superadmin/break-glass', body: { justification: 'Emergency migration test' } },
+  ]) {
+    it(`returns 410 from migrated ${endpoint.method.toUpperCase()} ${endpoint.path}`, async function () {
+      await login(config.users.superadmin);
+      const res = await client[endpoint.method](endpoint.path, endpoint.body || undefined);
 
-    expect(res.status).to.equal(200);
-    expect(res.data.data).to.be.an('array');
-    expect(res.data.data.length).to.be.at.least(8); // 8 seeded users
-  });
-
-  it('should view available roles', async function () {
-    await login(config.users.admin);
-    const res = await client.get('/api/personas/roles');
-
-    expect(res.status).to.equal(200);
-    expect(res.data.data).to.be.an('array');
-    expect(res.data.data.length).to.be.at.least(5);
-  });
-
-  it('should assign a role to a user', async function () {
-    await login(config.users.admin);
-
-    // Change the viewer user to 'dealer'
-    const res = await client.put(`/api/personas/admin/users/${config.ids.users.viewer}/role`, {
-      role: 'dealer',
+      expect(res.status).to.equal(410);
+      expect(res.data.code).to.equal('ADMIN_CONTROL_PLANE_REQUIRED');
     });
-
-    expect(res.status).to.equal(200);
-    expect(res.data.data).to.have.property('role', 'dealer');
-
-    // Revert it back
-    await client.put(`/api/personas/admin/users/${config.ids.users.viewer}/role`, {
-      role: 'customer',
-    });
-  });
-
-  it('should NOT be able to assign superadmin role', async function () {
-    await login(config.users.admin);
-    const res = await client.put(`/api/personas/admin/users/${config.ids.users.viewer}/role`, {
-      role: 'superadmin',
-    });
-
-    expect(res.status).to.equal(403);
-    expect(res.data.error).to.include('superadmin');
-  });
-
-  it('should view audit logs', async function () {
-    await login(config.users.admin);
-    const res = await client.get('/api/personas/admin/audit-logs');
-
-    expect(res.status).to.equal(200);
-    expect(res.data.data).to.be.an('array');
-  });
-
-  it('should NOT be able to activate break-glass', async function () {
-    await login(config.users.admin);
-    const res = await client.post('/api/personas/superadmin/break-glass', {
-      justification: 'Admin trying to break glass',
-    });
-
-    expect(res.status).to.equal(403);
-  });
-});
-
-// ============================================================================
-// 5. SUPER ADMIN PERSONA (BREAK-GLASS)
-// ============================================================================
-describe('Persona › Super Admin (Break-Glass)', function () {
-  let breakGlassSessionId;
-
-  afterEach(function () {
-    clearAuth();
-  });
-
-  it('should login as superadmin and get persona info', async function () {
-    await login(config.users.superadmin);
-    const res = await client.get('/api/personas/me');
-
-    expect(res.status).to.equal(200);
-    expect(res.data.data).to.have.property('role', 'superadmin');
-    expect(res.data.data.permissions).to.include('all');
-    expect(res.data.data.permissions).to.include('break-glass:activate');
-  });
-
-  it('should reject break-glass without justification', async function () {
-    await login(config.users.superadmin);
-    const res = await client.post('/api/personas/superadmin/break-glass', {
-      justification: 'short',
-    });
-
-    expect(res.status).to.equal(400);
-    expect(res.data.error).to.include('Justification');
-  });
-
-  it('should activate a break-glass session with proper justification', async function () {
-    await login(config.users.superadmin);
-    const res = await client.post('/api/personas/superadmin/break-glass', {
-      justification: 'Emergency: Critical security incident detected in production - investigating unauthorized data access',
-    });
-
-    expect(res.status).to.equal(201);
-    expect(res.data).to.have.property('data');
-    expect(res.data.data).to.have.property('sessionId');
-    expect(res.data.data).to.have.property('expiresAt');
-    expect(res.data.data.durationMinutes).to.equal(60);
-
-    breakGlassSessionId = res.data.data.sessionId;
-  });
-
-  it('should reject duplicate break-glass activation', async function () {
-    await login(config.users.superadmin);
-    const res = await client.post('/api/personas/superadmin/break-glass', {
-      justification: 'Another emergency while one is active',
-    });
-
-    expect(res.status).to.equal(409);
-    expect(res.data.error).to.include('active');
-  });
-
-  it('should record an action during break-glass session', async function () {
-    await login(config.users.superadmin);
-    const res = await client.post(`/api/personas/superadmin/break-glass/${breakGlassSessionId}/action`, {
-      action: 'DISABLE_USER_ACCOUNT',
-      details: 'Disabled compromised user account ID=xxx pending investigation',
-    });
-
-    expect(res.status).to.equal(200);
-    expect(res.data).to.have.property('data');
-  });
-
-  it('should end the break-glass session', async function () {
-    await login(config.users.superadmin);
-    const res = await client.post(`/api/personas/superadmin/break-glass/${breakGlassSessionId}/end`);
-
-    expect(res.status).to.equal(200);
-    expect(res.data.data).to.have.property('status', 'ended');
-    expect(res.data.data).to.have.property('ended_at');
-  });
-
-  it('should list break-glass sessions (audit trail)', async function () {
-    await login(config.users.superadmin);
-    const res = await client.get('/api/personas/superadmin/break-glass');
-
-    expect(res.status).to.equal(200);
-    expect(res.data.data).to.be.an('array');
-    expect(res.data.data.length).to.be.at.least(1);
-
-    // Verify our session is in the list with actions
-    const ourSession = res.data.data.find(s => s.id === breakGlassSessionId);
-    expect(ourSession).to.exist;
-    expect(ourSession.actions_taken).to.be.an('array');
-    expect(ourSession.actions_taken.length).to.be.at.least(1);
-  });
-
-  it('superadmin should also have access to admin endpoints', async function () {
-    await login(config.users.superadmin);
-    const res = await client.get('/api/personas/admin/users');
-
-    expect(res.status).to.equal(200);
-    expect(res.data.data).to.be.an('array');
-  });
-
-  it('superadmin should be able to assign superadmin role', async function () {
-    await login(config.users.superadmin);
-
-    // Temporarily promote trader to superadmin, then revert
-    const res = await client.put(`/api/personas/admin/users/${config.ids.users.trader}/role`, {
-      role: 'superadmin',
-    });
-    expect(res.status).to.equal(200);
-    expect(res.data.data.role).to.equal('superadmin');
-
-    // Revert
-    await client.put(`/api/personas/admin/users/${config.ids.users.trader}/role`, {
-      role: 'customer',
-    });
-  });
+  }
 });
 
 // ============================================================================
@@ -394,8 +232,6 @@ describe('Persona › Access Control Matrix', function () {
   const endpoints = [
     { method: 'get', path: '/api/personas/dealer/installations', allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'] },
     { method: 'get', path: '/api/personas/operations/alerts', allowedRoles: ['operations', 'admin', 'superadmin'] },
-    { method: 'get', path: '/api/personas/admin/users', allowedRoles: ['admin', 'superadmin'] },
-    { method: 'get', path: '/api/personas/admin/audit-logs', allowedRoles: ['admin', 'superadmin'] },
   ];
 
   const testUsers = [
@@ -440,15 +276,15 @@ describe('Persona › Unauthenticated Access', function () {
     expect(res.status).to.equal(401);
   });
 
-  it('should deny access to admin users without token', async function () {
+  it('should return 410 for migrated admin users endpoint without token', async function () {
     const res = await client.get('/api/personas/admin/users');
-    expect(res.status).to.equal(401);
+    expect(res.status).to.equal(410);
   });
 
-  it('should deny break-glass activation without token', async function () {
+  it('should return 410 for migrated break-glass endpoint without token', async function () {
     const res = await client.post('/api/personas/superadmin/break-glass', {
       justification: 'No auth attempt',
     });
-    expect(res.status).to.equal(401);
+    expect(res.status).to.equal(410);
   });
 });

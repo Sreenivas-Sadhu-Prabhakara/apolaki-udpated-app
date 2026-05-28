@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import adminApi from '../services/adminApi'
 import api from '../services/api'
 
 export const useUserStore = defineStore('user', () => {
@@ -8,11 +9,16 @@ export const useUserStore = defineStore('user', () => {
   const error = ref(null)
   const connectedProviders = ref([])
   const consentStatus = ref(null)
+  const adminAccessToken = ref(localStorage.getItem('adminAccessToken') || '')
+  const adminRefreshToken = ref(localStorage.getItem('adminRefreshToken') || '')
+  const adminUser = ref(JSON.parse(localStorage.getItem('adminUser') || 'null'))
 
   const isAuthenticated = computed(() => !!user.value)
   const userRole = computed(() => user.value?.role || 'customer')
   const onboardingComplete = computed(() => consentStatus.value?.onboardingComplete || false)
   const hasRole = (...roles) => roles.includes(userRole.value)
+  const adminScope = computed(() => adminUser.value?.adminScope || null)
+  const isAdminAuthenticated = computed(() => !!adminAccessToken.value && !!adminScope.value)
 
   const clearSession = () => {
     user.value = null
@@ -22,6 +28,15 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem('refreshToken')
     localStorage.removeItem('sessionToken')
     localStorage.removeItem('user')
+  }
+
+  const clearAdminSession = () => {
+    adminAccessToken.value = ''
+    adminRefreshToken.value = ''
+    adminUser.value = null
+    localStorage.removeItem('adminAccessToken')
+    localStorage.removeItem('adminRefreshToken')
+    localStorage.removeItem('adminUser')
   }
 
   const getProfile = async ({ silent = false } = {}) => {
@@ -73,6 +88,31 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  const adminLogin = async (email, password) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await adminApi.post('/auth/login', { email, password }, { skipAdminRedirect: true })
+      adminAccessToken.value = response.data.accessToken
+      adminRefreshToken.value = response.data.refreshToken
+      adminUser.value = response.data.user
+      localStorage.setItem('adminAccessToken', adminAccessToken.value)
+      localStorage.setItem('adminRefreshToken', adminRefreshToken.value)
+      localStorage.setItem('adminUser', JSON.stringify(adminUser.value))
+      return adminUser.value
+    } catch (err) {
+      clearAdminSession()
+      error.value = err.response?.data?.error || 'Admin sign-in failed.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const adminLogout = () => {
+    clearAdminSession()
+  }
+
   const getConsentStatus = async () => {
     const response = await api.get('/auth/consents')
     consentStatus.value = response.data.consentStatus
@@ -112,15 +152,23 @@ export const useUserStore = defineStore('user', () => {
     error,
     connectedProviders,
     consentStatus,
+    adminAccessToken,
+    adminRefreshToken,
+    adminUser,
     isAuthenticated,
     userRole,
     onboardingComplete,
+    adminScope,
+    isAdminAuthenticated,
     hasRole,
     clearSession,
+    clearAdminSession,
     getProfile,
     restoreSession,
     login,
     logout,
+    adminLogin,
+    adminLogout,
     getConsentStatus,
     completeConsentOnboarding,
     disconnectProvider

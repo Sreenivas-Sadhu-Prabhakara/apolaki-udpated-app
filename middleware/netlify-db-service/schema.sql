@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS users (
   phone VARCHAR(20),
   profile_picture_url VARCHAR(500),
   role VARCHAR(50) DEFAULT 'customer',
+  admin_totp_secret TEXT,
+  admin_totp_enabled BOOLEAN DEFAULT false,
   active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -56,6 +58,38 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   user_agent TEXT,
   status VARCHAR(50),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Normalized append-first audit event stream owned by the Admin Control Plane
+CREATE TABLE IF NOT EXISTS audit_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  service VARCHAR(100) NOT NULL,
+  actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  actor_role VARCHAR(50),
+  action VARCHAR(100) NOT NULL,
+  resource_type VARCHAR(100),
+  resource_id VARCHAR(255),
+  before_state JSONB,
+  after_state JSONB,
+  ip_address VARCHAR(45),
+  user_agent TEXT,
+  status VARCHAR(50) DEFAULT 'success',
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Admin Control Plane sessions. Regular app sessions never satisfy admin auth.
+CREATE TABLE IF NOT EXISTS admin_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ip_address VARCHAR(45),
+  user_agent TEXT,
+  admin_scope VARCHAR(20) NOT NULL CHECK (admin_scope IN ('admin', 'superadmin')),
+  mfa_verified BOOLEAN DEFAULT false,
+  refresh_token_hash TEXT,
+  logged_in_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  revoked_at TIMESTAMP,
+  revoked_by UUID REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Application consent decisions, separate from OAuth identity grants
@@ -249,6 +283,13 @@ CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_session_token ON sessions(session_token);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_admin_sessions_user_active ON admin_sessions(user_id, revoked_at, last_active_at);
+CREATE INDEX IF NOT EXISTS idx_audit_events_actor_id ON audit_events(actor_id);
+CREATE INDEX IF NOT EXISTS idx_audit_events_action ON audit_events(action);
+CREATE INDEX IF NOT EXISTS idx_audit_events_resource ON audit_events(resource_type, resource_id);
+CREATE INDEX IF NOT EXISTS idx_audit_events_timestamp ON audit_events(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_events_before_state ON audit_events USING GIN (before_state);
+CREATE INDEX IF NOT EXISTS idx_audit_events_after_state ON audit_events USING GIN (after_state);
 CREATE INDEX IF NOT EXISTS idx_user_consents_user_id ON user_consents(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_consents_lookup ON user_consents(user_id, consent_key, decision);
 CREATE INDEX IF NOT EXISTS idx_solar_installations_user_id ON solar_installations(user_id);

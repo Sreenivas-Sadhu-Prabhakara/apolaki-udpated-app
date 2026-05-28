@@ -125,6 +125,7 @@ function getSqlInstance() {
  */
 let schemaEnsured = false;
 let consentSchemaEnsured = false;
+let adminSchemaEnsured = false;
 
 async function ensureConsentSchema() {
   if (consentSchemaEnsured) return;
@@ -158,6 +159,65 @@ async function ensureConsentSchema() {
   }
 }
 
+async function ensureAdminSchema() {
+  if (adminSchemaEnsured) return;
+
+  const sqlInstance = getSqlInstance();
+  try {
+    await sqlInstance`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS admin_totp_secret TEXT,
+      ADD COLUMN IF NOT EXISTS admin_totp_enabled BOOLEAN DEFAULT false
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS admin_sessions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        admin_scope VARCHAR(20) NOT NULL CHECK (admin_scope IN ('admin', 'superadmin')),
+        mfa_verified BOOLEAN DEFAULT false,
+        refresh_token_hash TEXT,
+        logged_in_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        revoked_at TIMESTAMP,
+        revoked_by UUID REFERENCES users(id) ON DELETE SET NULL
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS audit_events (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        service VARCHAR(100) NOT NULL,
+        actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        actor_role VARCHAR(50),
+        action VARCHAR(100) NOT NULL,
+        resource_type VARCHAR(100),
+        resource_id VARCHAR(255),
+        before_state JSONB,
+        after_state JSONB,
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        status VARCHAR(50) DEFAULT 'success',
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_admin_sessions_user_active ON admin_sessions(user_id, revoked_at, last_active_at)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_audit_events_actor_id ON audit_events(actor_id)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_audit_events_action ON audit_events(action)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_audit_events_resource ON audit_events(resource_type, resource_id)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_audit_events_timestamp ON audit_events(timestamp DESC)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_audit_events_before_state ON audit_events USING GIN (before_state)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_audit_events_after_state ON audit_events USING GIN (after_state)`;
+    adminSchemaEnsured = true;
+  } catch (error) {
+    adminSchemaEnsured = false;
+    throw error;
+  }
+}
+
 async function ensureSchema() {
   if (schemaEnsured) return;
   schemaEnsured = true;
@@ -175,6 +235,7 @@ async function ensureSchema() {
     
     if (tableCheck[0]?.exists) {
       await ensureConsentSchema();
+      await ensureAdminSchema();
       console.log('✅ Database schema already exists');
       return;
     }
@@ -430,6 +491,7 @@ async function ensureSchema() {
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_oauth_providers_user_id ON oauth_providers(user_id)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_solar_installations_user_id ON solar_installations(user_id)`;
     await ensureConsentSchema();
+    await ensureAdminSchema();
 
     console.log('✅ Database schema created successfully');
   } catch (error) {
@@ -438,7 +500,7 @@ async function ensureSchema() {
   }
 }
 
-export { ensureConsentSchema, ensureInitialized, ensureSchema, initializeDatabase };
+export { ensureAdminSchema, ensureConsentSchema, ensureInitialized, ensureSchema, initializeDatabase };
 
 /**
  * User operations

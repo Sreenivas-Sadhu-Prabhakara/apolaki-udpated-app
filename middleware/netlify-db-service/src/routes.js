@@ -19,6 +19,7 @@ import {
 } from './db.js';
 
 const router = express.Router();
+const ADMIN_SERVICE_URL = process.env.ADMIN_SERVICE_URL || 'http://localhost:3002';
 
 function safeUser(user) {
   if (!user) return user;
@@ -38,6 +39,15 @@ function safeUser(user) {
 
 function canReadUserRecords(requestUser, userId) {
   return requestUser?.id === userId || ['admin', 'superadmin'].includes(requestUser?.role);
+}
+
+function adminControlPlaneGone(_req, res) {
+  res.status(410).json({
+    success: false,
+    error: 'This administrative endpoint has moved to the Admin Control Plane.',
+    code: 'ADMIN_CONTROL_PLANE_REQUIRED',
+    adminServiceUrl: ADMIN_SERVICE_URL
+  });
 }
 
 // ============================================
@@ -78,26 +88,7 @@ router.post('/users', async (req, res) => {
   }
 });
 
-/**
- * GET /api/users
- * Get all users
- */
-router.get('/users', async (req, res) => {
-  try {
-    const allUsers = await users.getAll();
-    res.json({
-      success: true,
-      count: allUsers.length,
-      data: allUsers.map(safeUser)
-    });
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
+router.get('/users', adminControlPlaneGone);
 
 /**
  * GET /api/users/profile

@@ -89,16 +89,16 @@ describe('API > Central Policy Enforcement', function () {
     expect(allowed.status).to.equal(201);
   });
 
-  it('permits and audits privileged administration without credential hashes', async function () {
+  it('returns gone for administrative endpoints migrated to admin-service', async function () {
     const admin = createClient();
     await signIn(admin, { email: 'admin@apolaki.solar', password: 'admin123' });
 
     const users = await admin.get('/api/users');
-    expect(users.status).to.equal(200);
-    expect(users.data.data[0]).to.not.have.property('password_hash');
+    expect(users.status).to.equal(410);
+    expect(users.data.code).to.equal('ADMIN_CONTROL_PLANE_REQUIRED');
 
     const audits = await admin.get('/api/personas/admin/audit-logs');
-    expect(audits.status).to.equal(200);
-    expect(audits.data.data.some(entry => entry.action === 'PRIVILEGED_ACCESS')).to.equal(true);
+    expect(audits.status).to.equal(410);
+    expect(audits.data.code).to.equal('ADMIN_CONTROL_PLANE_REQUIRED');
   });
 });

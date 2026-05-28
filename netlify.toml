@@ -18,7 +18,7 @@
   base = "."
   
   # Build command - installs both frontend and backend deps, then builds
-  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
+  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm ci --prefix middleware/admin-service && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
   
   # Frontend static files directory
   publish = "frontend/dist"
@@ -42,12 +42,22 @@
   included_files = [
     "config/**",
     "middleware/netlify-db-service/src/**",
-    "middleware/netlify-db-service/package.json"
+    "middleware/admin-service/src/**",
+    "middleware/netlify-db-service/package.json",
+    "middleware/admin-service/package.json"
   ]
 
 # ============================================================================
 # Redirects and Rewrites
 # ============================================================================
+[[redirects]]
+  # Admin Control Plane requests go to the dedicated admin-service handler.
+  # In production this path should only be reachable through the approved API gateway.
+  from = "/api/admin/*"
+  to = "/.netlify/functions/admin/:splat"
+  status = 200
+  force = true
+
 [[redirects]]
   # Proxy API requests to backend functions
   from = "/api/*"
@@ -98,7 +108,7 @@
 # ============================================================================
 [context.production]
   # Production build command (same as main build)
-  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
+  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm ci --prefix middleware/admin-service && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
   
   # Environment variables for production (set in Netlify dashboard)
   [context.production.environment]
@@ -108,7 +118,7 @@
 # Environment-specific configuration (staging)
 # ============================================================================
 [context.staging]
-  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
+  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm ci --prefix middleware/admin-service && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
   
   [context.staging.environment]
     NODE_ENV = "staging"
@@ -117,13 +127,13 @@
 # Environment-specific configuration (development/preview)
 # ============================================================================
 [context.deploy-preview]
-  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
+  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm ci --prefix middleware/admin-service && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
   
   [context.deploy-preview.environment]
     NODE_ENV = "development"
 
 [context.branch-deploy]
-  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
+  command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm ci --prefix middleware/admin-service && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
   
   [context.branch-deploy.environment]
     NODE_ENV = "development"

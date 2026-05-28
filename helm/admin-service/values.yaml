@@ -1,0 +1,16 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/apolaki/apolaki-admin-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+secretName: apolaki-admin-service-secrets
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi

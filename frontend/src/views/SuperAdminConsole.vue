@@ -38,7 +38,9 @@
         <p class="text-gray-400 mb-4 text-sm">Requires justification (min 10 chars). Session expires in 60 minutes.</p>
         <textarea v-model="justification" rows="3" placeholder="Describe the emergency requiring break-glass access..."
           class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 mb-4" />
-        <button @click="activateBreakGlass" :disabled="!justification || justification.length < 10 || activating"
+        <input v-model="signature" placeholder="Signed justification / incident reference..."
+          class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 mb-4" />
+        <button @click="activateBreakGlass" :disabled="!justification || justification.length < 10 || !signature || signature.length < 10 || activating"
           class="bg-red-600 px-6 py-3 rounded-lg font-bold text-lg hover:bg-red-700 disabled:opacity-50">
           {{ activating ? 'Activating...' : '🔐 Activate Break-Glass' }}
         </button>
@@ -72,10 +74,11 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
-import api from '../services/api'
+import adminApi from '../services/adminApi'
 
 const activeSession = ref(null)
 const justification = ref('')
+const signature = ref('')
 const actionText = ref('')
 const activating = ref(false)
 const actionSuccess = ref(false)
@@ -86,7 +89,7 @@ const historyLoading = ref(true)
 async function fetchHistory() {
   historyLoading.value = true
   try {
-    const res = await api.get('/personas/superadmin/break-glass')
+    const res = await adminApi.get('/break-glass')
     sessionHistory.value = res.data.data || []
     // Check if any active session exists
     const active = sessionHistory.value.find(s => s.status === 'active')
@@ -100,9 +103,10 @@ async function fetchHistory() {
 async function activateBreakGlass() {
   activating.value = true; errorMsg.value = ''
   try {
-    const res = await api.post('/personas/superadmin/break-glass', { justification: justification.value })
+    const res = await adminApi.post('/break-glass', { justification: justification.value, signature: signature.value })
     activeSession.value = res.data.data
     justification.value = ''
+    signature.value = ''
     await fetchHistory()
   } catch (e) {
     errorMsg.value = e.response?.data?.error || 'Failed to activate'
@@ -113,7 +117,7 @@ async function activateBreakGlass() {
 async function recordAction() {
   actionSuccess.value = false
   try {
-    await api.post(`/personas/superadmin/break-glass/${activeSession.value.sessionId}/action`, {
+    await adminApi.post(`/break-glass/${activeSession.value.sessionId}/action`, {
       action: actionText.value,
       details: 'Via Super Admin Console'
     })
@@ -128,7 +132,7 @@ async function recordAction() {
 async function endSession() {
   if (!confirm('Are you sure you want to end this break-glass session?')) return
   try {
-    await api.post(`/personas/superadmin/break-glass/${activeSession.value.sessionId}/end`)
+    await adminApi.post(`/break-glass/${activeSession.value.sessionId}/end`)
     activeSession.value = null
     await fetchHistory()
   } catch (e) {

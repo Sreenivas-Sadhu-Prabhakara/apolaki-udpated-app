@@ -9,9 +9,9 @@
  */
 
 import expressModule from 'express';
-import { ASSIGNABLE_ROLES, CONSENT_VERSION, getPermissionsForRole, normalizeRole } from '../auth/access-control.js';
+import { CONSENT_VERSION, getPermissionsForRole, normalizeRole } from '../auth/access-control.js';
 import { authenticateToken, authorizeRole } from '../auth/middleware.js';
-import { auditLogs, breakGlassSessions, ensureInitialized, maintenanceLog, solarInstallations, users } from '../db.js';
+import { auditLogs, ensureInitialized, maintenanceLog, solarInstallations } from '../db.js';
 
 // Handle CJS/ESM interop for bundled environments (Netlify esbuild)
 const express = expressModule.default || expressModule;
@@ -19,12 +19,20 @@ const express = expressModule.default || expressModule;
 const router = express.Router();
 
 // ─── Constants ──────────────────────────────────────────────────────────
-const VALID_ROLES = ASSIGNABLE_ROLES;
-const BREAK_GLASS_DURATION_MINUTES = 60;
+const ADMIN_SERVICE_URL = process.env.ADMIN_SERVICE_URL || 'http://localhost:3002';
 
 // ─── Helper ─────────────────────────────────────────────────────────────
 function getClientIp(req) {
   return req.headers['x-forwarded-for']?.split(',')[0] || req.ip || 'unknown';
+}
+
+function adminControlPlaneGone(_req, res) {
+  res.status(410).json({
+    success: false,
+    error: 'This administrative endpoint has moved to the Admin Control Plane.',
+    code: 'ADMIN_CONTROL_PLANE_REQUIRED',
+    adminServiceUrl: ADMIN_SERVICE_URL
+  });
 }
 
 // ============================================================================
@@ -58,19 +66,7 @@ router.get('/me', authenticateToken, async (req, res) => {
   }
 });
 
-/**
- * GET /api/personas/roles
- * Returns list of valid roles (admin+ only)
- */
-router.get('/roles', authenticateToken, authorizeRole('admin', 'superadmin'), (req, res) => {
-  res.json({
-    success: true,
-    data: VALID_ROLES.map(r => ({
-      role: r,
-      permissions: getPermissionsForRole(r),
-    })),
-  });
-});
+router.all('/roles', adminControlPlaneGone);
 
 // ============================================================================
 // DEALER ROUTES
@@ -217,231 +213,16 @@ router.put('/operations/resolve/:maintenanceId', authenticateToken, authorizeRol
 });
 
 // ============================================================================
-// ADMIN ROUTES
+// ADMIN CONTROL PLANE DEPRECATION SHIMS
 // ============================================================================
 
-/**
- * GET /api/personas/admin/users
- * Admin lists all users with role info
- */
-router.get('/admin/users', authenticateToken, authorizeRole('admin', 'superadmin'), async (req, res) => {
-  try {
-    const allUsers = await users.getAll();
-    res.json({
-      success: true,
-      count: allUsers.length,
-      data: allUsers.map(u => ({
-        id: u.id,
-        email: u.email,
-        role: u.role,
-        fullName: [u.first_name, u.last_name].filter(Boolean).join(' '),
-        active: u.active,
-        createdAt: u.created_at,
-      })),
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * PUT /api/personas/admin/users/:userId/role
- * Admin assigns a role to a user
- */
-router.put('/admin/users/:userId/role', authenticateToken, authorizeRole('admin', 'superadmin'), async (req, res) => {
-  try {
-    const { role } = req.body;
-    if (!VALID_ROLES.includes(role)) {
-      return res.status(400).json({ success: false, error: `Invalid role. Valid roles: ${VALID_ROLES.join(', ')}` });
-    }
-
-    // Only superadmin can assign superadmin role
-    if (role === 'superadmin' && req.user.role !== 'superadmin') {
-      return res.status(403).json({ success: false, error: 'Only superadmin can assign superadmin role' });
-    }
-
-    const sqlInstance = ensureInitialized();
-    const result = await sqlInstance`
-      UPDATE users SET role = ${role}, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${req.params.userId}
-      RETURNING id, email, role
-    `;
-
-    if (result.length === 0) {
-      return res.status(404).json({ success: false, error: 'User not found' });
-    }
-
-    await auditLogs.create({
-      userId: req.user.id,
-      action: 'ADMIN_ROLE_CHANGE',
-      resourceType: 'user',
-      resourceId: req.params.userId,
-      changes: { newRole: role },
-      ipAddress: getClientIp(req),
-      userAgent: req.get('user-agent'),
-      status: 'success',
-    });
-
-    res.json({ success: true, message: 'User role updated', data: result[0] });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/personas/admin/audit-logs
- * Admin views audit logs
- */
-router.get('/admin/audit-logs', authenticateToken, authorizeRole('admin', 'superadmin'), async (req, res) => {
-  try {
-    const limit = parseInt(req.query.limit) || 200;
-    const logs = await auditLogs.getAll(limit);
-    res.json({ success: true, count: logs.length, data: logs });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// ============================================================================
-// SUPER ADMIN (BREAK-GLASS) ROUTES
-// ============================================================================
-
-/**
- * POST /api/personas/superadmin/break-glass
- * Super admin initiates a break-glass emergency session
- * Requires: justification
- */
-router.post('/superadmin/break-glass', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
-  try {
-    const { justification } = req.body;
-    if (!justification || justification.length < 10) {
-      return res.status(400).json({ success: false, error: 'Justification is required (min 10 characters)' });
-    }
-
-    // Check for already active session
-    const active = await breakGlassSessions.getActiveByUserId(req.user.id);
-    if (active) {
-      return res.status(409).json({
-        success: false,
-        error: 'An active break-glass session already exists',
-        data: { sessionId: active.id, expiresAt: active.expires_at },
-      });
-    }
-
-    const expiresAt = new Date(Date.now() + BREAK_GLASS_DURATION_MINUTES * 60 * 1000);
-
-    const session = await breakGlassSessions.create({
-      userId: req.user.id,
-      justification,
-      expiresAt: expiresAt.toISOString(),
-      ipAddress: getClientIp(req),
-      userAgent: req.get('user-agent'),
-    });
-
-    await auditLogs.create({
-      userId: req.user.id,
-      action: 'BREAK_GLASS_ACTIVATED',
-      resourceType: 'break_glass_session',
-      resourceId: session.id,
-      changes: { justification },
-      ipAddress: getClientIp(req),
-      userAgent: req.get('user-agent'),
-      status: 'success',
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Break-glass session activated',
-      data: {
-        sessionId: session.id,
-        expiresAt: session.expires_at,
-        durationMinutes: BREAK_GLASS_DURATION_MINUTES,
-      },
-    });
-  } catch (error) {
-    console.error('Break-glass error:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * POST /api/personas/superadmin/break-glass/:sessionId/action
- * Record an action taken during a break-glass session
- */
-router.post('/superadmin/break-glass/:sessionId/action', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
-  try {
-    const { action, details } = req.body;
-    if (!action) {
-      return res.status(400).json({ success: false, error: 'action is required' });
-    }
-
-    const record = {
-      action,
-      details: details || '',
-      timestamp: new Date().toISOString(),
-      performedBy: req.user.id,
-    };
-
-    const updated = await breakGlassSessions.recordAction(req.params.sessionId, record);
-    if (!updated) {
-      return res.status(404).json({ success: false, error: 'Active session not found' });
-    }
-
-    await auditLogs.create({
-      userId: req.user.id,
-      action: 'BREAK_GLASS_ACTION',
-      resourceType: 'break_glass_session',
-      resourceId: req.params.sessionId,
-      changes: record,
-      ipAddress: getClientIp(req),
-      userAgent: req.get('user-agent'),
-      status: 'success',
-    });
-
-    res.json({ success: true, message: 'Action recorded', data: updated });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * POST /api/personas/superadmin/break-glass/:sessionId/end
- * End a break-glass session
- */
-router.post('/superadmin/break-glass/:sessionId/end', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
-  try {
-    const ended = await breakGlassSessions.end(req.params.sessionId);
-    if (!ended) {
-      return res.status(404).json({ success: false, error: 'Session not found' });
-    }
-
-    await auditLogs.create({
-      userId: req.user.id,
-      action: 'BREAK_GLASS_ENDED',
-      resourceType: 'break_glass_session',
-      resourceId: req.params.sessionId,
-      ipAddress: getClientIp(req),
-      userAgent: req.get('user-agent'),
-      status: 'success',
-    });
-
-    res.json({ success: true, message: 'Break-glass session ended', data: ended });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/personas/superadmin/break-glass
- * List all break-glass sessions (audit trail)
- */
-router.get('/superadmin/break-glass', authenticateToken, authorizeRole('superadmin', 'admin'), async (req, res) => {
-  try {
-    const sessions = await breakGlassSessions.getAll();
-    res.json({ success: true, count: sessions.length, data: sessions });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
+router.all([
+  '/admin/users',
+  '/admin/users/:userId/role',
+  '/admin/audit-logs',
+  '/superadmin/break-glass',
+  '/superadmin/break-glass/:sessionId/action',
+  '/superadmin/break-glass/:sessionId/end'
+], adminControlPlaneGone);
 
 export default router;

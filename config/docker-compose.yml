@@ -42,6 +42,29 @@ services:
     networks:
       - apolaki-network
 
+  # Admin Control Plane - internal-only governance API
+  admin-service:
+    build:
+      context: ../middleware/admin-service
+      dockerfile: Dockerfile
+    container_name: apolaki-admin-service
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3002
+      DATABASE_URL: postgresql://apolaki_admin_rw:apolaki_pass@postgres:5432/apolaki_db
+      ADMIN_JWT_SECRET: dev-admin-jwt-secret-change-in-production
+      ADMIN_REFRESH_SECRET: dev-admin-refresh-secret-change-in-production
+      ADMIN_INTERNAL_AUDIT_SECRET: dev-internal-audit-secret-change-in-production
+      CORS_ORIGINS: http://localhost:5173
+    ports:
+      - "3002:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - apolaki-network
+
   # RabbitMQ Message Broker - Async task queue & messaging
   rabbitmq:
     image: rabbitmq:3.12-management-alpine

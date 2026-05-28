@@ -21,6 +21,12 @@ const routes = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/admin-login',
+    name: 'AdminLogin',
+    component: () => import('../views/AdminLogin.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['admin', 'superadmin'], allowsPendingConsent: true }
+  },
+  {
     path: '/signup',
     name: 'Signup',
     redirect: '/login'
@@ -122,13 +128,19 @@ const routes = [
     path: '/admin',
     name: 'AdminConsole',
     component: () => import('../views/AdminConsole.vue'),
-    meta: { requiresAuth: true, allowedRoles: ['admin', 'superadmin'] }
+    meta: { requiresAuth: true, allowedRoles: ['admin', 'superadmin'], requiresAdminSession: true }
+  },
+  {
+    path: '/admin/mfa',
+    name: 'AdminMfaSetup',
+    component: () => import('../views/AdminMfaSetup.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['admin', 'superadmin'], requiresAdminSession: true }
   },
   {
     path: '/superadmin',
     name: 'SuperAdminConsole',
     component: () => import('../views/SuperAdminConsole.vue'),
-    meta: { requiresAuth: true, allowedRoles: ['superadmin'] }
+    meta: { requiresAuth: true, allowedRoles: ['superadmin'], requiresAdminSession: true }
   }
 ]
 
@@ -154,6 +166,8 @@ router.beforeEach((to, from, next) => {
   } else if (to.meta.allowedRoles && !to.meta.allowedRoles.includes(userStore.userRole)) {
     // Role-based guard: redirect to dashboard if user lacks permission
     next('/dashboard')
+  } else if (to.meta.requiresAdminSession && !userStore.isAdminAuthenticated) {
+    next('/admin-login')
   } else {
     next()
   }
