@@ -125,7 +125,7 @@
       <transition name="fade">
         <router-view />
       </transition>
-    </transition>
+    </main>
 
     <ChatWidget />
   </div>
