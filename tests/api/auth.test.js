@@ -39,6 +39,15 @@ describe('API > Authentication', function () {
     expect(res.headers.location).to.not.include('token=');
   });
 
+  it('does not accept a Facebook callback without an OAuth state cookie', async function () {
+    const res = await client.get('/api/auth/facebook/callback?state=forged&code=forged', {
+      maxRedirects: 0
+    });
+    expect(res.status).to.equal(302);
+    expect(res.headers.location).to.include('/login?error=');
+    expect(res.headers.location).to.not.include('token=');
+  });
+
   it('requires a session cookie for profile access', async function () {
     const res = await client.get('/api/auth/me');
     expect(res.status).to.equal(401);

@@ -1,6 +1,6 @@
 # Multi-stage build for Node.js Database Service
 # Stage 1: Build
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -12,20 +12,19 @@ RUN npm ci
 COPY . .
 
 # Stage 2: Production
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
 # Install only production dependencies
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Copy application code
 COPY . .
 
-# Create a non-root user for security
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S node -u 1001
+# The official Node image already provides a non-root node user.
+RUN chown -R node:node /app
 
 USER node
 

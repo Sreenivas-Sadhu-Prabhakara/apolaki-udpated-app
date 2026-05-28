@@ -33,11 +33,11 @@
         <ul class="nav-menu hidden lg:flex items-center gap-0.5">
           <li><router-link to="/dashboard" class="nav-link transition">1. Intelligence</router-link></li>
           <li><router-link to="/assessment" class="nav-link transition">2. Assessment</router-link></li>
-          <li><router-link to="/finance" class="nav-link transition">3. Financing</router-link></li>
+          <li v-if="canAccessConsentFeature('finance_data')"><router-link to="/finance" class="nav-link transition">3. Financing</router-link></li>
           <li><router-link to="/marketplace" class="nav-link transition">4. Marketplace</router-link></li>
-          <li><router-link to="/contracts" class="nav-link transition">5. Contracts</router-link></li>
-          <li><router-link to="/monitoring" class="nav-link transition">6. Monitoring</router-link></li>
-          <li><router-link to="/installations" class="nav-link transition">Installations</router-link></li>
+          <li v-if="canAccessConsentFeature('contracts_signing')"><router-link to="/contracts" class="nav-link transition">5. Contracts</router-link></li>
+          <li v-if="canAccessConsentFeature('installation_monitoring')"><router-link to="/monitoring" class="nav-link transition">6. Monitoring</router-link></li>
+          <li v-if="canAccessConsentFeature('installation_monitoring')"><router-link to="/installations" class="nav-link transition">Installations</router-link></li>
           <li>
             <button @click="messagingStore.toggleWidget()" class="nav-link transition flex items-center gap-1.5 focus:outline-none">
               Messages <span v-if="unreadCount" class="unread-dot"></span>
@@ -56,19 +56,21 @@
             </button>
             <transition name="dropdown">
               <ul v-if="moreMenuOpen" class="nav-dropdown" @mouseleave="moreMenuOpen = false">
-                <li v-if="userStore.hasRole('dealer', 'installer', 'admin', 'superadmin')">
+                <li v-if="canOpenDealerPortal">
                   <router-link to="/dealer" class="dropdown-link" @click="moreMenuOpen = false">🔧 Dealer Portal</router-link>
                 </li>
-                <li v-if="userStore.hasRole('operations', 'admin', 'superadmin')">
+                <li v-if="canOpenOperationsPortal">
                   <router-link to="/operations" class="dropdown-link" @click="moreMenuOpen = false">🛠️ Operations</router-link>
                 </li>
-                <li v-if="userStore.hasRole('admin', 'superadmin')">
+                <li v-if="canOpenAdminPortal">
                   <router-link to="/admin" class="dropdown-link" @click="moreMenuOpen = false">👤 Admin</router-link>
                 </li>
-                <li v-if="userStore.hasRole('superadmin')">
+                <li v-if="canOpenBreakGlassPortal">
                   <router-link to="/superadmin" class="dropdown-link dropdown-link--emergency" @click="moreMenuOpen = false">🚨 Break-Glass</router-link>
                 </li>
-                <li v-if="!hasRoleLinks" class="dropdown-link text-gray-400 text-xs">No active role portals</li>
+                <li v-if="!hasRoleLinks" class="dropdown-link text-gray-400 text-xs">
+                  No active role portals. Role plus consent are required.
+                </li>
               </ul>
             </transition>
           </li>
@@ -100,13 +102,13 @@
       <transition name="slide-down">
         <div v-if="mobileMenuOpen" class="mobile-menu mobile-menu-kinetic md:hidden" :class="isDarkMode ? 'mobile-menu-kinetic--dark' : 'mobile-menu-kinetic--light'">
           <ul class="flex flex-col py-3 px-4 gap-1">
-            <li v-if="userStore.hasRole('dealer', 'installer', 'admin', 'superadmin')">
+            <li v-if="canOpenDealerPortal">
               <router-link to="/dealer" class="mobile-link" @click="mobileMenuOpen = false">🔧 Dealer Portal</router-link>
             </li>
-            <li v-if="userStore.hasRole('operations', 'admin', 'superadmin')">
+            <li v-if="canOpenOperationsPortal">
               <router-link to="/operations" class="mobile-link" @click="mobileMenuOpen = false">🛠️ Operations</router-link>
             </li>
-            <li v-if="userStore.hasRole('admin', 'superadmin')">
+            <li v-if="canOpenAdminPortal">
               <router-link to="/admin" class="mobile-link" @click="mobileMenuOpen = false">👤 Admin</router-link>
             </li>
             <li v-if="userStore.user">
@@ -167,8 +169,28 @@ const userInitials = computed(() => {
 })
 
 // Whether to show the "More" dropdown with role-specific links
+const canAccessConsentFeature = (...consents) => {
+  return userStore.hasRole('admin', 'superadmin') || userStore.hasConsents(...consents)
+}
+
+const canOpenDealerPortal = computed(() => {
+  return userStore.hasRole('admin', 'superadmin') ||
+    (userStore.hasRole('dealer', 'installer') && userStore.hasConsent('partner_sharing'))
+})
+
+const canOpenOperationsPortal = computed(() => {
+  return userStore.hasRole('admin', 'superadmin') ||
+    (userStore.hasRole('operations') && userStore.hasConsents('installation_monitoring', 'partner_sharing'))
+})
+
+const canOpenAdminPortal = computed(() => userStore.hasRole('admin', 'superadmin'))
+const canOpenBreakGlassPortal = computed(() => userStore.hasRole('superadmin'))
+
 const hasRoleLinks = computed(() => {
-  return userStore.hasRole('dealer', 'installer', 'operations', 'admin', 'superadmin')
+  return canOpenDealerPortal.value ||
+    canOpenOperationsPortal.value ||
+    canOpenAdminPortal.value ||
+    canOpenBreakGlassPortal.value
 })
 
 onMounted(async () => {

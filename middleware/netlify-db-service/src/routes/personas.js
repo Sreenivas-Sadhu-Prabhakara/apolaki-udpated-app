@@ -11,7 +11,7 @@
 import expressModule from 'express';
 import { CONSENT_VERSION, getPermissionsForRole, normalizeRole } from '../auth/access-control.js';
 import { authenticateToken, authorizeRole } from '../auth/middleware.js';
-import { auditLogs, ensureInitialized, maintenanceLog, solarInstallations } from '../db.js';
+import { auditLogs, ensureConsentSchema, ensureInitialized, maintenanceLog, solarInstallations, userConsents } from '../db.js';
 
 // Handle CJS/ESM interop for bundled environments (Netlify esbuild)
 const express = expressModule.default || expressModule;
@@ -33,6 +33,33 @@ function adminControlPlaneGone(_req, res) {
     code: 'ADMIN_CONTROL_PLANE_REQUIRED',
     adminServiceUrl: ADMIN_SERVICE_URL
   });
+}
+
+function isElevatedRole(role) {
+  return ['admin', 'superadmin'].includes(normalizeRole(role));
+}
+
+async function hasActiveConsent(userId, consentKey) {
+  await ensureConsentSchema();
+  const records = await userConsents.getByUserId(userId);
+  return records.some(record =>
+    record.consent_key === consentKey &&
+    record.consent_version === CONSENT_VERSION &&
+    record.decision === 'granted'
+  );
+}
+
+async function requireOwnerConsent(req, res, ownerId, consentKey) {
+  if (isElevatedRole(req.user.role)) return true;
+  if (await hasActiveConsent(ownerId, consentKey)) return true;
+
+  res.status(403).json({
+    success: false,
+    error: `${consentKey} consent is required before delegated project work can begin.`,
+    code: 'CONSENT_REQUIRED',
+    requiredConsents: [consentKey]
+  });
+  return false;
 }
 
 // ============================================================================
@@ -96,6 +123,8 @@ router.post('/dealer/commission', authenticateToken, authorizeRole('dealer', 'in
     if (!ownerId || !name) {
       return res.status(400).json({ success: false, error: 'ownerId and name are required' });
     }
+
+    if (!(await requireOwnerConsent(req, res, ownerId, 'partner_sharing'))) return;
 
     const installation = await solarInstallations.create({
       userId: ownerId,

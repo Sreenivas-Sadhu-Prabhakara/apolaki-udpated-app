@@ -95,12 +95,12 @@ class ConfigManager {
     // OAuth Configuration
     this.config.oauth = {
       google: {
-        clientId: process.env.OAUTH_GOOGLE_CLIENT_ID,
-        clientSecret: process.env.OAUTH_GOOGLE_CLIENT_SECRET,
+        clientId: process.env.GOOGLE_CLIENT_ID || process.env.OAUTH_GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || process.env.OAUTH_GOOGLE_CLIENT_SECRET,
       },
       facebook: {
-        appId: process.env.OAUTH_FACEBOOK_CLIENT_ID,
-        appSecret: process.env.OAUTH_FACEBOOK_CLIENT_SECRET,
+        appId: process.env.FACEBOOK_APP_ID || process.env.OAUTH_FACEBOOK_CLIENT_ID,
+        appSecret: process.env.FACEBOOK_APP_SECRET || process.env.OAUTH_FACEBOOK_CLIENT_SECRET,
       },
       github: {
         clientId: process.env.OAUTH_GITHUB_CLIENT_ID,

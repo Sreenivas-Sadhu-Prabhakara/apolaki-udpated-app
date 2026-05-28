@@ -42,6 +42,28 @@
 
         <button class="primary-button" @click="startAssessment">See my new monthly cost</button>
         <p class="trust-note">Takes under a minute. Uses live solar data when available. Cost basis: {{ costBasisLabel }}.</p>
+
+        <aside class="saved-assessments saved-assessments--compact">
+          <div class="section-title">
+            <div>
+              <span class="eyebrow">Saved assessments</span>
+              <strong>From your account</strong>
+            </div>
+            <button class="ghost-button" type="button" :disabled="loadingSavedAssessments" @click="loadSavedAssessments">
+              {{ loadingSavedAssessments ? 'Loading' : 'Refresh' }}
+            </button>
+          </div>
+          <div v-if="savedAssessments.length" class="saved-list saved-list--compact">
+            <div v-for="item in savedAssessments.slice(0, 2)" :key="item.id" class="saved-item">
+              <strong>{{ assessmentCapacity(item) }}</strong>
+              <span>{{ assessmentLocation(item) }}</span>
+              <small>{{ formatSavedDate(item.created_at || item.createdAt || item.savings_estimate?.calculatedAt) }}</small>
+            </div>
+          </div>
+          <p v-else class="saved-empty">
+            {{ loadingSavedAssessments ? 'Loading saved assessments from the database...' : 'No saved assessments in your account yet.' }}
+          </p>
+        </aside>
       </div>
     </section>
 
@@ -336,8 +358,8 @@
           </div>
           <div v-if="savedAssessments.length" class="saved-list">
             <div v-for="item in savedAssessments.slice(0, 3)" :key="item.id" class="saved-item">
-              <strong>{{ Number(item.recommended_capacity || item.recommendedCapacity || item.savings_estimate?.targetCapacityKw || 0).toFixed(1) }} kW</strong>
-              <span>{{ item.city || item.savings_estimate?.locationName || 'Saved assessment' }}</span>
+              <strong>{{ assessmentCapacity(item) }}</strong>
+              <span>{{ assessmentLocation(item) }}</span>
               <small>{{ formatSavedDate(item.created_at || item.createdAt || item.savings_estimate?.calculatedAt) }}</small>
             </div>
           </div>
@@ -617,6 +639,27 @@ function formatSavedDate(date) {
   })
 }
 
+function assessmentCapacity(item) {
+  const value = Number(
+    item.recommended_capacity ||
+    item.recommendedCapacity ||
+    item.savings_estimate?.recommendedCapacity ||
+    item.savings_estimate?.recommendedCapacityKw ||
+    item.savings_estimate?.targetCapacityKw ||
+    item.savings_estimate?.systemSize ||
+    0
+  )
+  return value ? `${value.toFixed(1)} kW` : 'Assessment'
+}
+
+function assessmentLocation(item) {
+  return item.city ||
+    item.savings_estimate?.locationName ||
+    item.address ||
+    item.state ||
+    'Saved assessment'
+}
+
 async function waitForLiveData(timeoutMs) {
   if (liveSolarData.value) return liveSolarData.value
   const request = activeLiveRequest.value || refreshLiveData()
@@ -687,6 +730,8 @@ function buildMapTiles(lat, lng, zoom) {
 }
 
 onMounted(() => {
+  loadSavedAssessments()
+
   const saved = localStorage.getItem('financingAssessmentState')
   if (!saved) return
   try {
@@ -1431,10 +1476,19 @@ select:focus {
   align-items: stretch;
 }
 
+.saved-assessments--compact {
+  margin-top: 4px;
+  padding: 14px;
+}
+
 .saved-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+}
+
+.saved-list--compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .saved-item {

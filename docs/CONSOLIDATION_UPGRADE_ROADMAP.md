@@ -27,6 +27,7 @@ This document serves as our master checklist and progress tracker. We will imple
 | **PRD 8** | [Consumer-Installer In-App Async Messaging](#-prd-8-consumer-installer-in-app-async-messaging) | 🔄 IN PROGRESS | 2026-05-28 |
 | **PRD 9** | [Live Messaging, Presence, and Read Receipts](#-prd-9-live-messaging-presence-and-read-receipts) | ⏳ PENDING | *After PRD 8* |
 | **PRD 10** | [Trusted Notification Expansion](#-prd-10-trusted-notification-expansion) | ⏳ PENDING | *After trust controls mature* |
+| **PRD 11** | [Consent-Mapped Role Portals & Saved Assessment History](#-prd-11-consent-mapped-role-portals--saved-assessment-history) | ✅ COMPLETE | 2026-05-28 |
 
 ---
 
@@ -422,3 +423,50 @@ Add notification channels beyond in-app only after users have enough trust contr
 - [ ] **Minimal Content:** External notifications must avoid sensitive project, finance, contract, or attachment details.
 - [ ] **Revocation:** Users can turn off external notifications without losing in-app messaging access.
 - [ ] **Auditability:** All notification delivery attempts and preference changes are logged.
+
+---
+
+## 📋 [PRD 11] Consent-Mapped Role Portals & Saved Assessment History
+
+### PRD 11 Goal
+
+Make every role portal and protected app surface available according to the user's authenticated role plus active application consent, instead of relying on admin-only shortcuts or frontend-only visibility. Returning users must also see assessment records saved in the database as soon as they open the assessment workspace.
+
+### PRD 11 Scope & Requirements
+
+- [x] **Consent-To-Screen Matrix:**
+
+| Surface | Role Requirement | Consent Requirement | Notes |
+| :--- | :--- | :--- | :--- |
+| Assessment | Authenticated user | `profile_account`, `location_assessment` | Required onboarding consent; saved DB assessments load on entry. |
+| Finance | Authenticated user | `finance_data` | Hidden/blocked until finance consent is granted. |
+| Contracts | Authenticated user | `contracts_signing` | Hidden/blocked until contract consent is granted. |
+| Installations / Monitoring | Authenticated user | `installation_monitoring` | Hidden/blocked until monitoring consent is granted. |
+| Dealer Portal | `dealer`/legacy `installer`, `admin`, `superadmin` | `partner_sharing` for dealer users; admin roles may audit via control-plane policy | Consent alone never grants dealer role. |
+| Operations Portal | `operations`, `admin`, `superadmin` | `installation_monitoring` + `partner_sharing` for operations users; admin roles may audit via control-plane policy | Consent alone never grants operations role. |
+| Admin Portal | `admin`, `superadmin` | Admin-service session scope | Regular app session is insufficient. |
+| Break-Glass | `superadmin` | Admin-service session scope + break-glass controls | Emergency-only, separately audited. |
+
+- [x] **Frontend Enforcement:**
+  - Navigation links and role-portal dropdown entries are computed from role plus active consent, not role alone.
+  - Missing feature consent redirects to a simple consent unlock screen instead of silently showing an unusable page.
+  - Admin links remain visible only to admin/superadmin users and still require the admin-service login gate.
+
+- [x] **API Enforcement:**
+  - Assessment APIs require `location_assessment`.
+  - Installation and monitoring APIs require `installation_monitoring`.
+  - Contract APIs require `contracts_signing`.
+  - Finance APIs require `finance_data`.
+  - Dealer/installer delegated work requires the consumer owner's `partner_sharing` consent before project data can be commissioned or shared.
+
+- [x] **Saved Assessment History:**
+  - `/assessment` loads `/api/assessments` on page entry.
+  - Saved DB records are visible before a new calculation is run.
+  - The UI handles older rows and newer `savings_estimate` payloads without showing blank cards.
+
+### PRD 11 Definition Of Done
+
+- [x] Non-admin users with the correct role and consent can see their allowed portals.
+- [x] Users without consent are routed to the consent unlock page and cannot bypass it by direct URL.
+- [x] Backend endpoints deny missing consent with `403 CONSENT_REQUIRED`.
+- [x] Saved assessments from the database appear on the assessment landing/results views.

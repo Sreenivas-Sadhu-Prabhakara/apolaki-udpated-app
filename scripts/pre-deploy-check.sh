@@ -50,7 +50,7 @@ echo ""
 echo "🎨 Step 4: Colour consistency check..."
 
 # Count occurrences of the old conflicting orange (#f97316) in scoped styles
-OLD_ORANGE_COUNT=$(grep -rn '#f97316\|#ea580c' "$ROOT/frontend/src/" --include="*.vue" --include="*.css" 2>/dev/null | wc -l | tr -d ' ')
+OLD_ORANGE_COUNT=$( (grep -rn '#f97316\|#ea580c' "$ROOT/frontend/src/" --include="*.vue" --include="*.css" 2>/dev/null || true) | wc -l | tr -d ' ')
 if [[ "$OLD_ORANGE_COUNT" -gt 0 ]]; then
   log_fail "Found $OLD_ORANGE_COUNT occurrences of conflicting orange (#f97316/#ea580c) in source"
   grep -rn '#f97316\|#ea580c' "$ROOT/frontend/src/" --include="*.vue" --include="*.css" 2>/dev/null | head -5
@@ -59,7 +59,7 @@ else
 fi
 
 # Check that primary colour references use Solar Gold
-SOLAR_GOLD_COUNT=$(grep -rn '#FFB81C\|solar-gold' "$ROOT/frontend/src/styles/main.css" 2>/dev/null | wc -l | tr -d ' ')
+SOLAR_GOLD_COUNT=$( (grep -rn '#FFB81C\|solar-gold' "$ROOT/frontend/src/styles/main.css" 2>/dev/null || true) | wc -l | tr -d ' ')
 if [[ "$SOLAR_GOLD_COUNT" -ge 5 ]]; then
   log_pass "Solar Gold (#FFB81C) is correctly defined as primary ($SOLAR_GOLD_COUNT references)"
 else

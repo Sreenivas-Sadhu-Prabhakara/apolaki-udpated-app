@@ -57,19 +57,19 @@ const routes = [
     path: '/installations',
     name: 'Installations',
     component: () => import('../views/ApolakiPrd.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiredConsents: ['installation_monitoring'] }
   },
   {
     path: '/installations/:id',
     name: 'InstallationDetail',
     component: () => import('../views/InstallationDetail.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiredConsents: ['installation_monitoring'] }
   },
   {
     path: '/monitoring',
     name: 'Monitoring',
     component: () => import('../views/ApolakiPrd.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiredConsents: ['installation_monitoring'] }
   },
   {
     path: '/marketplace',
@@ -87,19 +87,19 @@ const routes = [
     path: '/assessment',
     name: 'Assessment',
     component: () => import('../views/Assessment.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiredConsents: ['profile_account', 'location_assessment'] }
   },
   {
     path: '/finance',
     name: 'Finance',
     component: () => import('../views/ApolakiPrd.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiredConsents: ['finance_data'] }
   },
   {
     path: '/contracts',
     name: 'Contracts',
     component: () => import('../views/ApolakiPrd.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiredConsents: ['contracts_signing'] }
   },
   {
     path: '/profile',
@@ -122,13 +122,23 @@ const routes = [
     path: '/dealer',
     name: 'DealerPortal',
     component: () => import('../views/DealerPortal.vue'),
-    meta: { requiresAuth: true, allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'] }
+    meta: {
+      requiresAuth: true,
+      allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'],
+      requiredConsents: ['partner_sharing'],
+      consentBypassRoles: ['admin', 'superadmin']
+    }
   },
   {
     path: '/operations',
     name: 'OperationsCenter',
     component: () => import('../views/OperationsCenter.vue'),
-    meta: { requiresAuth: true, allowedRoles: ['operations', 'admin', 'superadmin'] }
+    meta: {
+      requiresAuth: true,
+      allowedRoles: ['operations', 'admin', 'superadmin'],
+      requiredConsents: ['installation_monitoring', 'partner_sharing'],
+      consentBypassRoles: ['admin', 'superadmin']
+    }
   },
   {
     path: '/admin',
@@ -155,9 +165,17 @@ const router = createRouter({
   routes
 })
 
+function missingRouteConsents(to, userStore) {
+  const requiredConsents = to.meta.requiredConsents || []
+  const bypassRoles = to.meta.consentBypassRoles || []
+  if (!requiredConsents.length || bypassRoles.includes(userStore.userRole)) return []
+  return requiredConsents.filter(key => !userStore.hasConsent(key))
+}
+
 // Navigation guard for authentication & role-based access
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
+  const missingConsents = missingRouteConsents(to, userStore)
 
   if (to.meta.requiresAuth && !userStore.isAuthenticated) {
     next('/login')
@@ -172,6 +190,14 @@ router.beforeEach((to, from, next) => {
   } else if (to.meta.allowedRoles && !to.meta.allowedRoles.includes(userStore.userRole)) {
     // Role-based guard: redirect to dashboard if user lacks permission
     next('/dashboard')
+  } else if (to.meta.requiresAuth && missingConsents.length) {
+    next({
+      name: 'ConsentOnboarding',
+      query: {
+        next: to.fullPath,
+        required: missingConsents.join(',')
+      }
+    })
   } else if (to.meta.requiresAdminSession && !userStore.isAdminAuthenticated) {
     next('/admin-login')
   } else {
