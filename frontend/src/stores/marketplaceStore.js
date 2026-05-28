@@ -101,6 +101,37 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   const loading = ref(false)
   const error = ref(null)
 
+  const dealers = ref([])
+
+  const fetchDealers = async () => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await api.get('/marketplace/dealers')
+      dealers.value = response.data.data || []
+    } catch (err) {
+      error.value = 'Failed to load dealers'
+      console.warn('Dealers error', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const createBooking = async (dealerId, bookingType, scheduledAt, notes) => {
+    try {
+      const response = await api.post('/marketplace/bookings', {
+        dealerId,
+        bookingType,
+        scheduledAt,
+        notes
+      })
+      return response.data.data
+    } catch (err) {
+      console.error('Booking failed', err)
+      throw err
+    }
+  }
+
   const fetchProducts = async (category = null, search = null, options = {}) => {
     loading.value = true
     error.value = null
@@ -228,6 +259,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     currentProduct,
     reviews,
     wishlist,
+    dealers,
     loading,
     error,
     fetchProducts,
@@ -237,6 +269,8 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     fetchWishlist,
     addToWishlist,
     removeFromWishlist,
-    isInWishlist
+    isInWishlist,
+    fetchDealers,
+    createBooking
   }
 })

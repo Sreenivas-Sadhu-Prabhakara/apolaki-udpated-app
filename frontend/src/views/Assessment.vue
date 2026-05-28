@@ -236,18 +236,17 @@
         </div>
 
         <div class="save-assessment-card">
-          <div>
-            <span class="eyebrow">Secure account record</span>
-            <h3>{{ savedAssessmentId ? 'Assessment saved' : 'Save this assessment' }}</h3>
-            <p>Save this plan to your account so it can be retrieved later and tied to your authenticated user profile.</p>
-            <p v-if="saveError" class="field-error">{{ saveError }}</p>
-            <p v-if="savedAssessmentId" class="save-success">Saved assessment ID: {{ savedAssessmentId }}</p>
-          </div>
-          <button class="save-button" type="button" :disabled="savingAssessment || Boolean(savedAssessmentId)" @click="saveAssessment">
-            {{ savingAssessment ? 'Saving' : savedAssessmentId ? 'Saved' : 'Save assessment' }}
-          </button>
+        <div>
+          <span class="eyebrow">Secure account record</span>
+          <h3>{{ savedAssessmentId ? 'Assessment saved' : 'Save this assessment' }}</h3>
+          <p>Save this plan to your account so it can be retrieved later and tied to your authenticated user profile.</p>
+          <p v-if="saveError" class="field-error">{{ saveError }}</p>
+          <p v-if="savedAssessmentId" class="save-success">Saved as: {{ formatSavedDate(new Date()) }}</p>
         </div>
-
+        <button class="save-button" type="button" :disabled="savingAssessment || Boolean(savedAssessmentId)" @click="saveAssessment">
+          {{ savingAssessment ? 'Saving' : savedAssessmentId ? 'Saved' : 'Save assessment' }}
+        </button>
+        </div>
         <div class="results-grid">
           <div class="metric-card">
             <span>System size</span>
@@ -607,7 +606,15 @@ async function loadSavedAssessments() {
 }
 
 function formatSavedDate(date) {
-  return date ? new Date(date).toLocaleDateString() : 'Recently'
+  if (!date) return 'Recently'
+  const d = new Date(date)
+  return d.toLocaleString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric', 
+    hour: 'numeric', 
+    minute: '2-digit' 
+  })
 }
 
 async function waitForLiveData(timeoutMs) {

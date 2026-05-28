@@ -134,11 +134,17 @@
                 </p>
                 
                 <div class="mt-auto pt-4 flex gap-3">
-                    <button @click="openQuoteModal(installer)" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 rounded-lg text-sm transition">
-                        Request Quotation
+                    <button v-if="installer.contact_enabled" @click="router.push(`/messaging?installerId=${installer.id}`)" class="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold py-2 rounded-lg text-sm transition" title="Message Installer">
+                        💬 Message
                     </button>
-                    <button @click="router.push(`/messaging?installerId=${installer.id}`)" class="px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg text-sm transition" title="Message Installer">
-                        💬
+                    <button v-if="installer.booking_enabled" @click="openActionModal(installer, 'book')" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 rounded-lg text-sm transition">
+                        📅 Book
+                    </button>
+                    <button v-if="installer.scheduling_enabled" @click="openActionModal(installer, 'schedule')" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg text-sm transition">
+                        🗓️ Schedule
+                    </button>
+                    <button v-if="installer.type === 'supplier'" @click="openActionModal(installer, 'add')" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 rounded-lg text-sm transition">
+                        ➕ Add
                     </button>
                 </div>
             </div>
@@ -343,27 +349,31 @@
         No products found. Try adjusting your search or filters.
       </div>
 
-      <!-- Quotation Modal -->
-      <div v-if="quoteInstaller" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <!-- Action Modal -->
+      <div v-if="actionDealer" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden" :class="isDark ? 'bg-slate-900 border border-slate-700' : ''">
           <div class="p-6 border-b" :class="isDark ? 'border-slate-700' : 'border-gray-200'">
             <div class="flex justify-between items-center">
-              <h2 class="text-xl font-bold" :class="isDark ? 'text-white' : 'text-gray-900'">Request Quotation</h2>
-              <button @click="quoteInstaller = null" class="text-gray-500 hover:text-gray-700 transition transform hover:scale-110">✕</button>
+              <h2 class="text-xl font-bold capitalize" :class="isDark ? 'text-white' : 'text-gray-900'">{{ actionType }} Request</h2>
+              <button @click="actionDealer = null" class="text-gray-500 hover:text-gray-700 transition transform hover:scale-110">✕</button>
             </div>
-            <p class="text-sm text-gray-500 mt-1">Send a handshake request to <strong class="text-gray-700">{{ quoteInstaller.name }}</strong></p>
+            <p class="text-sm text-gray-500 mt-1">Send a request to <strong class="text-gray-700">{{ actionDealer.name }}</strong></p>
           </div>
           
           <div class="p-6 space-y-4">
-            <!-- Simulated form pulling from Assessment config -->
-            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4">
+            <div v-if="actionType === 'book' || actionType === 'schedule'" class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4">
                 <p class="text-sm text-blue-800 flex items-start gap-2">
                     <span class="mt-0.5">💡</span>
                     <span>This request will automatically include your current system size estimate and roof type from your last Assessment.</span>
                 </p>
             </div>
             
-            <div>
+            <div v-if="actionType === 'schedule'">
+              <label class="block text-sm font-medium mb-1" :class="isDark ? 'text-slate-300' : 'text-gray-700'">Preferred Date/Time</label>
+              <input type="datetime-local" v-model="actionSchedule" class="w-full border rounded-lg px-4 py-2 text-sm" :class="isDark ? 'bg-slate-800 border-slate-600 text-white' : 'bg-white border-gray-300'" />
+            </div>
+
+            <div v-if="actionType !== 'schedule'">
               <label class="block text-sm font-medium mb-1" :class="isDark ? 'text-slate-300' : 'text-gray-700'">Project Timeline</label>
               <select class="w-full border rounded-lg px-4 py-2 text-sm" :class="isDark ? 'bg-slate-800 border-slate-600 text-white' : 'bg-white border-gray-300'">
                 <option>Ready to start immediately</option>
@@ -374,14 +384,14 @@
             
             <div>
               <label class="block text-sm font-medium mb-1" :class="isDark ? 'text-slate-300' : 'text-gray-700'">Additional Notes</label>
-              <textarea rows="3" class="w-full border rounded-lg px-4 py-2 text-sm" :class="isDark ? 'bg-slate-800 border-slate-600 text-white' : 'bg-white border-gray-300'" placeholder="Tell them about your specific requirements..."></textarea>
+              <textarea v-model="actionNotes" rows="3" class="w-full border rounded-lg px-4 py-2 text-sm" :class="isDark ? 'bg-slate-800 border-slate-600 text-white' : 'bg-white border-gray-300'" placeholder="Tell them about your specific requirements..."></textarea>
             </div>
           </div>
           
           <div class="p-6 border-t flex justify-end gap-3" :class="isDark ? 'border-slate-700 bg-slate-800/50' : 'border-gray-200 bg-gray-50'">
-            <button @click="quoteInstaller = null" class="px-4 py-2 text-sm font-medium rounded-lg border hover:bg-gray-100 transition" :class="isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-gray-300 text-gray-700'">Cancel</button>
-            <button @click="submitQuotation" class="px-6 py-2 text-sm font-medium rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition flex items-center gap-2">
-              <span v-if="submittingQuote">Sending...</span>
+            <button @click="actionDealer = null" class="px-4 py-2 text-sm font-medium rounded-lg border hover:bg-gray-100 transition" :class="isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-gray-300 text-gray-700'">Cancel</button>
+            <button @click="submitAction" class="px-6 py-2 text-sm font-medium rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition flex items-center gap-2">
+              <span v-if="submittingAction">Sending...</span>
               <span v-else>Send Request ✉️</span>
             </button>
           </div>
@@ -415,10 +425,14 @@ const showReviewForm = ref(false)
 const activeTab = ref('equipment') // 'equipment' or 'installers'
 const activeServiceType = ref('all')
 const selectedProvince = ref('all')
-const quoteInstaller = ref(null)
-const submittingQuote = ref(false)
 
-// Use saved province from Assessment if available (Requirement: automatically filter based on province input inside the user's Assessment config)
+const actionDealer = ref(null)
+const actionType = ref('') // 'book', 'schedule', 'add'
+const submittingAction = ref(false)
+const actionNotes = ref('')
+const actionSchedule = ref('')
+
+// Use saved province from Assessment if available
 onMounted(() => {
     try {
         const stored = localStorage.getItem('financingAssessmentState')
@@ -441,74 +455,16 @@ const serviceTypes = [
   { value: 'maintenance', label: '🔧 Maintenance Crews' }
 ]
 
-// Mock data for installers
-const installersList = [
-    {
-        id: 'i1',
-        name: 'SunPower PH',
-        type: 'installer',
-        typeLabel: 'Vetted Installer',
-        icon: '👷‍♂️',
-        verified: true,
-        rating: 4.8,
-        reviewCount: 124,
-        provinces: ['NCR', 'Bulacan', 'Laguna'],
-        description: 'Premium Tier 1 solar installations for residential and commercial. PCAB licensed and fully insured.'
-    },
-    {
-        id: 'i2',
-        name: 'EcoEnergy Materials',
-        type: 'supplier',
-        typeLabel: 'Material Supplier',
-        icon: '🏭',
-        verified: true,
-        rating: 4.9,
-        reviewCount: 89,
-        provinces: ['NCR', 'Cebu', 'Laguna', 'Cavite'],
-        description: 'Wholesale distributor of tier-1 JA Solar panels and Growatt inverters.'
-    },
-    {
-        id: 'i3',
-        name: 'BrightFuture Consultants',
-        type: 'consultant',
-        typeLabel: 'Solar Consultant',
-        icon: '👨‍💼',
-        verified: false,
-        rating: 4.5,
-        reviewCount: 32,
-        provinces: ['NCR', 'Cavite'],
-        description: 'Independent structural engineering and ROI assessment for commercial roofing.'
-    },
-    {
-        id: 'i4',
-        name: 'QuickFix Solar Maintenance',
-        type: 'maintenance',
-        typeLabel: 'Maintenance Crew',
-        icon: '🔧',
-        verified: true,
-        rating: 4.7,
-        reviewCount: 215,
-        provinces: ['NCR', 'Bulacan'],
-        description: '24/7 emergency inverter repairs, panel cleaning, and annual maintenance contracts.'
-    },
-    {
-        id: 'i5',
-        name: 'Visayas Solar Master',
-        type: 'installer',
-        typeLabel: 'Vetted Installer',
-        icon: '👷',
-        verified: true,
-        rating: 4.6,
-        reviewCount: 56,
-        provinces: ['Cebu'],
-        description: 'Top rated installation team based in Cebu City. Specializes in hybrid setups.'
-    }
-]
-
 const filteredInstallers = computed(() => {
-    return installersList.filter(installer => {
+    return marketplaceStore.dealers.filter(installer => {
         const typeMatch = activeServiceType.value === 'all' || installer.type === activeServiceType.value
-        const provinceMatch = selectedProvince.value === 'all' || installer.provinces.includes(selectedProvince.value)
+        // Assume installer.provinces is an array from JSONB. If it's a string, parse it.
+        let provs = []
+        try {
+           provs = typeof installer.provinces === 'string' ? JSON.parse(installer.provinces) : (installer.provinces || [])
+        } catch(e) {}
+
+        const provinceMatch = selectedProvince.value === 'all' || provs.includes(selectedProvince.value)
         return typeMatch && provinceMatch
     })
 })
@@ -615,22 +571,29 @@ async function handleSubmitReview() {
   }
 }
 
-function openQuoteModal(installer) {
-    quoteInstaller.value = installer
+function openActionModal(dealer, type) {
+    actionDealer.value = dealer
+    actionType.value = type
+    actionNotes.value = ''
+    actionSchedule.value = ''
 }
 
-function submitQuotation() {
-    submittingQuote.value = true
-    // Simulate API call
-    setTimeout(() => {
-        submittingQuote.value = false
-        quoteInstaller.value = null
-        alert('Quotation request sent successfully! The provider will contact you shortly.')
-    }, 1200)
+async function submitAction() {
+    submittingAction.value = true
+    try {
+        await marketplaceStore.createBooking(actionDealer.value.id, actionType.value, actionSchedule.value, actionNotes.value)
+        alert(`${actionType.value.charAt(0).toUpperCase() + actionType.value.slice(1)} request sent successfully! The provider will contact you shortly.`)
+        actionDealer.value = null
+    } catch (e) {
+        alert('Failed to send request. Please try again.')
+    } finally {
+        submittingAction.value = false
+    }
 }
 
 onMounted(async () => {
   await marketplaceStore.fetchProducts()
   await marketplaceStore.fetchWishlist()
+  await marketplaceStore.fetchDealers()
 })
 </script>

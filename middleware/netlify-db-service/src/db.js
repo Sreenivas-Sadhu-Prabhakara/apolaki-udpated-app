@@ -331,6 +331,92 @@ async function ensureMessagingSchema() {
   }
 }
 
+let marketplaceSchemaEnsured = false;
+
+async function ensureMarketplaceSchema() {
+  if (marketplaceSchemaEnsured) return;
+
+  const sqlInstance = getSqlInstance();
+  try {
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS dealer_profiles (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        type VARCHAR(50) NOT NULL DEFAULT 'installer',
+        description TEXT,
+        icon VARCHAR(50),
+        verified BOOLEAN DEFAULT false,
+        rating DECIMAL(3, 2) DEFAULT 0,
+        review_count INTEGER DEFAULT 0,
+        contact_enabled BOOLEAN DEFAULT true,
+        booking_enabled BOOLEAN DEFAULT true,
+        scheduling_enabled BOOLEAN DEFAULT false,
+        provinces JSONB DEFAULT '[]',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS bookings (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        dealer_id UUID NOT NULL REFERENCES dealer_profiles(id) ON DELETE CASCADE,
+        booking_type VARCHAR(50) NOT NULL DEFAULT 'book',
+        status VARCHAR(50) NOT NULL DEFAULT 'pending',
+        scheduled_at TIMESTAMP,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    // Seed mock data if dealer_profiles is empty
+    const dealerCount = await sqlInstance`SELECT COUNT(*) FROM dealer_profiles`;
+    if (parseInt(dealerCount[0].count, 10) === 0) {
+      // First ensure a system user exists to own these profiles (or we create some mock users)
+      const mockUsers = await sqlInstance`
+        INSERT INTO users (email, first_name, last_name, role)
+        VALUES 
+          ('installer1@mock.com', 'Mock', 'Installer1', 'dealer'),
+          ('installer2@mock.com', 'Mock', 'Installer2', 'dealer'),
+          ('supplier1@mock.com', 'Mock', 'Supplier1', 'supplier'),
+          ('consultant1@mock.com', 'Mock', 'Consultant1', 'consultant'),
+          ('maintenance1@mock.com', 'Mock', 'Maintenance1', 'operations')
+        RETURNING id, email
+      `;
+      
+      const installers = [
+        { email: 'installer1@mock.com', name: 'SunPower PH', type: 'installer', icon: '👷‍♂️', desc: 'Premium Tier 1 solar installations.', contact: true, book: true, schedule: false },
+        { email: 'installer2@mock.com', name: 'Lumina Solar', type: 'installer', icon: '🔋', desc: 'Commercial and residential systems.', contact: true, book: true, schedule: false },
+        { email: 'supplier1@mock.com', name: 'Solaric Panels', type: 'supplier', icon: '📦', desc: 'Direct supplier of panels and batteries.', contact: true, book: false, schedule: false },
+        { email: 'consultant1@mock.com', name: 'Engr. Roberto Santos', type: 'consultant', icon: '📋', desc: 'Licensed Electrical Engineer consulting.', contact: true, book: true, schedule: false },
+        { email: 'maintenance1@mock.com', name: 'EcoGrid Ops', type: 'maintenance', icon: '🔧', desc: 'Solar system maintenance and repair.', contact: true, book: false, schedule: true }
+      ];
+
+      for (const inst of installers) {
+        const user = mockUsers.find(u => u.email === inst.email);
+        if (user) {
+          await sqlInstance`
+            INSERT INTO dealer_profiles (user_id, name, type, icon, description, contact_enabled, booking_enabled, scheduling_enabled, provinces)
+            VALUES (${user.id}, ${inst.name}, ${inst.type}, ${inst.icon}, ${inst.desc}, ${inst.contact}, ${inst.book}, ${inst.schedule}, '["NCR", "Cebu"]')
+          `;
+        }
+      }
+    }
+
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_dealer_profiles_type ON dealer_profiles(type)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings(user_id)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_bookings_dealer_id ON bookings(dealer_id)`;
+    
+    marketplaceSchemaEnsured = true;
+  } catch (error) {
+    marketplaceSchemaEnsured = false;
+    throw error;
+  }
+}
+
 async function ensureSchema() {
   if (schemaEnsured) return;
   schemaEnsured = true;
@@ -350,6 +436,7 @@ async function ensureSchema() {
       await ensureConsentSchema();
       await ensureAdminSchema();
       await ensureMessagingSchema();
+      await ensureMarketplaceSchema();
       console.log('✅ Database schema already exists');
       return;
     }
@@ -607,6 +694,7 @@ async function ensureSchema() {
     await ensureConsentSchema();
     await ensureAdminSchema();
     await ensureMessagingSchema();
+    await ensureMarketplaceSchema();
 
     console.log('✅ Database schema created successfully');
   } catch (error) {
@@ -1334,6 +1422,45 @@ export const marketplace = {
       WHERE active = true
       AND (name ILIKE ${searchTerm} OR description ILIKE ${searchTerm} OR manufacturer ILIKE ${searchTerm})
       ORDER BY rating DESC, created_at DESC
+    `;
+  }
+};
+
+export const marketplaceDealers = {
+  async getAll() {
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`
+      SELECT * FROM dealer_profiles
+      ORDER BY type ASC, rating DESC
+    `;
+  },
+  async getById(id) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      SELECT * FROM dealer_profiles WHERE id = ${id}
+    `;
+    return result[0];
+  }
+};
+
+export const marketplaceBookings = {
+  async create({ userId, dealerId, bookingType, scheduledAt, notes }) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      INSERT INTO bookings (user_id, dealer_id, booking_type, scheduled_at, notes)
+      VALUES (${userId}, ${dealerId}, ${bookingType}, ${scheduledAt || null}, ${notes || ''})
+      RETURNING *
+    `;
+    return result[0];
+  },
+  async getByUserId(userId) {
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`
+      SELECT b.*, d.name as dealer_name, d.type as dealer_type
+      FROM bookings b
+      JOIN dealer_profiles d ON b.dealer_id = d.id
+      WHERE b.user_id = ${userId}
+      ORDER BY b.created_at DESC
     `;
   }
 };

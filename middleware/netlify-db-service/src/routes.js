@@ -12,6 +12,8 @@ import {
     finance,
     maintenanceLog,
     marketplace,
+    marketplaceDealers,
+    marketplaceBookings,
     monitoringData,
     performanceData,
     solarInstallations,
@@ -1178,7 +1180,7 @@ router.get('/assessments', authenticateToken, async (req, res) => {
  * POST /api/assessments/calculate
  * Calculate solar assessment with ROI
  */
-router.post('/assessments/calculate', authenticateToken, async (req, res) => {
+router.post('/assessments/calculate', async (req, res) => {
   try {
     const {
       address,
@@ -1318,27 +1320,16 @@ router.post('/assessments/calculate', authenticateToken, async (req, res) => {
       savingsEstimate.financing = { monthlyLease: parseFloat((estimatedCost / 240).toFixed(2)), termMonths: 240 };
     }
 
-    // Save to database
-    const assessment = await assessments.create({
-      userId: req.user.id,
-      address: address || '',
-      city: city || '',
-      state: state || '',
-      zipCode: zipCode || '',
-      roofCondition: roofCondition || 'good',
-      roofArea,
-      annualUsage,
-      sunExposure: sunExposure || 'medium',
-      obstructionLevel: obstructionLevel || 'minimal',
-      recommendedCapacity,
-      estimatedCost,
-      savingsEstimate
-    });
-
-    res.status(201).json({
+    let assessment = null;
+    // Save to database only if authenticated (authenticateToken not strict here, but we can check if req.headers has auth)
+    // Actually, we need to extract the token manually if we removed the middleware. Let's just return the calc if no auth middleware is used.
+    // Wait, the frontend explicitly calls POST /assessments to save later if needed. So we can just return the calculation!
+    
+    // To keep it simple, we won't save here. The frontend calls POST /assessments to save it.
+    
+    res.status(200).json({
       success: true,
       data: {
-        ...assessment,
         calculation: savingsEstimate
       }
     });
@@ -1466,6 +1457,73 @@ router.get('/users/:userId/assessments', authenticateToken, async (req, res) => 
 // ============================================
 // MARKETPLACE ROUTES
 // ============================================
+
+/**
+ * GET /api/marketplace/dealers
+ * Get all vetted installers, consultants, suppliers
+ */
+router.get('/marketplace/dealers', async (req, res) => {
+  try {
+    const dealers = await marketplaceDealers.getAll();
+    res.json({
+      success: true,
+      count: dealers.length,
+      data: dealers
+    });
+  } catch (error) {
+    console.error('Error fetching dealers:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/marketplace/bookings
+ * Create a booking/schedule request
+ */
+router.post('/marketplace/bookings', authenticateToken, async (req, res) => {
+  try {
+    const { dealerId, bookingType, scheduledAt, notes } = req.body;
+    
+    if (!dealerId) {
+      return res.status(400).json({ success: false, error: 'Dealer ID is required' });
+    }
+
+    const booking = await marketplaceBookings.create({
+      userId: req.user.id,
+      dealerId,
+      bookingType,
+      scheduledAt,
+      notes
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Booking request sent successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('Error creating booking:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/marketplace/bookings/me
+ * Get user's bookings
+ */
+router.get('/marketplace/bookings/me', authenticateToken, async (req, res) => {
+  try {
+    const userBookings = await marketplaceBookings.getByUserId(req.user.id);
+    res.json({
+      success: true,
+      count: userBookings.length,
+      data: userBookings
+    });
+  } catch (error) {
+    console.error('Error fetching bookings:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 /**
  * GET /api/marketplace/products
