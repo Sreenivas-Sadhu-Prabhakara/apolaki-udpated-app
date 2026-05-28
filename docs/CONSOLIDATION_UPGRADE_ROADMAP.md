@@ -22,6 +22,7 @@ This document serves as our master checklist and progress tracker. We will imple
 | **PRD 3** | [High-Conversion AI-Driven Assessment Flow](#-prd-3-high-conversion-ai-driven-assessment-flow) | 🔄 IN PROGRESS | 2026-05-27 |
 | **PRD 4** | [Vetted Installer & Supplier Marketplace](#-prd-4-vetted-installer--supplier-marketplace) | ✅ COMPLETE | 2026-05-27 |
 | **PRD 5** | [Energy Flow Dashboard & Telemetry Panel](#-prd-5-energy-flow-dashboard--telemetry-panel) | ⏳ PENDING | *To Be Planned* |
+| **PRD 6** | [Admin Microservice Segregation & Secure Control Plane](#-prd-6-admin-microservice-segregation--secure-control-plane) | ⏳ PENDING | *To Be Planned* |
 
 ---
 
@@ -156,3 +157,135 @@ Deliver premium dashboards tracking live system telemetry, system efficiency, an
   - Smooth live canvas or animated CSS lines representing real-time movement between solar modules, household consumer loads, storage, and grid exports.
 - [ ] **Telemetry Readout Panels:**
   - Deep-dive telemetry historical feeds showing inverter currents, AC inputs, temperature status, and overall health logs.
+
+---
+
+## 📋 [PRD 6] Admin Microservice Segregation & Secure Control Plane
+
+### PRD 6 Goal
+
+Extract all administrative, role-management, audit, and break-glass functionality currently co-located inside `netlify-db-service` and the `personas.js` route module into a **dedicated, independently deployable Admin Control Plane microservice** (`admin-service`). This service will be the single source of truth for user governance, role assignment, audit logging, and emergency access. It communicates with all other services over authenticated internal APIs and is not reachable from the public frontend without an elevated JWT scope.
+
+---
+
+### PRD 6 Background & Motivation
+
+Currently, admin-level actions live in the same Express server (`netlify-db-service`) that handles regular end-user requests — solar assessments, marketplace products, financing, installations. This creates several risks and architectural problems:
+
+| Problem | Impact |
+| :--- | :--- |
+| Admin routes share the same process, port, and attack surface as customer-facing routes | Any XSS or SSRF vulnerability could escalate to admin |
+| Audit log writes happen in-band with business logic — a failed transaction rolls back the audit trail | Incomplete forensic record |
+| `superadmin` and `break-glass` routes are only protected by a role string check in JWT payload | Single-layer access control, no MFA gate |
+| Role escalation (`PUT /admin/users/:id/role`) is not rate-limited or reviewed | Insider threat vector |
+| No separate deployment target — admin can't be air-gapped or network-restricted | No defence-in-depth |
+
+---
+
+### PRD 6 Scope & Requirements
+
+#### 6.1 — New `admin-service` Microservice Bootstrap
+
+- [ ] **Create `middleware/admin-service/`** as a standalone Node.js + Express service with its own `package.json`, `Dockerfile`, `.env.example`, and `README.md`.
+- [ ] **Separate database connection pool** — admin-service connects to the same Neon (Postgres) database but using a dedicated read-write role (`apolaki_admin_rw`) with restricted `GRANT` permissions — it may NOT touch `marketplace_products`, `monitoring_data`, or `performance_data` tables (those are owned by other services).
+- [ ] **Dedicated port** — default `:3002`, separate from `netlify-db-service` (`:3001`) and `solar-service` (`:3003`).
+- [ ] **Internal-only network policy** — in production (Netlify/K8s), admin-service is bound to an internal network namespace. The public API gateway does NOT proxy any `/admin` route directly — all requests must pass through a Netlify Edge Function acting as an API Gateway with strict allowlist.
+- [ ] **Health & readiness endpoints** — `GET /health` and `GET /ready` with DB connectivity check.
+
+#### 6.2 — Routes to Migrate (from `personas.js` and `routes.js`)
+
+Migrate the following endpoints wholesale from `netlify-db-service` into `admin-service`:
+
+| Existing Route | Method | New Route in admin-service | Auth Requirement |
+| :--- | :---: | :--- | :--- |
+| `/api/personas/admin/users` | GET | `/api/admin/users` | `admin` or `superadmin` scope + valid JWT |
+| `/api/personas/admin/users/:id/role` | PUT | `/api/admin/users/:id/role` | `superadmin` scope + MFA challenge token |
+| `/api/personas/admin/audit-logs` | GET | `/api/admin/audit-logs` | `admin` or `superadmin` scope |
+| `/api/personas/superadmin/break-glass` | POST | `/api/admin/break-glass` | `superadmin` scope + signed justification |
+| `/api/personas/superadmin/break-glass/:id/action` | POST | `/api/admin/break-glass/:id/action` | `superadmin` scope + active session token |
+| `/api/personas/superadmin/break-glass/:id/end` | POST | `/api/admin/break-glass/:id/end` | `superadmin` scope |
+| `/api/personas/superadmin/break-glass` | GET | `/api/admin/break-glass` | `admin` or `superadmin` scope |
+| `/api/personas/roles` | GET | `/api/admin/roles` | `admin` or `superadmin` scope |
+| `/api/users` (GET all, unauthenticated) | GET | REMOVED — auth required, moved to admin-service | `admin` scope |
+| `/api/users/:id/role` (unauthenticated PUT) | PUT | REMOVED — consolidate into admin-service | `admin` scope |
+
+#### 6.3 — Enhanced Authorization Layer
+
+- [ ] **JWT Scope Claims** — introduce an `adminScope` claim in the JWT payload (`"adminScope": "admin"` | `"superadmin"` | `null`). This claim is ONLY populated if the login was performed through the admin-service login flow (see §6.4). Regular user JWTs will carry `adminScope: null` and will be rejected by admin-service middleware.
+- [ ] **MFA Gate for role changes** — `PUT /api/admin/users/:id/role` must receive a short-lived `mfaToken` in the `X-MFA-Token` header, validated against a TOTP secret stored per admin user. Until an admin user sets up TOTP, role-change endpoints return `403 MFA_REQUIRED`.
+- [ ] **Rate limiting** — admin-service applies `express-rate-limit` at 20 requests/min per IP for all endpoints, and 3 requests/min for role change and break-glass initiation.
+- [ ] **IP Allowlist** — optional environment-variable-driven CIDR allowlist (`ADMIN_ALLOWED_CIDRS`). If set, all requests from outside the allowlist are immediately rejected with `403`.
+
+#### 6.4 — Admin-Specific Login Flow
+
+- [ ] **Dedicated admin login endpoint** — `POST /api/admin/auth/login` accepts `{ email, password }` and returns a short-lived JWT (15 min) with `adminScope` set, plus a refresh token.
+- [ ] **Session tracking** — every admin login creates a row in a new `admin_sessions` table including `user_id`, `ip_address`, `user_agent`, `logged_in_at`, `last_active_at`, and `revoked_at`.
+- [ ] **Force-revoke sessions** — `POST /api/admin/auth/revoke/:sessionId` allows superadmin to forcibly invalidate any admin session.
+- [ ] **Automatic expiry & re-auth** — idle sessions (no activity > 30 min) are hard-expired on the server side; frontend is redirected to admin login.
+
+#### 6.5 — Immutable Audit Log Service
+
+Currently `auditLogs.create()` is called inline with business logic. If the DB transaction fails, the audit entry may be skipped.
+
+- [ ] **Async audit queue** — admin-service exposes an internal `POST /internal/audit` endpoint that accepts events from all other services. Events are written to a dedicated `audit_events` table immediately and independently of the calling service's transaction.
+- [ ] **Append-only enforcement** — `audit_events` table has no `UPDATE` or `DELETE` grants for any service role. Only a dedicated `audit_writer` DB role can `INSERT`.
+- [ ] **Audit event schema** — standardize all audit entries to: `{ id, service, actor_id, actor_role, action, resource_type, resource_id, before_state (JSONB), after_state (JSONB), ip_address, timestamp }`.
+- [ ] **Audit log pagination & search** — `GET /api/admin/audit-logs` supports `?page`, `?limit`, `?actor_id`, `?action`, `?resource_type`, `?from`, `?to` query params.
+- [ ] **Exportable audit trail** — `GET /api/admin/audit-logs/export.csv` returns a CSV download of filtered logs (for compliance/legal requests).
+
+#### 6.6 — Frontend Admin Console Refactor
+
+- [ ] **Update `AdminConsole.vue`** — change all API calls from `/personas/admin/*` to the new `admin-service` base URL (from environment variable `VITE_ADMIN_SERVICE_URL`).
+- [ ] **Update `SuperAdminConsole.vue`** — same redirect for break-glass flows.
+- [ ] **Admin login gate** — if the currently stored JWT does not contain `adminScope`, redirect to a new dedicated `AdminLogin.vue` page before allowing access to admin views. This is enforced both in the Vue Router `beforeEnter` guard and validated server-side on every request.
+- [ ] **MFA enrollment UI** — new `AdminMfaSetup.vue` component for TOTP QR code generation and verification using `otpauth` library.
+- [ ] **Real-time admin session panel** — `AdminConsole.vue` gains a "Active Admin Sessions" widget listing all currently logged-in admin users with the ability to revoke sessions.
+
+#### 6.7 — API Gateway Routing Update
+
+- [ ] **Netlify `netlify.toml` redirect rules** — add `/api/admin/*` → `admin-service` function path, keeping `/api/*` → `netlify-db-service`.
+- [ ] **Remove admin routes from `netlify-db-service`** — after migration, delete `personas.js` admin blocks and remove `auditLogs`, `breakGlassSessions` imports from `routes.js`. Add a deprecated redirect shim temporarily returning `410 Gone` for 30 days.
+- [ ] **K8s / Helm** — add `admin-service` as a new `Deployment` and `Service` in `helm/` with separate resource limits, network policies (ingress only from internal namespace), and its own `Secret` for DB credentials.
+
+#### 6.8 — Database Schema Changes
+
+- [ ] **`admin_sessions` table** — `id`, `user_id (FK)`, `ip_address`, `user_agent`, `admin_scope`, `mfa_verified (bool)`, `logged_in_at`, `last_active_at`, `revoked_at`, `revoked_by`.
+- [ ] **`audit_events` table** — new normalized table replacing the existing `audit_logs`, with `before_state` and `after_state` JSONB columns and a GIN index for JSON search.
+- [ ] **Migrate existing `audit_logs` rows** → `audit_events` via a one-time migration script `scripts/migrate-audit-logs.js`.
+- [ ] **DB role segregation** — document and apply GRANT/REVOKE SQL in `config/init-db.sql` creating `apolaki_admin_rw`, `audit_writer`, and `apolaki_app_rw` roles with least-privilege permissions.
+
+#### 6.9 — Testing
+
+- [ ] **Unit tests** for all new admin-service route handlers (`tests/api/admin.test.js`).
+- [ ] **Integration tests** — verify that a regular user JWT (`adminScope: null`) is rejected with 403 from every admin-service endpoint.
+- [ ] **E2E tests** — `tests/e2e/adminConsole.test.js` covering: admin login, role change with MFA, break-glass session creation + action + end, audit log pagination.
+- [ ] **Security regression tests** — verify privilege escalation attempt (user tries to call role change with customer JWT) returns 403.
+
+---
+
+### PRD 6 Implementation Plan (Suggested Session Order)
+
+| Step | Description | Complexity |
+| :--- | :--- | :---: |
+| **Step 1** | Scaffold `middleware/admin-service/` with Express, auth middleware, health endpoint | Low |
+| **Step 2** | Migrate user management + role change routes with enhanced JWT scope validation | Medium |
+| **Step 3** | Migrate break-glass routes + MFA gate for role changes | High |
+| **Step 4** | Implement async audit queue (`/internal/audit`) + append-only `audit_events` table | High |
+| **Step 5** | Admin login flow + `admin_sessions` table + session revocation | Medium |
+| **Step 6** | Frontend: update API calls, admin login gate, MFA enrollment UI | Medium |
+| **Step 7** | API Gateway routing update (netlify.toml + Helm charts) | Low |
+| **Step 8** | DB schema migration script + GRANT/REVOKE documentation | Medium |
+| **Step 9** | Full test suite (unit + integration + E2E + security regression) | High |
+
+---
+
+### PRD 6 Definition of Done
+
+- [ ] `admin-service` runs independently (`npm run dev` from `middleware/admin-service/`) and passes all health checks.
+- [ ] All admin routes respond correctly from `admin-service` and return `410 Gone` from `netlify-db-service`.
+- [ ] Regular user JWTs are rejected by every admin endpoint (verified by automated test).
+- [ ] Role changes require a valid TOTP MFA token (verified by automated test).
+- [ ] All admin actions produce an audit event in the `audit_events` table with full before/after state.
+- [ ] Frontend admin views work end-to-end through the new service with the admin login gate enforced.
+- [ ] K8s network policy restricts `admin-service` ingress to internal namespace only.
+- [ ] DB roles are documented and applied via `init-db.sql`.
