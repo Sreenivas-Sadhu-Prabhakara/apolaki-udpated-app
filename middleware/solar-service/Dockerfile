@@ -1,6 +1,6 @@
 # Multi-stage build for Go Solar Service
 # Stage 1: Build
-FROM golang:1.21-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
@@ -29,9 +29,6 @@ RUN apk --no-cache add ca-certificates
 
 # Copy binary from builder
 COPY --from=builder /app/solar-service .
-
-# Copy any required config files
-COPY config/ ./config/
 
 # Create a non-root user for security
 RUN addgroup -g 1001 -S solr
