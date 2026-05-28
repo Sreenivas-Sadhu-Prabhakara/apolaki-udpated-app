@@ -28,6 +28,7 @@ This document serves as our master checklist and progress tracker. We will imple
 | **PRD 9** | [Live Messaging, Presence, and Read Receipts](#-prd-9-live-messaging-presence-and-read-receipts) | ⏳ PENDING | *After PRD 8* |
 | **PRD 10** | [Trusted Notification Expansion](#-prd-10-trusted-notification-expansion) | ⏳ PENDING | *After trust controls mature* |
 | **PRD 11** | [Consent-Mapped Role Portals & Saved Assessment History](#-prd-11-consent-mapped-role-portals--saved-assessment-history) | ✅ COMPLETE | 2026-05-28 |
+| **PRD 12** | [Production Hardening, Policy Coverage, and Security Audit Remediation](#-prd-12-production-hardening-policy-coverage-and-security-audit-remediation) | ⏳ PENDING | *Next session* |
 
 ---
 
@@ -470,3 +471,60 @@ Make every role portal and protected app surface available according to the user
 - [x] Users without consent are routed to the consent unlock page and cannot bypass it by direct URL.
 - [x] Backend endpoints deny missing consent with `403 CONSENT_REQUIRED`.
 - [x] Saved assessments from the database appear on the assessment landing/results views.
+
+---
+
+## 📋 [PRD 12] Production Hardening, Policy Coverage, and Security Audit Remediation
+
+### PRD 12 Goal
+
+Convert the 2026-05-29 distinguished-engineer audit into a focused remediation pass before the next feature build. The platform should not rely on green builds alone; every shipped screen/API must have explicit policy coverage, secret hygiene, production-safe logging, and security controls that match the consent/RBAC direction of the product.
+
+### Audit Baseline
+
+- **Code baseline:** latest `origin/main` pulled locally at commit `2c29beb`.
+- **CI baseline:** latest GitHub checks were green.
+- **Local baseline:** `scripts/pre-deploy-check.sh --quick` passed, but skipped TypeScript, API regression, and UI regression suites.
+- **Scope:** read-only audit; no implementation changes were made during the audit.
+
+### PRD 12 Priority Findings
+
+- [ ] **Marketplace booking policy gap:** `GET /marketplace/dealers`, `POST /marketplace/bookings`, and `GET /marketplace/bookings/me` exist in the route layer but are missing from `API_POLICY_MATRIX`, so the central policy gateway can reject the latest marketplace booking flow with `POLICY_NOT_REGISTERED`.
+- [ ] **Route-policy regression coverage gap:** CI did not catch the missing marketplace policies. Add an automated test that fails when any Express route under `/api` lacks an explicit policy entry or approved public/disabled exemption.
+- [ ] **Tracked environment files:** real `.env`-style files are tracked in git, including root, frontend, middleware, and production/staging config paths. Replace real env files with examples only, add ignore rules, and rotate any value that may have been committed.
+- [ ] **Sensitive query logging:** database error logging currently includes raw query text and values. Redact or remove values so tokens, emails, finance data, OAuth data, and session identifiers cannot land in production logs.
+- [ ] **Admin token storage risk:** admin access and refresh tokens are stored in `localStorage`. Move admin session handling to safer storage, preferably secure `httpOnly`, `sameSite` cookies or short-lived in-memory access tokens backed by a secure refresh cookie.
+- [ ] **Weak CSP for privileged surfaces:** current CSP permits `unsafe-inline` and `unsafe-eval`, increasing XSS blast radius. Tighten CSP and remove unsafe allowances where practical, starting with admin and auth flows.
+- [ ] **Production fallback secrets:** admin-service code can boot with development fallback secrets if env vars are missing. Production must fail closed when required secrets are absent or set to known defaults.
+- [ ] **Messaging attachment controls:** PRD 8 attachment storage currently needs stronger compliance alignment: object-store isolation, encryption-at-rest proof, type allowlist, malware scanning, retention policy, export/delete flows, and signed retrieval.
+- [ ] **Messaging recipient boundary:** consumers must only start installer conversations with the recommended installer or an admin-allocated installer. Arbitrary target IDs should not be enough to initiate a conversation.
+- [ ] **Policy drift cleanup:** disabled auth/provider routes and deprecated admin shims remain in public policy lists even though handlers return `410 Gone`. Policy should become the clean source of truth.
+- [ ] **Consent vs authorization boundary:** consent should describe user permission for data processing, not entitlement. Access still requires role, ownership, allocation, and resource policy checks.
+- [ ] **Admin public routing posture:** `/api/admin/*` is publicly routed through Netlify. Auth is required, but the design should document whether this is acceptable for Netlify MVP or move toward gateway/internal-only access.
+- [ ] **Health endpoint minimization:** public health responses should avoid environment/config-presence details and expose only minimal liveness information.
+
+### PRD 12 Implementation Plan
+
+| Step | Description | Priority |
+| :--- | :--- | :---: |
+| **Step 1** | Register missing marketplace policies and add route-policy coverage tests. | P0 |
+| **Step 2** | Remove tracked real env files, update ignore rules, document rotation, and verify no secrets remain in committed files. | P0 |
+| **Step 3** | Redact DB logging and add regression tests proving sensitive values are not logged. | P1 |
+| **Step 4** | Harden admin session storage and fail closed on missing production secrets. | P1 |
+| **Step 5** | Tighten CSP, especially on auth/admin paths, and validate the app still builds/renders. | P1 |
+| **Step 6** | Bring PRD 8 messaging into policy alignment: recommended/admin-allocated installer only, protected attachments, and audited admin review. | P1 |
+| **Step 7** | Clean stale policy entries for disabled providers/admin shims and document approved public routes. | P2 |
+| **Step 8** | Minimize public health endpoint output and document operational readiness endpoints separately. | P2 |
+
+### PRD 12 Definition Of Done
+
+- [ ] Every active `/api` route is covered by `API_POLICY_MATRIX` or an explicit tested exemption.
+- [ ] Marketplace dealer discovery and booking APIs pass allowed, denied-by-role, denied-by-consent, and denied-by-ownership tests.
+- [ ] No real `.env` file is tracked; examples remain tracked; leaked values are rotated where applicable.
+- [ ] DB error logs never include raw token, password, email, finance, OAuth, or session values.
+- [ ] Admin sessions no longer persist privileged refresh credentials in `localStorage`.
+- [ ] Production startup fails if required auth/admin secrets are missing or equal to known development defaults.
+- [ ] Messaging conversation creation enforces recommended-installer or admin-allocation boundaries.
+- [ ] Attachment storage has documented encryption, scanning, retention, export, and deletion behavior.
+- [ ] CSP is tightened without breaking login, consent, admin, messaging, assessment, or marketplace flows.
+- [ ] Public health output is minimal, while detailed readiness remains protected/internal.
