@@ -124,6 +124,8 @@ export const useUserStore = defineStore('user', () => {
     return consentStatus.value.consents.some(c => c.key === key && c.decision === 'granted')
   }
 
+  const hasConsents = (...keys) => keys.every(key => hasConsent(key))
+
   const completeConsentOnboarding = async (consents) => {
     loading.value = true
     error.value = null
@@ -166,6 +168,8 @@ export const useUserStore = defineStore('user', () => {
     adminScope,
     isAdminAuthenticated,
     hasRole,
+    hasConsent,
+    hasConsents,
     clearSession,
     clearAdminSession,
     getProfile,

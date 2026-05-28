@@ -31,10 +31,30 @@
           you choose those features later.
         </p>
 
+        <div class="feature-consents">
+          <div class="section-heading">
+            <strong>{{ requestedConsentKeys.length ? 'Unlock this feature' : 'Optional feature consents' }}</strong>
+            <small>Turn on only what you need. You can leave the rest off.</small>
+          </div>
+
+          <label
+            v-for="consent in optionalConsents"
+            :key="consent.key"
+            class="feature-choice"
+            :class="{ requested: requestedConsentKeys.includes(consent.key) }"
+          >
+            <input v-model="featureChoices[consent.key]" type="checkbox">
+            <span>
+              <strong>{{ consent.title }}</strong>
+              <small>{{ consent.purpose }}</small>
+            </span>
+          </label>
+        </div>
+
         <p v-if="message" class="error" role="alert">{{ message }}</p>
 
         <button class="continue" type="submit" :disabled="userStore.loading || !essentialAccepted">
-          {{ userStore.loading ? 'Saving...' : 'Continue to assessment' }}
+          {{ userStore.loading ? 'Saving...' : continueLabel }}
         </button>
       </form>
     </section>
@@ -42,16 +62,27 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 const status = ref(null)
 const essentialAccepted = ref(false)
 const loadingStatus = ref(true)
 const message = ref('')
+const featureChoices = reactive({})
+
+const requestedConsentKeys = computed(() => {
+  return String(route.query.required || '')
+    .split(',')
+    .map(key => key.trim())
+    .filter(Boolean)
+})
+const optionalConsents = computed(() => status.value?.consents?.filter(consent => !consent.required) || [])
+const continueLabel = computed(() => route.query.next ? 'Save and continue' : 'Continue to assessment')
 
 onMounted(async () => {
   try {
@@ -59,6 +90,9 @@ onMounted(async () => {
     essentialAccepted.value = status.value.consents
       .filter(consent => consent.required)
       .every(consent => consent.decision === 'granted')
+    optionalConsents.value.forEach(consent => {
+      featureChoices[consent.key] = consent.decision === 'granted' || requestedConsentKeys.value.includes(consent.key)
+    })
   } catch {
     message.value = 'Your consent settings could not be loaded. Please sign in again.'
   } finally {
@@ -77,7 +111,7 @@ async function submitChoice() {
     key: consent.key,
     decision: consent.required
       ? 'granted'
-      : (consent.decision === 'granted' ? 'granted' : 'declined')
+      : (featureChoices[consent.key] ? 'granted' : 'declined')
   }))
   const updatedStatus = await userStore.completeConsentOnboarding(choices)
 
@@ -85,7 +119,7 @@ async function submitChoice() {
     message.value = userStore.error
     return
   }
-  await router.replace('/assessment')
+  await router.replace(route.query.next || '/assessment')
 }
 </script>
 
@@ -165,6 +199,62 @@ h1 {
 
 .privacy-note {
   margin: 1.1rem 0 1.3rem;
+}
+
+.feature-consents {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 0 1.3rem;
+}
+
+.section-heading {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.section-heading strong {
+  color: #102a43;
+}
+
+.section-heading small {
+  color: #60788a;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.feature-choice {
+  align-items: flex-start;
+  border: 1px solid #d4e8fb;
+  border-radius: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  gap: 0.8rem;
+  padding: 0.85rem;
+}
+
+.feature-choice.requested {
+  border-color: #0f6cbd;
+  box-shadow: 0 0 0 3px rgba(15, 108, 189, 0.1);
+}
+
+.feature-choice input {
+  accent-color: #0f6cbd;
+  height: 1rem;
+  margin-top: 0.15rem;
+  width: 1rem;
+}
+
+.feature-choice strong {
+  color: #102a43;
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.feature-choice small {
+  color: #60788a;
+  font-size: 0.82rem;
+  line-height: 1.4;
 }
 
 .error {

@@ -5,16 +5,19 @@
 
 import axios from 'axios';
 import express from 'express';
+import { CONSENT_VERSION, normalizeRole } from './auth/access-control.js';
 import { authenticateToken } from './auth/middleware.js';
 import {
     assessments,
     contracts,
+    ensureConsentSchema,
     finance,
     maintenanceLog,
     marketplace,
     monitoringData,
     performanceData,
     solarInstallations,
+    userConsents,
     users
 } from './db.js';
 
@@ -38,7 +41,34 @@ function safeUser(user) {
 }
 
 function canReadUserRecords(requestUser, userId) {
-  return requestUser?.id === userId || ['admin', 'superadmin'].includes(requestUser?.role);
+  return requestUser?.id === userId || ['admin', 'superadmin'].includes(normalizeRole(requestUser?.role));
+}
+
+function isElevatedRole(role) {
+  return ['admin', 'superadmin'].includes(normalizeRole(role));
+}
+
+async function hasActiveConsent(userId, consentKey) {
+  await ensureConsentSchema();
+  const records = await userConsents.getByUserId(userId);
+  return records.some(record =>
+    record.consent_key === consentKey &&
+    record.consent_version === CONSENT_VERSION &&
+    record.decision === 'granted'
+  );
+}
+
+async function requireConsent(req, res, consentKey, { userId = req.user.id, allowElevated = false } = {}) {
+  if (allowElevated && isElevatedRole(req.user.role)) return true;
+  if (await hasActiveConsent(userId, consentKey)) return true;
+
+  res.status(403).json({
+    success: false,
+    error: `${consentKey} consent is required for this action.`,
+    code: 'CONSENT_REQUIRED',
+    requiredConsents: [consentKey]
+  });
+  return false;
 }
 
 function adminControlPlaneGone(_req, res) {
@@ -208,6 +238,8 @@ router.put('/users/:id', async (req, res) => {
  */
 router.post('/installations', authenticateToken, async (req, res) => {
   try {
+    if (!(await requireConsent(req, res, 'installation_monitoring'))) return;
+
     const {
       name,
       address,
@@ -261,6 +293,8 @@ router.post('/installations', authenticateToken, async (req, res) => {
  */
 router.get('/installations', authenticateToken, async (req, res) => {
   try {
+    if (!(await requireConsent(req, res, 'installation_monitoring', { allowElevated: true }))) return;
+
     const { userId } = req.query;
     let installations;
     // Admin/superadmin can see all; regular users see their own
@@ -287,7 +321,7 @@ router.get('/installations', authenticateToken, async (req, res) => {
  * GET /api/installations/:id
  * Get installation by ID
  */
-router.get('/installations/:id', async (req, res) => {
+router.get('/installations/:id', authenticateToken, async (req, res) => {
   try {
     const installation = await solarInstallations.getById(req.params.id);
 
@@ -297,6 +331,16 @@ router.get('/installations/:id', async (req, res) => {
         error: 'Installation not found'
       });
     }
+
+    if (!canReadUserRecords(req.user, installation.user_id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied',
+        code: 'OWNERSHIP_DENIED'
+      });
+    }
+
+    if (!(await requireConsent(req, res, 'installation_monitoring', { allowElevated: true }))) return;
 
     res.json({
       success: true,
@@ -315,8 +359,18 @@ router.get('/installations/:id', async (req, res) => {
  * GET /api/users/:userId/installations
  * Get all installations for a user
  */
-router.get('/users/:userId/installations', async (req, res) => {
+router.get('/users/:userId/installations', authenticateToken, async (req, res) => {
   try {
+    if (!canReadUserRecords(req.user, req.params.userId)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied',
+        code: 'OWNERSHIP_DENIED'
+      });
+    }
+
+    if (!(await requireConsent(req, res, 'installation_monitoring', { allowElevated: true }))) return;
+
     const installations = await solarInstallations.getByUserId(req.params.userId);
 
     res.json({
@@ -337,8 +391,26 @@ router.get('/users/:userId/installations', async (req, res) => {
  * PUT /api/installations/:id
  * Update installation
  */
-router.put('/installations/:id', async (req, res) => {
+router.put('/installations/:id', authenticateToken, async (req, res) => {
   try {
+    const existing = await solarInstallations.getById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        error: 'Installation not found'
+      });
+    }
+
+    if (!canReadUserRecords(req.user, existing.user_id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied',
+        code: 'OWNERSHIP_DENIED'
+      });
+    }
+
+    if (!(await requireConsent(req, res, 'installation_monitoring', { allowElevated: true }))) return;
+
     const { name, status, capacity, panelCount } = req.body;
     const installation = await solarInstallations.update(req.params.id, {
       name,
@@ -372,8 +444,26 @@ router.put('/installations/:id', async (req, res) => {
  * DELETE /api/installations/:id
  * Delete installation
  */
-router.delete('/installations/:id', async (req, res) => {
+router.delete('/installations/:id', authenticateToken, async (req, res) => {
   try {
+    const existing = await solarInstallations.getById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        error: 'Installation not found'
+      });
+    }
+
+    if (!canReadUserRecords(req.user, existing.user_id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied',
+        code: 'OWNERSHIP_DENIED'
+      });
+    }
+
+    if (!(await requireConsent(req, res, 'installation_monitoring', { allowElevated: true }))) return;
+
     const result = await solarInstallations.delete(req.params.id);
 
     if (!result) {
@@ -608,6 +698,8 @@ router.get('/installations/:installationId/maintenance', async (req, res) => {
  */
 router.get('/contracts', authenticateToken, async (req, res) => {
   try {
+    if (!(await requireConsent(req, res, 'contracts_signing', { allowElevated: true }))) return;
+
     let userContracts;
     if (req.user.role === 'admin' || req.user.role === 'superadmin') {
       userContracts = await contracts.getAll();
@@ -635,6 +727,8 @@ router.get('/contracts', authenticateToken, async (req, res) => {
  */
 router.get('/contracts/:id', authenticateToken, async (req, res) => {
   try {
+    if (!(await requireConsent(req, res, 'contracts_signing', { allowElevated: true }))) return;
+
     const contract = await contracts.getById(req.params.id);
 
     if (!contract) {
@@ -668,6 +762,8 @@ router.get('/contracts/:id', authenticateToken, async (req, res) => {
  */
 router.post('/contracts', authenticateToken, async (req, res) => {
   try {
+    if (!(await requireConsent(req, res, 'contracts_signing'))) return;
+
     const {
       contractType,
       title,
@@ -713,6 +809,8 @@ router.post('/contracts', authenticateToken, async (req, res) => {
  */
 router.put('/contracts/:id', authenticateToken, async (req, res) => {
   try {
+    if (!(await requireConsent(req, res, 'contracts_signing', { allowElevated: true }))) return;
+
     const { status, endDate, metadata } = req.body;
     const contract = await contracts.update(req.params.id, {
       status,
@@ -741,6 +839,8 @@ router.put('/contracts/:id', authenticateToken, async (req, res) => {
  */
 router.post('/contracts/:id/sign', authenticateToken, async (req, res) => {
   try {
+    if (!(await requireConsent(req, res, 'contracts_signing', { allowElevated: true }))) return;
+
     const { signature } = req.body;
 
     if (!signature) {
@@ -1162,6 +1262,8 @@ router.post('/solar/lookup', authenticateToken, async (req, res) => {
  */
 router.get('/assessments', authenticateToken, async (req, res) => {
   try {
+    if (!(await requireConsent(req, res, 'location_assessment'))) return;
+
     const userAssessments = await assessments.getByUserId(req.user.id);
     res.json({
       success: true,
@@ -1180,6 +1282,8 @@ router.get('/assessments', authenticateToken, async (req, res) => {
  */
 router.post('/assessments/calculate', authenticateToken, async (req, res) => {
   try {
+    if (!(await requireConsent(req, res, 'location_assessment'))) return;
+
     const {
       address,
       city,
@@ -1354,6 +1458,8 @@ router.post('/assessments/calculate', authenticateToken, async (req, res) => {
  */
 router.post('/assessments', authenticateToken, async (req, res) => {
   try {
+    if (!(await requireConsent(req, res, 'location_assessment'))) return;
+
     const {
       address,
       city,
@@ -1405,6 +1511,8 @@ router.post('/assessments', authenticateToken, async (req, res) => {
  */
 router.get('/assessments/:id', authenticateToken, async (req, res) => {
   try {
+    if (!(await requireConsent(req, res, 'location_assessment', { allowElevated: true }))) return;
+
     const assessment = await assessments.getById(req.params.id);
 
     if (!assessment) {
@@ -1440,6 +1548,8 @@ router.get('/assessments/:id', authenticateToken, async (req, res) => {
  */
 router.get('/users/:userId/assessments', authenticateToken, async (req, res) => {
   try {
+    if (!(await requireConsent(req, res, 'location_assessment', { allowElevated: true }))) return;
+
     if (!canReadUserRecords(req.user, req.params.userId)) {
       return res.status(403).json({
         success: false,
@@ -1656,6 +1766,8 @@ router.delete('/marketplace/wishlist/:productId', authenticateToken, async (req,
  */
 router.post('/finance/transactions', authenticateToken, async (req, res) => {
   try {
+    if (!(await requireConsent(req, res, 'finance_data'))) return;
+
     const {
       transactionId,
       amount,
@@ -1699,6 +1811,8 @@ router.post('/finance/transactions', authenticateToken, async (req, res) => {
  */
 router.get('/finance/transactions', authenticateToken, async (req, res) => {
   try {
+    if (!(await requireConsent(req, res, 'finance_data'))) return;
+
     const transactions = await finance.getByUserId(req.user.id);
     res.json({
       success: true,
@@ -1717,6 +1831,8 @@ router.get('/finance/transactions', authenticateToken, async (req, res) => {
  */
 router.get('/finance/summary', authenticateToken, async (req, res) => {
   try {
+    if (!(await requireConsent(req, res, 'finance_data'))) return;
+
     const summary = await finance.getSummary(req.user.id);
     res.json({
       success: true,
