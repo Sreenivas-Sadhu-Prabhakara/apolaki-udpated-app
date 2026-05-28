@@ -4,7 +4,7 @@
   "description": "Apolaki Solar Platform - Comprehensive solar energy management system",
   "type": "module",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "scripts": {
     "start": "node middleware/netlify-db-service/src/server.js",

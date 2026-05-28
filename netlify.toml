@@ -24,10 +24,13 @@
   publish = "frontend/dist"
   
   # Node.js version
-  node_version = "18.x"
+  node_version = "20.x"
   
   # Netlify Functions directory (serverless backend)
   functions = "middleware/netlify-db-service/.netlify/functions"
+
+  [build.environment]
+    NODE_VERSION = "20"
 
 # ============================================================================
 # Functions configuration
@@ -113,6 +116,7 @@
   # Environment variables for production (set in Netlify dashboard)
   [context.production.environment]
     NODE_ENV = "production"
+    NODE_VERSION = "20"
 
 # ============================================================================
 # Environment-specific configuration (staging)
@@ -122,6 +126,7 @@
   
   [context.staging.environment]
     NODE_ENV = "staging"
+    NODE_VERSION = "20"
 
 # ============================================================================
 # Environment-specific configuration (development/preview)
@@ -131,9 +136,11 @@
   
   [context.deploy-preview.environment]
     NODE_ENV = "development"
+    NODE_VERSION = "20"
 
 [context.branch-deploy]
   command = "npm ci && npm ci --include=dev --prefix frontend && npm ci --prefix middleware/netlify-db-service && npm ci --prefix middleware/admin-service && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
   
   [context.branch-deploy.environment]
     NODE_ENV = "development"
+    NODE_VERSION = "20"
