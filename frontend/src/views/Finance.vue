@@ -309,6 +309,12 @@
               <p class="text-xl font-black">{{ prequalRating.status }}</p>
               <p class="text-[10px] leading-snug">{{ prequalRating.desc }}</p>
             </div>
+
+            <!-- Contact Financing Advisor CTA -->
+            <router-link to="/messaging?financierId=f1" class="mt-4 w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 border"
+              :class="isDark ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm'">
+              💬 Message Financing Advisor
+            </router-link>
           </div>
         </div>
       </div>

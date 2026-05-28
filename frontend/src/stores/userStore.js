@@ -119,6 +119,11 @@ export const useUserStore = defineStore('user', () => {
     return consentStatus.value
   }
 
+  const hasConsent = (key) => {
+    if (!consentStatus.value?.consents) return false
+    return consentStatus.value.consents.some(c => c.key === key && c.decision === 'granted')
+  }
+
   const completeConsentOnboarding = async (consents) => {
     loading.value = true
     error.value = null

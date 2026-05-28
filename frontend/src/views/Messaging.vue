@@ -5,6 +5,14 @@
       <aside class="w-full md:w-80 lg:w-96 flex flex-col border-r shrink-0" :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'">
         <div class="p-4 border-b" :class="isDark ? 'border-slate-700' : 'border-gray-200'">
           <h2 class="text-xl font-bold mb-4" :class="isDark ? 'text-white' : 'text-gray-900'">Messages</h2>
+          
+          <!-- Consent Banner -->
+          <div v-if="!userStore.hasConsent('installer_messaging')" class="mb-4 p-3 rounded-lg bg-orange-50 border border-orange-100 text-[11px] leading-tight text-orange-800">
+            <p class="font-bold mb-1">Consent Required 🛡️</p>
+            <p class="mb-2">Grant messaging consent to start project coordination. Messages are protected and audited for support.</p>
+            <button @click="grantConsent" class="w-full py-1.5 bg-orange-600 text-white rounded font-bold hover:bg-orange-700 transition">Grant Consent</button>
+          </div>
+
           <div class="relative">
             <input 
               v-model="searchQuery" 
@@ -46,7 +54,12 @@
                     </h3>
                     <span class="text-[10px] text-gray-400">{{ formatTime(conv.updated_at) }}</span>
                   </div>
-                  <p class="text-xs text-gray-500 truncate">{{ conv.last_message || 'No messages yet' }}</p>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase" :class="getRoleBadge(conv).class">
+                      {{ getRoleBadge(conv).label }}
+                    </span>
+                    <p class="text-xs text-gray-500 truncate flex-1">{{ conv.last_message || 'No messages yet' }}</p>
+                  </div>
                 </div>
               </div>
             </li>
@@ -196,12 +209,21 @@ const filteredConversations = computed(() => {
 
 const getOtherParticipantName = (conv) => {
   if (!conv) return ''
+  if (conv.context_type === 'support') return 'Apolaki Support'
+  if (conv.context_type === 'finance') return conv.installer_name || 'Financing Advisor'
   return userStore.user.id === conv.consumer_id ? (conv.installer_name || 'Installer') : (conv.consumer_name || 'Consumer')
 }
 
 const getOtherParticipantInitials = (conv) => {
+  if (conv?.context_type === 'support') return 'AS'
   const name = getOtherParticipantName(conv)
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+}
+
+const getRoleBadge = (conv) => {
+  if (conv.context_type === 'support') return { label: 'Support', class: 'bg-red-100 text-red-700' }
+  if (conv.context_type === 'finance') return { label: 'Finance', class: 'bg-green-100 text-green-700' }
+  return { label: 'Installer', class: 'bg-blue-100 text-blue-700' }
 }
 
 const decryptMessage = (msg) => {
@@ -233,10 +255,24 @@ const formatFileSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
 
+const grantConsent = async () => {
+  try {
+    await userStore.completeConsentOnboarding([
+      { key: 'installer_messaging', decision: 'granted' }
+    ])
+    // Re-fetch to ensure store is updated
+    await userStore.getConsentStatus()
+  } catch (err) {
+    console.error('Consent failed', err)
+  }
+}
+
 const selectConversation = async (conv) => {
   messagingStore.currentConversation = conv
-  await messagingStore.fetchMessages(conv.id)
-  messagingStore.startPolling(conv.id)
+  if (conv.id !== 'new') {
+    await messagingStore.fetchMessages(conv.id)
+    messagingStore.startPolling(conv.id)
+  }
   scrollToBottom()
 }
 
@@ -244,13 +280,29 @@ const handleSend = async () => {
   if (!newMessage.value.trim() && !attachment.value) return
   
   const text = newMessage.value.trim()
-  const convId = messagingStore.currentConversation.id
+  const conv = messagingStore.currentConversation
   
   newMessage.value = ''
+  const file = attachment.value
   attachment.value = null
   
   try {
-    await messagingStore.sendMessage(convId, text)
+    if (conv.id === 'new') {
+      const payload = {
+        contextType: conv.context_type,
+        contextId: conv.context_id
+      }
+      if (conv.installer_id) payload.installerId = conv.installer_id
+      if (conv.financier_id) payload.financierId = conv.financier_id
+      if (conv.is_support) payload.isSupport = true
+
+      const newConv = await messagingStore.createConversation(payload)
+      messagingStore.currentConversation = newConv
+      await messagingStore.sendMessage(newConv.id, text, file)
+      messagingStore.startPolling(newConv.id)
+    } else {
+      await messagingStore.sendMessage(conv.id, text, file)
+    }
     scrollToBottom()
   } catch (err) {
     console.error('Send failed', err)
@@ -279,13 +331,31 @@ onMounted(async () => {
   await messagingStore.fetchConversations()
   await messagingStore.fetchSecurityBanner()
   
-  // Handle direct navigation via ?installerId=...
-  if (route.query.installerId) {
-    const existing = messagingStore.conversations.find(c => c.installer_id === route.query.installerId)
+  // Handle direct navigation via query params
+  const { installerId, financierId, support } = route.query
+  
+  if (installerId || financierId || support) {
+    let existing = null
+    if (installerId) {
+      existing = messagingStore.conversations.find(c => c.installer_id === installerId)
+    } else if (financierId) {
+      existing = messagingStore.conversations.find(c => c.installer_id === financierId && c.context_type === 'finance')
+    } else if (support) {
+      existing = messagingStore.conversations.find(c => c.context_type === 'support')
+    }
+
     if (existing) {
       selectConversation(existing)
     } else {
-      // Logic to start a new conversation could go here
+      // Setup UI for a new conversation state
+      messagingStore.currentConversation = { 
+        id: 'new', 
+        installer_id: installerId,
+        financier_id: financierId,
+        is_support: !!support,
+        context_type: support ? 'support' : (financierId ? 'finance' : 'marketplace'),
+        isNew: true 
+      }
     }
   }
 })

@@ -8,6 +8,8 @@
 
 import expressModule from 'express';
 import webpush from 'web-push';
+import multer from 'multer';
+import path from 'path';
 import { CONSENT_VERSION, normalizeRole } from '../auth/access-control.js';
 import { authenticateToken, authorizeRole } from '../auth/middleware.js';
 import { auditLogs, messaging, userConsents, users, pushSubscriptions } from '../db.js';
@@ -15,10 +17,27 @@ import { auditLogs, messaging, userConsents, users, pushSubscriptions } from '..
 const express = expressModule.default || expressModule;
 const router = express.Router();
 
-const PRIVILEGED_ROLES = new Set(['admin', 'superadmin']);
+const PRIVILEGED_ROLES = new Set(['admin', 'superadmin', 'operations']);
 const INSTALLER_MESSAGING_CONSENT = 'installer_messaging';
 
+// Multer storage for MVP local uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+
 // PRD 9: Web Push Configuration
+// ... (rest of push config)
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
 const vapidEmail = process.env.VAPID_EMAIL || 'admin@apolaki.local';
@@ -132,6 +151,29 @@ router.post('/push-subscription', authenticateToken, async (req, res) => {
   res.status(201).json({ success: true, message: 'Push subscription registered.' });
 });
 
+router.post('/attachments', authenticateToken, upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, error: 'No file uploaded.' });
+  }
+
+  // PRD 8: Secure metadata. For MVP, we return a local storage key.
+  const storageKey = `local://uploads/${req.file.filename}`;
+  
+  res.status(201).json({
+    success: true,
+    data: {
+      fileName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      sizeBytes: req.file.size,
+      storageKey,
+      encryptionMetadata: {
+        scheme: 'client_envelope_v1',
+        storage: 'local_mvp'
+      }
+    }
+  });
+});
+
 router.get('/security-banner', authenticateToken, (_req, res) => {
   res.json({
     success: true,
@@ -194,6 +236,8 @@ router.post('/conversations', authenticateToken, async (req, res) => {
     recommendationId,
     consumerId: requestedConsumerId,
     installerId: requestedInstallerId,
+    financierId,
+    isSupport = false,
     contextType = 'general',
     contextId = null
   } = req.body || {};
@@ -202,6 +246,7 @@ router.post('/conversations', authenticateToken, async (req, res) => {
   let installerId = requestedInstallerId;
   let recommendation = null;
   let assignmentSource = 'recommendation';
+  let targetContextType = contextType;
 
   if (recommendationId) {
     recommendation = await messaging.getRecommendationById(recommendationId);
@@ -214,27 +259,37 @@ router.post('/conversations', authenticateToken, async (req, res) => {
     consumerId = recommendation.consumer_id;
     installerId = recommendation.installer_id;
     assignmentSource = recommendation.source === 'admin_allocation' ? 'admin_allocation' : 'recommendation';
+    targetContextType = recommendation.context_type || targetContextType;
   } else if (isPrivileged(req.user)) {
     consumerId = requestedConsumerId;
     assignmentSource = 'admin_allocation';
+  } else if (installerId || financierId || isSupport) {
+    // Hybrid: Users can start contextual chats if they provide a target
+    assignmentSource = 'contextual_initiation';
+    if (isSupport) {
+      targetContextType = 'support';
+      // Find a support user or use a placeholder
+      const supportUsers = await users.getByRole('admin');
+      installerId = supportUsers[0]?.id; // Simple assignment to first admin for MVP
+    } else if (financierId) {
+      targetContextType = 'finance';
+      installerId = financierId;
+    }
   } else {
     return res.status(403).json({
       success: false,
-      error: 'Consumers can start conversations only from an active installer recommendation.',
-      code: 'RECOMMENDATION_REQUIRED'
+      error: 'Conversations must start from a recommendation, contextual target, or admin allocation.',
+      code: 'INITIATION_DENIED'
     });
   }
 
   if (!consumerId || !installerId) {
-    return res.status(400).json({ success: false, error: 'consumerId and installerId are required.', code: 'VALIDATION_ERROR' });
-  }
-  if (role === 'dealer' && installerId !== req.user.id) {
-    return res.status(403).json({ success: false, error: 'Installers cannot create conversations for other installers.', code: 'INSTALLER_SCOPE_DENIED' });
+    return res.status(400).json({ success: false, error: 'consumerId and target (installer/financier/support) are required.', code: 'VALIDATION_ERROR' });
   }
 
-  const installer = await users.getById(installerId);
-  if (!installer || normalizeRole(installer.role) !== 'dealer') {
-    return res.status(400).json({ success: false, error: 'installerId must reference an installer/dealer user.', code: 'INVALID_INSTALLER' });
+  const targetUser = await users.getById(installerId);
+  if (!targetUser) {
+    return res.status(400).json({ success: false, error: 'Target user not found.', code: 'INVALID_TARGET' });
   }
 
   if (!(await hasInstallerMessagingConsent(consumerId))) {
@@ -245,7 +300,7 @@ router.post('/conversations', authenticateToken, async (req, res) => {
     consumerId,
     installerId,
     recommendationId: recommendation?.id || null,
-    contextType: recommendation?.context_type || contextType,
+    contextType: targetContextType,
     contextId: recommendation?.context_id || contextId,
     assignmentSource,
     createdBy: req.user.id
@@ -254,7 +309,8 @@ router.post('/conversations', authenticateToken, async (req, res) => {
   await audit(req, 'MESSAGING_CONVERSATION_CREATED', 'messaging_conversation', conversation.id, 'success', {
     consumerId,
     installerId,
-    assignmentSource
+    assignmentSource,
+    contextType: targetContextType
   });
 
   res.status(201).json({ success: true, data: conversation });

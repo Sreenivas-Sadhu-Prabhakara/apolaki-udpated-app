@@ -10,6 +10,38 @@ export const useMessagingStore = defineStore('messaging', () => {
   const error = ref(null)
   const pollingInterval = ref(null)
   const securityBanner = ref(null)
+  
+  // Widget UI State
+  const isWidgetOpen = ref(false)
+  const showConversationList = ref(true)
+
+  const toggleWidget = () => {
+    isWidgetOpen.value = !isWidgetOpen.value
+  }
+
+  const openChatWith = async (installerId) => {
+    isWidgetOpen.value = true
+    
+    // Ensure conversations are loaded
+    if (conversations.value.length === 0) {
+      await fetchConversations()
+    }
+    
+    // Find existing conversation with this installer
+    const existing = conversations.value.find(c => c.installer_id === installerId)
+    
+    if (existing) {
+      currentConversation.value = existing
+      showConversationList.value = false
+      await fetchMessages(existing.id)
+      startPolling(existing.id)
+    } else {
+      // Setup UI for a new conversation state (MVP fallback)
+      currentConversation.value = { id: 'new', installer_id: installerId, isNew: true }
+      messages.value = []
+      showConversationList.value = false
+    }
+  }
 
   const fetchConversations = async () => {
     loading.value = true
@@ -32,13 +64,20 @@ export const useMessagingStore = defineStore('messaging', () => {
     }
   }
 
-  const sendMessage = async (conversationId, text) => {
+  const sendMessage = async (conversationId, text, attachmentFile = null) => {
     try {
+      let attachments = []
+      if (attachmentFile) {
+        const uploadRes = await messagingApi.uploadAttachment(attachmentFile)
+        attachments = [uploadRes.data.data]
+      }
+
       // PRD 8: Simple server-managed encryption envelope (Base64 for MVP demonstration)
       const encryptedBody = btoa(text)
       const res = await messagingApi.sendMessage(conversationId, { 
         encryptedBody,
-        encryptionMetadata: { scheme: 'client_envelope_v1', encoding: 'base64' }
+        encryptionMetadata: { scheme: 'client_envelope_v1', encoding: 'base64' },
+        attachments
       })
       // Optimistic update would be better, but for now we re-fetch
       await fetchMessages(conversationId)
@@ -94,6 +133,10 @@ export const useMessagingStore = defineStore('messaging', () => {
     loading,
     error,
     securityBanner,
+    isWidgetOpen,
+    showConversationList,
+    toggleWidget,
+    openChatWith,
     fetchConversations,
     fetchMessages,
     sendMessage,

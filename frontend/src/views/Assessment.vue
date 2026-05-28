@@ -23,6 +23,23 @@
           <span>Estimated monthly savings</span>
           <strong>{{ formatPeso(Math.max(0, heroBill - heroSolarPayment)) }}</strong>
         </div>
+
+        <!-- PRD 3: Hero slider for instant intent capture -->
+        <div class="hero-slider-wrap">
+          <input 
+            type="range" 
+            v-model.number="heroBill" 
+            min="2000" 
+            max="100000" 
+            step="500" 
+            class="hero-slider"
+          />
+          <div class="slider-labels">
+            <span>PHP 2k</span>
+            <span>PHP 100k</span>
+          </div>
+        </div>
+
         <button class="primary-button" @click="startAssessment">See my new monthly cost</button>
         <p class="trust-note">Takes under a minute. Uses live solar data when available. Cost basis: {{ costBasisLabel }}.</p>
       </div>
@@ -280,6 +297,34 @@
           <button class="ghost-button" type="button" @click="startOver">Start a new assessment</button>
         </div>
 
+        <div v-if="results" class="recommended-installers-preview mt-8">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold" :class="isDark ? 'text-white' : 'text-gray-900'">Recommended Installers</h3>
+            <span class="text-xs text-blue-500 font-bold uppercase tracking-widest">Matched for {{ form.location }}</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div v-for="installer in matchedInstallers" :key="installer.id" 
+                 class="p-4 border rounded-xl flex items-center justify-between"
+                 :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100 shadow-sm'">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xl">
+                  {{ installer.icon }}
+                </div>
+                <div>
+                  <h4 class="font-bold text-sm" :class="isDark ? 'text-white' : 'text-gray-900'">{{ installer.name }}</h4>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[10px] text-yellow-500">★ {{ installer.rating }}</span>
+                    <span class="text-[10px] text-gray-400">Verified Partner</span>
+                  </div>
+                </div>
+              </div>
+              <router-link :to="`/messaging?installerId=${installer.id}`" class="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition">
+                💬 Message
+              </router-link>
+            </div>
+          </div>
+        </div>
+
         <aside class="saved-assessments">
           <div class="section-title">
             <div>
@@ -389,8 +434,13 @@ const visibleSteps = [
   { id: 3, label: 'Usage' }
 ]
 const quickBills = [5000, 12000, 25000, 50000]
-const heroBill = 12000
-const heroSolarPayment = 2500
+const heroBill = ref(12000)
+const heroSolarPayment = computed(() => {
+  // PRD 3: Use a simplified solar payment formula for the hero preview
+  // Logic: 0.7 reduction for large bills, slightly less for small
+  const discountFactor = heroBill.value > 15000 ? 0.75 : 0.65
+  return Math.round((heroBill.value * (1 - discountFactor)) / 100) * 100
+})
 const costBasisLabel = `${formatPeso(INSTALLED_COST_PER_KW)} / kW`
 const processingMessages = [
   'Checking live solar potential',
@@ -427,6 +477,18 @@ const solarBars = computed(() => {
   if (!values.length) return []
   const max = Math.max(...values)
   return values.map(value => Math.max(12, Math.round((Number(value || 0) / max) * 100)))
+})
+
+const matchedInstallers = computed(() => {
+  // PRD 8: Mock matched installers based on province
+  const province = getLocation(form.location).province
+  const base = [
+    { id: 'i1', name: 'Solara Energy Solutions', rating: 4.8, icon: '☀️' },
+    { id: 'i2', name: 'Lumina Solar PH', rating: 4.9, icon: '🔋' }
+  ]
+  if (province === 'NCR') return base
+  if (province === 'Cebu') return [{ id: 'i3', name: 'Visayas Solar Tech', rating: 4.7, icon: '🌊' }, ...base]
+  return base
 })
 
 watch(

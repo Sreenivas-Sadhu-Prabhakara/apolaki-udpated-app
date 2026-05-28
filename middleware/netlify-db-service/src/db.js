@@ -672,6 +672,16 @@ export const users = {
   },
 
   /**
+   * Get users by role
+   * @param {string} role - Role to filter by
+   * @returns {Promise} Array of users
+   */
+  async getByRole(role) {
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`SELECT * FROM users WHERE role = ${role} AND active = true`;
+  },
+
+  /**
    * Update user
    * @param {string} id - User ID
    * @param {Object} updates - Fields to update

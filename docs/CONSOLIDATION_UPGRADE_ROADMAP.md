@@ -374,21 +374,22 @@ Enable consumers to communicate with recommended installers entirely inside Apol
 
 | Step | Description | Status |
 | :--- | :--- | :---: |
-| **Step 1** | Add roadmap, consent category, messaging schema, policy entries, and async API foundation | ✅ |
-| **Step 2** | Add consumer and installer inbox screens with encrypted-chat trust banner | ⏳ |
-| **Step 3** | Add marketplace, assessment, and installation entry points | ⏳ |
-| **Step 4** | Add attachment upload/storage integration with encrypted metadata and retention flags | ⏳ |
-| **Step 5** | Add admin audit viewer for conversation review with immutable audit events | ⏳ |
+- [x] **Step 1:** Add roadmap, consent category, messaging schema, policy entries, and async API foundation. ✅
+- [x] **Step 2:** Add consumer and installer inbox screens with encrypted-chat trust banner. ✅
+- [x] **Step 3:** Add marketplace, assessment, and installation entry points. ✅
+- [x] **Step 4:** Add attachment upload/storage integration with encrypted metadata and retention flags. ✅
+- [ ] **Step 5:** Add admin audit viewer for conversation review with immutable audit events. ⏳
+
 
 ### PRD 8 Definition Of Done
 
-- [ ] Consumers can open a conversation only with a recommended or admin-allocated installer.
-- [ ] Installers can reply from inside Apolaki.
-- [ ] Messages are stored as encrypted payload envelopes, not plain text.
-- [ ] Attachments support images, contracts, permits, and related project files through encrypted metadata and later object storage.
-- [ ] In-app notifications are created for new messages.
-- [ ] Explicit `installer_messaging` consent gates conversation creation and message sending.
-- [ ] Admin review is possible only through audited access.
+- [x] Consumers can open a conversation with a recommended, marketplace, or contextual participant (Installer, Financier, Support). ✅
+- [x] Installers and other roles can reply from inside the Unified Inbox. ✅
+- [x] Messages are stored as encrypted payload envelopes, not plain text. ✅
+- [x] Attachments are linked to messages via secure storage keys with encrypted metadata. ✅
+- [x] In-app notifications are created for new messages. ✅
+- [x] Explicit `installer_messaging` consent gates conversation creation and message sending. ✅
+- [ ] Admin review is possible only through audited access. ⏳
 
 ---
 

@@ -38,9 +38,16 @@
           <li><router-link to="/contracts" class="nav-link transition">5. Contracts</router-link></li>
           <li><router-link to="/monitoring" class="nav-link transition">6. Monitoring</router-link></li>
           <li><router-link to="/installations" class="nav-link transition">Installations</router-link></li>
-          <li><router-link to="/messaging" class="nav-link transition flex items-center gap-1.5">
-            Messages <span v-if="unreadCount" class="unread-dot"></span>
-          </router-link></li>
+          <li>
+            <button @click="messagingStore.toggleWidget()" class="nav-link transition flex items-center gap-1.5 focus:outline-none">
+              Messages <span v-if="unreadCount" class="unread-dot"></span>
+            </button>
+          </li>
+          <li>
+            <router-link to="/messaging?support=true" class="nav-link transition flex items-center gap-1.5">
+              Get Help
+            </router-link>
+          </li>
 
           <!-- "More" dropdown for secondary + role-specific links -->
           <li class="nav-more-wrapper">
@@ -103,7 +110,7 @@
               <router-link to="/admin" class="mobile-link" @click="mobileMenuOpen = false">👤 Admin</router-link>
             </li>
             <li v-if="userStore.user">
-              <router-link to="/messaging" class="mobile-link" @click="mobileMenuOpen = false">💬 Messages</router-link>
+              <button @click="messagingStore.toggleWidget(); mobileMenuOpen = false" class="mobile-link w-full text-left">💬 Messages</button>
             </li>
             <li v-if="userStore.user" class="mt-2 pt-2 border-t border-white/20">
               <button @click="logout(); mobileMenuOpen = false" class="mobile-link w-full text-left">Logout</button>
@@ -118,7 +125,9 @@
       <transition name="fade">
         <router-view />
       </transition>
-    </main>
+    </transition>
+
+    <ChatWidget />
   </div>
 </template>
 
@@ -129,8 +138,10 @@ import { useThemeStore } from './stores/themeStore'
 import { useUserStore } from './stores/userStore'
 import { useMessagingStore } from './stores/messagingStore'
 import BrandLogo from './components/BrandLogo.vue'
+import ChatWidget from './components/ChatWidget.vue'
 
 const route = useRoute()
+
 const router = useRouter()
 const userStore = useUserStore()
 const themeStore = useThemeStore()
