@@ -24,6 +24,9 @@ This document serves as our master checklist and progress tracker. We will imple
 | **PRD 5** | [Energy Flow Dashboard & Telemetry Panel](#-prd-5-energy-flow-dashboard--telemetry-panel) | ⏳ PENDING | *To Be Planned* |
 | **PRD 6** | [Admin Microservice Segregation & Secure Control Plane](#-prd-6-admin-microservice-segregation--secure-control-plane) | ✅ COMPLETE | 2026-05-28 |
 | **PRD 7** | [Unified Apolaki Brand SVG Rollout](#-prd-7-unified-apolaki-brand-svg-rollout) | ✅ COMPLETE | 2026-05-28 |
+| **PRD 8** | [Consumer-Installer In-App Async Messaging](#-prd-8-consumer-installer-in-app-async-messaging) | 🔄 IN PROGRESS | 2026-05-28 |
+| **PRD 9** | [Live Messaging, Presence, and Read Receipts](#-prd-9-live-messaging-presence-and-read-receipts) | ⏳ PENDING | *After PRD 8* |
+| **PRD 10** | [Trusted Notification Expansion](#-prd-10-trusted-notification-expansion) | ⏳ PENDING | *After trust controls mature* |
 
 ---
 
@@ -325,3 +328,96 @@ Use the approved Apolaki SVG as the single brand asset across the application, s
 2. Added `frontend/src/components/BrandLogo.vue`.
 3. Updated `frontend/index.html`, `App.vue`, `Login.vue`, `About.vue`, and `AdminLogin.vue` to use the shared brand asset.
 4. Updated static kitchen-sink reference HTML files to reference the local SVG instead of remote logo URLs.
+
+---
+
+## 📋 [PRD 8] Consumer-Installer In-App Async Messaging
+
+### PRD 8 Goal
+
+Enable consumers to communicate with recommended installers entirely inside Apolaki, starting with simple asynchronous messaging that supports coordination, support, auditability, explicit consent, and protected attachments without pushing users to email, SMS, WhatsApp, or external channels.
+
+### PRD 8 Scope & Requirements
+
+- [ ] **Entry Points Across The App:**
+  - Allow messaging from installer marketplace profiles, assessment recommendations, installation detail pages, and future project/support surfaces.
+  - Keep all communication inside Apolaki. External contact channels are deliberately discouraged in the MVP until platform trust controls are mature.
+
+- [ ] **Recommended-Installer Boundary:**
+  - Consumers can start conversations only with installers recommended for their project or assessment.
+  - Admins can allocate or reassign other installers inside the app when the consumer asks for help or when an operational issue requires reassignment.
+  - Individual installers receive messages directly; shared team inboxes are out of MVP scope.
+
+- [ ] **Consent And Data Minimization:**
+  - Add an explicit `installer_messaging` consent category before project/contact data can be shared in a conversation.
+  - Consent copy must explain that messages, project context, and attachments are used only for installation coordination and support.
+  - If disputes, delays, or quality issues arise, show a clear disclaimer that Apolaki may review the conversation for audit, safety, and support purposes.
+
+- [ ] **Protected Attachments:**
+  - Support encrypted attachment metadata for images, contracts, permits, site survey files, and related project documents.
+  - Store only minimal metadata needed for retrieval, audit, security scanning, and retention policy.
+  - Design storage to support GDPR-style rights: access, export, revocation, retention limits, and erasure workflows where legally allowed.
+
+- [ ] **Encrypted Messaging Trust Banner:**
+  - Chat UI must display a banner explaining that messages and attachments are protected with end-to-end style encryption.
+  - Admin/operations review must be explicitly governed and audited. Content review should use a policy-controlled governance key path rather than unrestricted database access.
+
+- [ ] **Admin Audit And Quality Control:**
+  - Admins can view conversation metadata and, through audited policy access, review communications for quality control, legal requests, safety, and support.
+  - Every admin review must create an audit event.
+
+- [ ] **In-App Notifications Only:**
+  - Notify users only inside the app for the first release.
+  - Email, SMS, WhatsApp, and push notifications are intentionally deferred and should be discouraged until user trust, preference controls, and deliverability rules are ready.
+
+### PRD 8 Implementation Plan
+
+| Step | Description | Status |
+| :--- | :--- | :---: |
+| **Step 1** | Add roadmap, consent category, messaging schema, policy entries, and async API foundation | ✅ |
+| **Step 2** | Add consumer and installer inbox screens with encrypted-chat trust banner | ⏳ |
+| **Step 3** | Add marketplace, assessment, and installation entry points | ⏳ |
+| **Step 4** | Add attachment upload/storage integration with encrypted metadata and retention flags | ⏳ |
+| **Step 5** | Add admin audit viewer for conversation review with immutable audit events | ⏳ |
+
+### PRD 8 Definition Of Done
+
+- [ ] Consumers can open a conversation only with a recommended or admin-allocated installer.
+- [ ] Installers can reply from inside Apolaki.
+- [ ] Messages are stored as encrypted payload envelopes, not plain text.
+- [ ] Attachments support images, contracts, permits, and related project files through encrypted metadata and later object storage.
+- [ ] In-app notifications are created for new messages.
+- [ ] Explicit `installer_messaging` consent gates conversation creation and message sending.
+- [ ] Admin review is possible only through audited access.
+
+---
+
+## 📋 [PRD 9] Live Messaging, Presence, and Read Receipts
+
+### PRD 9 Goal
+
+Upgrade PRD 8 asynchronous messaging into a live coordination experience after the secure async foundation is stable.
+
+### PRD 9 Scope & Requirements
+
+- [ ] **Live Delivery:** WebSocket or server-sent-event delivery for active conversations.
+- [ ] **Read Receipts:** Per-message delivered/read state, visible to participants.
+- [ ] **Presence:** Lightweight online/typing state without exposing unnecessary user activity.
+- [ ] **Rate Limits And Abuse Controls:** Throttle message bursts, attachment spam, and repeated installer reassignment requests.
+- [ ] **Admin Visibility:** Preserve audit controls for live events and read-receipt metadata.
+
+---
+
+## 📋 [PRD 10] Trusted Notification Expansion
+
+### PRD 10 Goal
+
+Add notification channels beyond in-app only after users have enough trust controls, preference controls, and communication history inside Apolaki.
+
+### PRD 10 Scope & Requirements
+
+- [ ] **User-Controlled Preferences:** Opt-in controls for email, SMS, WhatsApp, and push notification categories.
+- [ ] **Trust Thresholds:** External notifications remain discouraged until account verification, consent maturity, and support safeguards are in place.
+- [ ] **Minimal Content:** External notifications must avoid sensitive project, finance, contract, or attachment details.
+- [ ] **Revocation:** Users can turn off external notifications without losing in-app messaging access.
+- [ ] **Auditability:** All notification delivery attempts and preference changes are logged.

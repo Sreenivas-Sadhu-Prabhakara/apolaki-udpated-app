@@ -46,12 +46,14 @@ import { initializePassport } from './auth/passport.js';
 import { enforceApiPolicy } from './auth/policy.js';
 import routesModule from './routes.js';
 import authRoutesModule from './routes/auth.js';
+import messageRoutesModule from './routes/messages.js';
 import personaRoutesModule from './routes/personas.js';
 
 // Handle CJS/ESM interop — esbuild bundling on Netlify can wrap default exports
 const passport = passportModule.default || passportModule;
 const routes = routesModule.default || routesModule;
 const authRoutes = authRoutesModule.default || authRoutesModule;
+const messageRoutes = messageRoutesModule.default || messageRoutesModule;
 const personaRoutes = personaRoutesModule.default || personaRoutesModule;
 
 const app = express();
@@ -122,6 +124,9 @@ app.get('/health', async (req, res) => {
 app.use('/api', enforceApiPolicy);
 
 app.use('/api/auth', authRoutes);
+
+// In-app messaging routes
+app.use('/api/messages', messageRoutes);
 
 // Persona routes
 app.use('/api/personas', personaRoutes);

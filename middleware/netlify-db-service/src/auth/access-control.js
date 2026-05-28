@@ -11,6 +11,7 @@ const ROLE_PERMISSIONS = Object.freeze({
     'create:assessment',
     'view:contracts',
     'view:finance',
+    'message:installer',
     'trade:energy'
   ],
   dealer: [
@@ -21,7 +22,8 @@ const ROLE_PERMISSIONS = Object.freeze({
     'view:contracts',
     'create:contract',
     'view:quotes',
-    'create:quote'
+    'create:quote',
+    'message:consumer'
   ],
   operations: [
     'view:dashboard',
@@ -42,6 +44,7 @@ const ROLE_PERMISSIONS = Object.freeze({
     'assign:roles',
     'view:audit-logs',
     'view:billing',
+    'view:messages:audit',
     'manage:org-settings'
   ],
   superadmin: [
@@ -105,6 +108,13 @@ export const CONSENT_DEFINITIONS = Object.freeze([
     required: false,
     purpose: 'Share relevant project data with assigned delivery and support teams.',
     dataScope: ['dealer_sharing', 'operations_sharing']
+  },
+  {
+    key: 'installer_messaging',
+    title: 'In-app messaging with recommended installers',
+    required: false,
+    purpose: 'Coordinate installation questions, support requests, and project documents with your recommended or admin-assigned installer inside Apolaki.',
+    dataScope: ['message_envelopes', 'project_context', 'attachment_metadata', 'in_app_notifications']
   }
 ]);
 

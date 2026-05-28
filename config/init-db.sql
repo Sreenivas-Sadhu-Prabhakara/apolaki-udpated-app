@@ -124,6 +124,75 @@ CREATE TABLE IF NOT EXISTS user_consents (
   UNIQUE(user_id, consent_key, consent_version)
 );
 
+-- PRD 8 in-app consumer-installer messaging.
+-- Message content is stored as encrypted envelopes; attachments keep only
+-- minimal retrieval and encryption metadata.
+CREATE TABLE IF NOT EXISTS installer_recommendations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  consumer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  installer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  context_type VARCHAR(50) NOT NULL DEFAULT 'general',
+  context_id UUID,
+  source VARCHAR(50) NOT NULL DEFAULT 'system_recommendation',
+  status VARCHAR(30) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'superseded', 'revoked')),
+  reason TEXT,
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS messaging_conversations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  consumer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  installer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  recommendation_id UUID REFERENCES installer_recommendations(id) ON DELETE SET NULL,
+  context_type VARCHAR(50) NOT NULL DEFAULT 'general',
+  context_id UUID,
+  assignment_source VARCHAR(50) NOT NULL DEFAULT 'recommendation',
+  status VARCHAR(30) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed', 'archived')),
+  encryption_scheme VARCHAR(100) NOT NULL DEFAULT 'client_envelope_v1',
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS messaging_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id UUID NOT NULL REFERENCES messaging_conversations(id) ON DELETE CASCADE,
+  sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  sender_role VARCHAR(50) NOT NULL,
+  encrypted_body TEXT NOT NULL,
+  encryption_metadata JSONB DEFAULT '{}',
+  attachment_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  edited_at TIMESTAMP,
+  deleted_at TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS messaging_attachments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  message_id UUID NOT NULL REFERENCES messaging_messages(id) ON DELETE CASCADE,
+  uploader_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  file_name VARCHAR(255) NOT NULL,
+  mime_type VARCHAR(100) NOT NULL,
+  size_bytes INTEGER NOT NULL DEFAULT 0,
+  storage_key TEXT NOT NULL,
+  encryption_metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS in_app_notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type VARCHAR(100) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  body TEXT,
+  resource_type VARCHAR(100),
+  resource_id UUID,
+  read_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ============================================================================
 -- Solar Installation & Performance Tables
 -- ============================================================================
@@ -327,6 +396,13 @@ CREATE INDEX IF NOT EXISTS idx_audit_events_before_state ON audit_events USING G
 CREATE INDEX IF NOT EXISTS idx_audit_events_after_state ON audit_events USING GIN (after_state);
 CREATE INDEX IF NOT EXISTS idx_user_consents_user_id ON user_consents(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_consents_lookup ON user_consents(user_id, consent_key, decision);
+CREATE INDEX IF NOT EXISTS idx_installer_recommendations_consumer ON installer_recommendations(consumer_id, status);
+CREATE INDEX IF NOT EXISTS idx_installer_recommendations_installer ON installer_recommendations(installer_id, status);
+CREATE INDEX IF NOT EXISTS idx_messaging_conversations_consumer ON messaging_conversations(consumer_id, status);
+CREATE INDEX IF NOT EXISTS idx_messaging_conversations_installer ON messaging_conversations(installer_id, status);
+CREATE INDEX IF NOT EXISTS idx_messaging_messages_conversation ON messaging_messages(conversation_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_messaging_attachments_message ON messaging_attachments(message_id);
+CREATE INDEX IF NOT EXISTS idx_in_app_notifications_user ON in_app_notifications(user_id, read_at, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_solar_installations_user_id ON solar_installations(user_id);
 CREATE INDEX IF NOT EXISTS idx_monitoring_data_installation_id ON monitoring_data(installation_id);
 CREATE INDEX IF NOT EXISTS idx_monitoring_data_timestamp ON monitoring_data(timestamp);
@@ -361,12 +437,15 @@ GRANT USAGE ON SCHEMA public TO apolaki_app_rw, apolaki_admin_rw, audit_writer;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON users, oauth_providers, sessions, user_consents,
   solar_installations, contracts, finance, assessments, marketplace_reviews, wishlist,
-  maintenance_log TO apolaki_app_rw;
+  maintenance_log, installer_recommendations, messaging_conversations, messaging_messages,
+  messaging_attachments, in_app_notifications TO apolaki_app_rw;
 GRANT SELECT ON marketplace_products, monitoring_data, performance_data TO apolaki_app_rw;
 
 GRANT SELECT ON users TO apolaki_admin_rw;
 GRANT UPDATE (role, active, admin_totp_secret, admin_totp_enabled, updated_at) ON users TO apolaki_admin_rw;
-GRANT SELECT, INSERT, UPDATE ON admin_sessions, break_glass_sessions, audit_events TO apolaki_admin_rw;
+GRANT SELECT, INSERT, UPDATE ON admin_sessions, break_glass_sessions, audit_events,
+  installer_recommendations, messaging_conversations, messaging_messages,
+  messaging_attachments, in_app_notifications TO apolaki_admin_rw;
 GRANT SELECT ON audit_logs TO apolaki_admin_rw;
 REVOKE ALL ON marketplace_products, monitoring_data, performance_data FROM apolaki_admin_rw;
 

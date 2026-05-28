@@ -126,6 +126,7 @@ function getSqlInstance() {
 let schemaEnsured = false;
 let consentSchemaEnsured = false;
 let adminSchemaEnsured = false;
+let messagingSchemaEnsured = false;
 
 async function ensureConsentSchema() {
   if (consentSchemaEnsured) return;
@@ -218,6 +219,101 @@ async function ensureAdminSchema() {
   }
 }
 
+async function ensureMessagingSchema() {
+  if (messagingSchemaEnsured) return;
+
+  const sqlInstance = getSqlInstance();
+  try {
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS installer_recommendations (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        consumer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        installer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        context_type VARCHAR(50) NOT NULL DEFAULT 'general',
+        context_id UUID,
+        source VARCHAR(50) NOT NULL DEFAULT 'system_recommendation',
+        status VARCHAR(30) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'superseded', 'revoked')),
+        reason TEXT,
+        created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS messaging_conversations (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        consumer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        installer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        recommendation_id UUID REFERENCES installer_recommendations(id) ON DELETE SET NULL,
+        context_type VARCHAR(50) NOT NULL DEFAULT 'general',
+        context_id UUID,
+        assignment_source VARCHAR(50) NOT NULL DEFAULT 'recommendation',
+        status VARCHAR(30) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed', 'archived')),
+        encryption_scheme VARCHAR(100) NOT NULL DEFAULT 'client_envelope_v1',
+        created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS messaging_messages (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        conversation_id UUID NOT NULL REFERENCES messaging_conversations(id) ON DELETE CASCADE,
+        sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        sender_role VARCHAR(50) NOT NULL,
+        encrypted_body TEXT NOT NULL,
+        encryption_metadata JSONB DEFAULT '{}',
+        attachment_count INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        edited_at TIMESTAMP,
+        deleted_at TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS messaging_attachments (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        message_id UUID NOT NULL REFERENCES messaging_messages(id) ON DELETE CASCADE,
+        uploader_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        file_name VARCHAR(255) NOT NULL,
+        mime_type VARCHAR(100) NOT NULL,
+        size_bytes INTEGER NOT NULL DEFAULT 0,
+        storage_key TEXT NOT NULL,
+        encryption_metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS in_app_notifications (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        type VARCHAR(100) NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        body TEXT,
+        resource_type VARCHAR(100),
+        resource_id UUID,
+        read_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_installer_recommendations_consumer ON installer_recommendations(consumer_id, status)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_installer_recommendations_installer ON installer_recommendations(installer_id, status)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_conversations_consumer ON messaging_conversations(consumer_id, status)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_conversations_installer ON messaging_conversations(installer_id, status)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_messages_conversation ON messaging_messages(conversation_id, created_at)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_attachments_message ON messaging_attachments(message_id)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_in_app_notifications_user ON in_app_notifications(user_id, read_at, created_at DESC)`;
+    messagingSchemaEnsured = true;
+  } catch (error) {
+    messagingSchemaEnsured = false;
+    throw error;
+  }
+}
+
 async function ensureSchema() {
   if (schemaEnsured) return;
   schemaEnsured = true;
@@ -236,6 +332,7 @@ async function ensureSchema() {
     if (tableCheck[0]?.exists) {
       await ensureConsentSchema();
       await ensureAdminSchema();
+      await ensureMessagingSchema();
       console.log('✅ Database schema already exists');
       return;
     }
@@ -492,6 +589,7 @@ async function ensureSchema() {
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_solar_installations_user_id ON solar_installations(user_id)`;
     await ensureConsentSchema();
     await ensureAdminSchema();
+    await ensureMessagingSchema();
 
     console.log('✅ Database schema created successfully');
   } catch (error) {
@@ -500,7 +598,7 @@ async function ensureSchema() {
   }
 }
 
-export { ensureAdminSchema, ensureConsentSchema, ensureInitialized, ensureSchema, initializeDatabase };
+export { ensureAdminSchema, ensureConsentSchema, ensureInitialized, ensureMessagingSchema, ensureSchema, initializeDatabase };
 
 /**
  * User operations
@@ -1505,6 +1603,224 @@ export const userConsents = {
         actor_id = EXCLUDED.actor_id,
         source = EXCLUDED.source,
         updated_at = CURRENT_TIMESTAMP
+      RETURNING *
+    `;
+    return result[0];
+  }
+};
+
+/**
+ * PRD 8 in-app messaging operations.
+ * Message bodies are stored as encrypted envelopes; the API does not require
+ * or return plaintext message content.
+ */
+export const messaging = {
+  async createRecommendation({ consumerId, installerId, contextType = 'general', contextId = null, source = 'admin_allocation', reason = null, createdBy = null }) {
+    await ensureMessagingSchema();
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      INSERT INTO installer_recommendations (
+        consumer_id, installer_id, context_type, context_id, source, reason, created_by
+      )
+      VALUES (
+        ${consumerId}, ${installerId}, ${contextType}, ${contextId || null}, ${source}, ${reason}, ${createdBy}
+      )
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  async getRecommendationById(id) {
+    await ensureMessagingSchema();
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      SELECT r.*,
+        consumer.email AS consumer_email,
+        installer.email AS installer_email
+      FROM installer_recommendations r
+      JOIN users consumer ON consumer.id = r.consumer_id
+      JOIN users installer ON installer.id = r.installer_id
+      WHERE r.id = ${id}
+    `;
+    return result[0];
+  },
+
+  async listRecommendations({ userId, role }) {
+    await ensureMessagingSchema();
+    const sqlInstance = getSqlInstance();
+    if (['admin', 'superadmin'].includes(role)) {
+      return await sqlInstance`
+        SELECT r.*, consumer.email AS consumer_email, installer.email AS installer_email
+        FROM installer_recommendations r
+        JOIN users consumer ON consumer.id = r.consumer_id
+        JOIN users installer ON installer.id = r.installer_id
+        ORDER BY r.created_at DESC
+      `;
+    }
+    if (role === 'dealer') {
+      return await sqlInstance`
+        SELECT r.*, consumer.email AS consumer_email, installer.email AS installer_email
+        FROM installer_recommendations r
+        JOIN users consumer ON consumer.id = r.consumer_id
+        JOIN users installer ON installer.id = r.installer_id
+        WHERE r.installer_id = ${userId}
+        ORDER BY r.created_at DESC
+      `;
+    }
+    return await sqlInstance`
+      SELECT r.*, consumer.email AS consumer_email, installer.email AS installer_email
+      FROM installer_recommendations r
+      JOIN users consumer ON consumer.id = r.consumer_id
+      JOIN users installer ON installer.id = r.installer_id
+      WHERE r.consumer_id = ${userId}
+      ORDER BY r.created_at DESC
+    `;
+  },
+
+  async createConversation({ consumerId, installerId, recommendationId = null, contextType = 'general', contextId = null, assignmentSource = 'recommendation', createdBy = null }) {
+    await ensureMessagingSchema();
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      INSERT INTO messaging_conversations (
+        consumer_id, installer_id, recommendation_id, context_type, context_id, assignment_source, created_by
+      )
+      VALUES (
+        ${consumerId}, ${installerId}, ${recommendationId}, ${contextType}, ${contextId || null}, ${assignmentSource}, ${createdBy}
+      )
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  async getConversationById(id) {
+    await ensureMessagingSchema();
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      SELECT c.*,
+        consumer.email AS consumer_email,
+        installer.email AS installer_email
+      FROM messaging_conversations c
+      JOIN users consumer ON consumer.id = c.consumer_id
+      JOIN users installer ON installer.id = c.installer_id
+      WHERE c.id = ${id}
+    `;
+    return result[0];
+  },
+
+  async listConversations({ userId, role }) {
+    await ensureMessagingSchema();
+    const sqlInstance = getSqlInstance();
+    if (['admin', 'superadmin'].includes(role)) {
+      return await sqlInstance`
+        SELECT c.*, consumer.email AS consumer_email, installer.email AS installer_email,
+          latest.created_at AS last_message_at
+        FROM messaging_conversations c
+        JOIN users consumer ON consumer.id = c.consumer_id
+        JOIN users installer ON installer.id = c.installer_id
+        LEFT JOIN LATERAL (
+          SELECT created_at FROM messaging_messages
+          WHERE conversation_id = c.id
+          ORDER BY created_at DESC
+          LIMIT 1
+        ) latest ON true
+        ORDER BY COALESCE(latest.created_at, c.created_at) DESC
+      `;
+    }
+    if (role === 'dealer') {
+      return await sqlInstance`
+        SELECT c.*, consumer.email AS consumer_email, installer.email AS installer_email,
+          latest.created_at AS last_message_at
+        FROM messaging_conversations c
+        JOIN users consumer ON consumer.id = c.consumer_id
+        JOIN users installer ON installer.id = c.installer_id
+        LEFT JOIN LATERAL (
+          SELECT created_at FROM messaging_messages
+          WHERE conversation_id = c.id
+          ORDER BY created_at DESC
+          LIMIT 1
+        ) latest ON true
+        WHERE c.installer_id = ${userId}
+        ORDER BY COALESCE(latest.created_at, c.created_at) DESC
+      `;
+    }
+    return await sqlInstance`
+      SELECT c.*, consumer.email AS consumer_email, installer.email AS installer_email,
+        latest.created_at AS last_message_at
+      FROM messaging_conversations c
+      JOIN users consumer ON consumer.id = c.consumer_id
+      JOIN users installer ON installer.id = c.installer_id
+      LEFT JOIN LATERAL (
+        SELECT created_at FROM messaging_messages
+        WHERE conversation_id = c.id
+        ORDER BY created_at DESC
+        LIMIT 1
+      ) latest ON true
+      WHERE c.consumer_id = ${userId}
+      ORDER BY COALESCE(latest.created_at, c.created_at) DESC
+    `;
+  },
+
+  async createMessage({ conversationId, senderId, senderRole, encryptedBody, encryptionMetadata = {}, attachments = [] }) {
+    await ensureMessagingSchema();
+    const sqlInstance = getSqlInstance();
+    const messageRows = await sqlInstance`
+      INSERT INTO messaging_messages (
+        conversation_id, sender_id, sender_role, encrypted_body, encryption_metadata, attachment_count
+      )
+      VALUES (
+        ${conversationId}, ${senderId}, ${senderRole}, ${encryptedBody},
+        ${JSON.stringify(encryptionMetadata)}, ${attachments.length}
+      )
+      RETURNING *
+    `;
+
+    const message = messageRows[0];
+    for (const attachment of attachments) {
+      await sqlInstance`
+        INSERT INTO messaging_attachments (
+          message_id, uploader_id, file_name, mime_type, size_bytes, storage_key, encryption_metadata
+        )
+        VALUES (
+          ${message.id}, ${senderId}, ${attachment.fileName}, ${attachment.mimeType},
+          ${attachment.sizeBytes || 0}, ${attachment.storageKey}, ${JSON.stringify(attachment.encryptionMetadata || {})}
+        )
+      `;
+    }
+
+    await sqlInstance`
+      UPDATE messaging_conversations
+      SET updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${conversationId}
+    `;
+
+    return message;
+  },
+
+  async listMessages(conversationId, limit = 100) {
+    await ensureMessagingSchema();
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`
+      SELECT m.*,
+        COALESCE(
+          json_agg(a.*) FILTER (WHERE a.id IS NOT NULL),
+          '[]'
+        ) AS attachments
+      FROM messaging_messages m
+      LEFT JOIN messaging_attachments a ON a.message_id = m.id
+      WHERE m.conversation_id = ${conversationId}
+        AND m.deleted_at IS NULL
+      GROUP BY m.id
+      ORDER BY m.created_at ASC
+      LIMIT ${limit}
+    `;
+  },
+
+  async createNotification({ userId, type, title, body, resourceType, resourceId }) {
+    await ensureMessagingSchema();
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      INSERT INTO in_app_notifications (user_id, type, title, body, resource_type, resource_id)
+      VALUES (${userId}, ${type}, ${title}, ${body}, ${resourceType}, ${resourceId})
       RETURNING *
     `;
     return result[0];

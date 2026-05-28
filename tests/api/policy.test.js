@@ -14,7 +14,8 @@ const ESSENTIAL_CHOICES = [
   { key: 'installation_monitoring', decision: 'declined' },
   { key: 'contracts_signing', decision: 'declined' },
   { key: 'finance_data', decision: 'declined' },
-  { key: 'partner_sharing', decision: 'declined' }
+  { key: 'partner_sharing', decision: 'declined' },
+  { key: 'installer_messaging', decision: 'declined' }
 ];
 
 function createClient() {

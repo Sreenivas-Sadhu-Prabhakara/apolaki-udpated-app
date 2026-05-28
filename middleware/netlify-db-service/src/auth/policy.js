@@ -89,6 +89,14 @@ export const API_POLICY_MATRIX = [
   policy('GET', '/marketplace/products/:id', { access: 'public' }),
   policy('GET', '/health', { access: 'public' }),
 
+  policy('GET', '/messages/security-banner', { permission: 'messaging:banner:read' }),
+  policy('GET', '/messages/recommendations', { permission: 'messaging:recommendation:list' }),
+  policy('POST', '/messages/recommendations', { permission: 'messaging:recommendation:create', allowedRoles: ['admin', 'superadmin'], auditOnAllow: true }),
+  policy('GET', '/messages/conversations', { permission: 'messaging:conversation:list' }),
+  policy('POST', '/messages/conversations', { permission: 'messaging:conversation:create', auditOnAllow: true }),
+  policy('GET', '/messages/conversations/:conversationId/messages', { permission: 'messaging:message:list', auditOnAllow: true }),
+  policy('POST', '/messages/conversations/:conversationId/messages', { permission: 'messaging:message:create', auditOnAllow: true }),
+
   policy('GET', '/users/profile', { permission: 'profile:read', requiredConsents: ['profile_account'] }),
   policy('PUT', '/users/profile', { permission: 'profile:update', requiredConsents: ['profile_account'], auditOnAllow: true }),
   policy('POST', '/users', { permission: 'user:create', allowedRoles: ['admin', 'superadmin'], auditOnAllow: true }),
