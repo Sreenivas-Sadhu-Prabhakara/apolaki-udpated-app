@@ -458,13 +458,16 @@
       </article>
     </section>
 
-    <aside v-if="nextAction" class="prd-next-step">
-      <div>
+    <aside v-if="nextAction" class="prd-next-step" aria-label="Recommended next step">
+      <div class="prd-next-step__marker">
+        <span>{{ activeJourneyOrder + 1 > journeySteps.length ? activeJourneyOrder : activeJourneyOrder + 1 }}</span>
+      </div>
+      <div class="prd-next-step__content">
         <span class="prd-label">Next best action</span>
         <h2>{{ nextAction.title }}</h2>
         <p>{{ nextAction.description }}</p>
       </div>
-      <router-link class="prd-button" :to="nextAction.to">{{ nextAction.label }}</router-link>
+      <router-link class="prd-button prd-button--next" :to="nextAction.to">{{ nextAction.label }}</router-link>
     </aside>
   </div>
 </template>
@@ -1236,23 +1239,81 @@ onBeforeUnmount(() => window.clearTimeout(solarLookupTimer))
   margin: 22px auto 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  justify-content: flex-start;
+  gap: 16px;
   border-radius: 12px;
+  border: 1px solid #E6EEF7;
+  background: #FFFFFF;
+  color: #1A1C1E;
+  padding: 16px;
+  box-shadow: 0 1px 16px rgba(15, 23, 42, 0.08);
+}
+
+.prd-page--dark .prd-next-step {
+  border-color: rgba(255, 255, 255, 0.08);
   background: #1A1C1E;
+  color: #FDFDFD;
+  box-shadow: 0 1px 18px rgba(0, 0, 0, 0.28);
+}
+
+.prd-next-step__marker {
+  display: grid;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 50%;
+  background: #E8F2FB;
+  color: #0F6CBD;
+}
+
+.prd-next-step__marker span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: #0F6CBD;
   color: #FFFFFF;
-  padding: 22px;
-  box-shadow: 0 1px 18px rgba(15, 23, 42, 0.14);
+  font-size: 0.9rem;
+  font-weight: 950;
+}
+
+.prd-page--dark .prd-next-step__marker {
+  background: rgba(244, 201, 76, 0.16);
+  color: #F4C94C;
+}
+
+.prd-page--dark .prd-next-step__marker span {
+  background: #F4C94C;
+  color: #1A1C1E;
+}
+
+.prd-next-step__content {
+  min-width: 0;
+  flex: 1;
 }
 
 .prd-next-step h2 {
   margin: 4px 0 0;
-  font-size: 1.35rem;
+  font-size: 1.12rem;
+  line-height: 1.18;
 }
 
 .prd-next-step p {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
+  color: #5F6B7A;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.prd-page--dark .prd-next-step p {
   color: rgba(255, 255, 255, 0.72);
+}
+
+.prd-button--next {
+  flex: 0 0 auto;
+  box-shadow: 0 8px 20px rgba(15, 108, 189, 0.16);
 }
 
 .prd-impact__top {
