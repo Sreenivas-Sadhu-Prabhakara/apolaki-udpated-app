@@ -6,6 +6,8 @@ services:
     image: postgres:15-alpine
     container_name: apolaki-postgres
     restart: unless-stopped
+    env_file:
+      - ./env/.env.dev
     environment:
       POSTGRES_USER: apolaki_user
       POSTGRES_PASSWORD: apolaki_pass
@@ -42,6 +44,27 @@ services:
     networks:
       - apolaki-network
 
+  # Main Business API - Primary data service
+  netlify-db-service:
+    build:
+      context: ../middleware/netlify-db-service
+      dockerfile: Dockerfile
+    container_name: apolaki-db-service
+    restart: unless-stopped
+    env_file:
+      - ./env/.env.dev
+    environment:
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - apolaki-network
+
   # Admin Control Plane - internal-only governance API
   admin-service:
     build:
@@ -49,14 +72,11 @@ services:
       dockerfile: Dockerfile
     container_name: apolaki-admin-service
     restart: unless-stopped
+    env_file:
+      - ./env/.env.dev
     environment:
-      NODE_ENV: development
       PORT: 3002
       DATABASE_URL: postgresql://apolaki_admin_rw:apolaki_pass@postgres:5432/apolaki_db
-      ADMIN_JWT_SECRET: dev-admin-jwt-secret-change-in-production
-      ADMIN_REFRESH_SECRET: dev-admin-refresh-secret-change-in-production
-      ADMIN_INTERNAL_AUDIT_SECRET: dev-internal-audit-secret-change-in-production
-      CORS_ORIGINS: http://localhost:5173
     ports:
       - "3002:3002"
     depends_on:
@@ -70,10 +90,8 @@ services:
     image: rabbitmq:3.12-management-alpine
     container_name: apolaki-rabbitmq
     restart: unless-stopped
-    environment:
-      RABBITMQ_DEFAULT_USER: apolaki
-      RABBITMQ_DEFAULT_PASS: apolaki_pass
-      RABBITMQ_DEFAULT_VHOST: /apolaki
+    env_file:
+      - ./env/.env.dev
     ports:
       - "5672:5672"   # AMQP port
       - "15672:15672" # Management UI
@@ -87,11 +105,36 @@ services:
     networks:
       - apolaki-network
 
+  # Marketplace Microservice - Independent marketplace domain
+  marketplace-service:
+    build:
+      context: ../middleware/marketplace-service
+      dockerfile: Dockerfile
+    container_name: apolaki-marketplace-service
+    restart: unless-stopped
+    env_file:
+      - ./env/.env.dev
+    environment:
+      PORT: 3004
+      DATABASE_URL: postgresql://apolaki_app_rw:apolaki_pass@postgres:5432/apolaki_db
+      RABBITMQ_URL: amqp://apolaki:apolaki_pass@rabbitmq:5672/apolaki
+    ports:
+      - "3004:3004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - apolaki-network
+
   # Elasticsearch (optional, for search & analytics)
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
     container_name: apolaki-elasticsearch
     restart: unless-stopped
+    env_file:
+      - ./env/.env.dev
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false

@@ -8,15 +8,16 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "test": "npm run test:api && npm run test:e2e",
+    "test": "npm-run-all test:api test:security test:e2e",
     "test:api": "mocha --timeout 30000 --recursive 'api/**/*.test.js'",
+    "test:security": "mocha --timeout 30000 --recursive 'security/**/*.test.js'",
     "test:e2e": "mocha --timeout 120000 --recursive 'e2e/**/*.test.js'",
     "test:cucumber": "cucumber-js --require cucumber/steps/**/*.js cucumber/features/**/*.feature",
     "test:regression": "mocha --timeout 120000 --recursive 'regression/**/*.test.js'",
     "test:regression:api": "mocha --timeout 120000 'regression/fullPlatform.test.js'",
     "test:regression:ui": "mocha --timeout 120000 'regression/uiRegression.test.js'",
     "test:smoke": "mocha --timeout 60000 --grep '@smoke' --recursive '{api,e2e}/**/*.test.js'",
-    "test:report": "mocha --timeout 120000 --reporter mochawesome --reporter-options reportDir=reports,reportFilename=regression-report --recursive '{api,e2e,regression}/**/*.test.js'",
+    "test:report": "mocha --timeout 120000 --reporter mochawesome --reporter-options reportDir=reports,reportFilename=regression-report --recursive '{api,e2e,security,regression}/**/*.test.js'",
     "lint": "eslint ."
   },
   "dependencies": {

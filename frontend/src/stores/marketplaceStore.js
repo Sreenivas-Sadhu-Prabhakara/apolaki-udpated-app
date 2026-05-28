@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import api from '../services/api'
+import marketplaceApi from '../services/marketplaceApi'
 
 /**
  * Fallback seed data so the marketplace always has products to browse,
@@ -107,7 +107,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await api.get('/marketplace/dealers')
+      const response = await marketplaceApi.get('/dealers')
       dealers.value = response.data.data || []
     } catch (err) {
       error.value = 'Failed to load dealers'
@@ -119,7 +119,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
 
   const createBooking = async (dealerId, bookingType, scheduledAt, notes) => {
     try {
-      const response = await api.post('/marketplace/bookings', {
+      const response = await marketplaceApi.post('/bookings', {
         dealerId,
         bookingType,
         scheduledAt,
@@ -136,18 +136,18 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     loading.value = true
     error.value = null
     try {
-      let url = '/marketplace/products'
+      let url = '/products'
       const params = new URLSearchParams()
       if (search) params.set('search', search)
       if (category && category !== 'all') {
         if (!search) {
-          url = `/marketplace/products/category/${category}`
+          url = `/products/category/${category}`
         } else {
           params.set('category', category)
         }
       }
       const queryString = params.toString()
-      const response = await api.get(queryString ? `${url}?${queryString}` : url, options)
+      const response = await marketplaceApi.get(queryString ? `${url}?${queryString}` : url, options)
       products.value = response.data.data || []
       // If API returned empty, use seed data as fallback
       if (products.value.length === 0) {
@@ -186,7 +186,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await api.get(`/marketplace/products/${id}`)
+      const response = await marketplaceApi.get(`/products/${id}`)
       currentProduct.value = response.data.data || response.data
       return currentProduct.value
     } catch (err) {
@@ -199,7 +199,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
 
   const fetchReviews = async (productId) => {
     try {
-      const response = await api.get(`/marketplace/products/${productId}/reviews`)
+      const response = await marketplaceApi.get(`/products/${productId}/reviews`)
       reviews.value = response.data.data || []
       return reviews.value
     } catch (err) {
@@ -210,7 +210,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
 
   const createReview = async (productId, { rating, title, comment }) => {
     try {
-      const response = await api.post(`/marketplace/products/${productId}/reviews`, { rating, title, comment })
+      const response = await marketplaceApi.post(`/products/${productId}/reviews`, { rating, title, comment })
       const review = response.data.data || response.data
       reviews.value.unshift(review)
       return review
@@ -222,7 +222,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
 
   const fetchWishlist = async () => {
     try {
-      const response = await api.get('/marketplace/wishlist')
+      const response = await marketplaceApi.get('/wishlist')
       wishlist.value = response.data.data || []
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to fetch wishlist'
@@ -231,7 +231,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
 
   const addToWishlist = async (productId) => {
     try {
-      await api.post(`/marketplace/wishlist/${productId}`)
+      await marketplaceApi.post(`/wishlist/${productId}`)
       // Refresh wishlist
       await fetchWishlist()
     } catch (err) {
@@ -242,7 +242,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
 
   const removeFromWishlist = async (productId) => {
     try {
-      await api.delete(`/marketplace/wishlist/${productId}`)
+      await marketplaceApi.delete(`/wishlist/${productId}`)
       wishlist.value = wishlist.value.filter(i => i.id !== productId)
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to remove from wishlist'

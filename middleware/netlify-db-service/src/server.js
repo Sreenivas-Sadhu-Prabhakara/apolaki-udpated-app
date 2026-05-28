@@ -31,12 +31,15 @@ console.log('Configuration:', configManager.logConfig());
 
 // Initialize database connection before importing routes
 import { ensureSchema, initializeDatabase } from './db.js';
+import { connectMQ } from './mq.js';
 try {
   initializeDatabase();
   // Auto-create schema if tables don't exist (e.g. fresh Netlify Neon database)
   ensureSchema().catch(err => console.warn('⚠️  Schema ensure warning:', err.message));
+  // Initialize MQ for event-driven coordination
+  connectMQ();
 } catch (error) {
-  console.warn('⚠️  Database initialization warning:', error.message);
+  console.warn('⚠️  Database/MQ initialization warning:', error.message);
 }
 
 import cors from 'cors';

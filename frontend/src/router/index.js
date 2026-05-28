@@ -56,7 +56,7 @@ const routes = [
   {
     path: '/installations',
     name: 'Installations',
-    component: () => import('../views/ApolakiPrd.vue'),
+    component: () => import('../views/Installations.vue'),
     meta: { requiresAuth: true, requiredConsents: ['installation_monitoring'] }
   },
   {
@@ -68,13 +68,13 @@ const routes = [
   {
     path: '/monitoring',
     name: 'Monitoring',
-    component: () => import('../views/ApolakiPrd.vue'),
+    component: () => import('../views/Monitoring.vue'),
     meta: { requiresAuth: true, requiredConsents: ['installation_monitoring'] }
   },
   {
     path: '/marketplace',
     name: 'Marketplace',
-    component: () => import('../views/ApolakiPrd.vue'),
+    component: () => import('../views/Marketplace.vue'),
     meta: { requiresAuth: true }
   },
   {
@@ -92,13 +92,13 @@ const routes = [
   {
     path: '/finance',
     name: 'Finance',
-    component: () => import('../views/ApolakiPrd.vue'),
+    component: () => import('../views/Finance.vue'),
     meta: { requiresAuth: true, requiredConsents: ['finance_data'] }
   },
   {
     path: '/contracts',
     name: 'Contracts',
-    component: () => import('../views/ApolakiPrd.vue'),
+    component: () => import('../views/Contracts.vue'),
     meta: { requiresAuth: true, requiredConsents: ['contracts_signing'] }
   },
   {

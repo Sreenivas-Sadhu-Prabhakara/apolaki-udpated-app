@@ -150,6 +150,10 @@ Build a gorgeous marketplace experience where users can match and request quotat
   - Automatically filter and bubble up providers registered within the province input inside the user's Assessment config.
 - [x] **Quotation Handshake Form:**
   - One-tap request dispatch containing assessment variables to selected providers.
+- [x] **Microservice & MQ Upgrade (v2.1):**
+  - Segregated marketplace logic into a dedicated `marketplace-service`.
+  - Integrated RabbitMQ for event-driven synchronization with `messaging-service`.
+  - Auto-conversation triggers implemented for booking events.
 
 ---
 
