@@ -574,7 +574,7 @@ const PrdHeader = defineComponent({
         props.eyebrow ? h('span', { class: 'prd-label' }, props.eyebrow) : null,
         h('h1', props.title)
       ]),
-      props.action ? h('button', { class: 'prd-button prd-button--ghost', onClick: () => emit('action') }, props.action) : null
+      props.action ? h('button', { class: 'prd-button prd-button--header-action', onClick: () => emit('action') }, props.action) : null
     ])
   }
 })
@@ -1606,6 +1606,22 @@ onBeforeUnmount(() => window.clearTimeout(solarLookupTimer))
 .prd-button--ghost {
   background: #EDF5FC;
   color: #0F6CBD;
+}
+
+:deep(.prd-button--header-action) {
+  background-color: #F4C94C !important;
+  color: #1A1C1E !important;
+  border: 1px solid rgba(26, 28, 30, 0.08);
+  box-shadow: 0 10px 22px rgba(244, 201, 76, 0.24) !important;
+}
+
+:deep(.prd-button--header-action:hover) {
+  background-color: #F1BF25 !important;
+}
+
+.prd-page--dark :deep(.prd-button--header-action) {
+  background-color: #F4C94C !important;
+  color: #1A1C1E !important;
 }
 
 .prd-button--impact {

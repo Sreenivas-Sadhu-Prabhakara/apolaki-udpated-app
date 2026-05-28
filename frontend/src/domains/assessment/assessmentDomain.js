@@ -128,6 +128,17 @@ export async function calculateAssessmentPlan(input, liveSolarData) {
   }
 }
 
+export async function saveAssessmentPlan(input, result, liveSolarData) {
+  const payload = buildSavedAssessmentPayload(input, result, liveSolarData)
+  const response = await api.post('/assessments', payload, { timeout: 7000 })
+  return response.data?.data || response.data
+}
+
+export async function fetchSavedAssessmentPlans() {
+  const response = await api.get('/assessments', { timeout: 7000 })
+  return Array.isArray(response.data) ? response.data : response.data?.data || []
+}
+
 export function persistAssessmentState(input, result, liveSolarData) {
   const location = getLocation(input.location)
   localStorage.setItem('financingAssessmentState', JSON.stringify({
@@ -142,6 +153,37 @@ export function persistAssessmentState(input, result, liveSolarData) {
     provider: result.provider || liveSolarData?.provider || 'built_in_estimate',
     calculatedAt: new Date().toISOString()
   }))
+}
+
+function buildSavedAssessmentPayload(input, result, liveSolarData) {
+  const basePayload = buildAssessmentPayload(input, liveSolarData)
+  return {
+    ...basePayload,
+    recommendedCapacity: result.systemSize,
+    estimatedCost: result.installedCost,
+    savingsEstimate: {
+      source: 'assessment_conversion_funnel',
+      monthlyBill: Number(input.monthlyBill || 0),
+      monthlyPayment: result.solarPayment,
+      monthlySavings: result.monthlySavings,
+      annualSavings: result.annualSavings,
+      annualProduction: result.annualProduction,
+      installedCost: result.installedCost,
+      downPayment: result.downPayment,
+      loanPrincipal: result.loanPrincipal,
+      tenureYears: result.tenure,
+      costBasisPhpPerKw: INSTALLED_COST_PER_KW,
+      provider: result.provider || liveSolarData?.provider || 'built_in_estimate',
+      providerName: result.providerName,
+      locationName: result.locationName,
+      latitude: result.latitude,
+      longitude: result.longitude,
+      confidenceScore: result.confidenceScore,
+      propertyType: input.propertyType,
+      targetCapacityKw: input.targetCapacityKw,
+      calculatedAt: new Date().toISOString()
+    }
+  }
 }
 
 function normalizeAssessmentResult(input, liveSolarData, backendData, calculationSource) {

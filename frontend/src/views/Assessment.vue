@@ -218,6 +218,19 @@
           </div>
         </div>
 
+        <div class="save-assessment-card">
+          <div>
+            <span class="eyebrow">Secure account record</span>
+            <h3>{{ savedAssessmentId ? 'Assessment saved' : 'Save this assessment' }}</h3>
+            <p>Save this plan to your account so it can be retrieved later and tied to your authenticated user profile.</p>
+            <p v-if="saveError" class="field-error">{{ saveError }}</p>
+            <p v-if="savedAssessmentId" class="save-success">Saved assessment ID: {{ savedAssessmentId }}</p>
+          </div>
+          <button class="save-button" type="button" :disabled="savingAssessment || Boolean(savedAssessmentId)" @click="saveAssessment">
+            {{ savingAssessment ? 'Saving' : savedAssessmentId ? 'Saved' : 'Save assessment' }}
+          </button>
+        </div>
+
         <div class="results-grid">
           <div class="metric-card">
             <span>System size</span>
@@ -266,6 +279,26 @@
           <router-link class="secondary-button link-button" to="/marketplace">View matching installers</router-link>
           <button class="ghost-button" type="button" @click="startOver">Start a new assessment</button>
         </div>
+
+        <aside class="saved-assessments">
+          <div class="section-title">
+            <div>
+              <span class="eyebrow">Saved assessments</span>
+              <strong>Retrievable account history</strong>
+            </div>
+            <button class="ghost-button" type="button" :disabled="loadingSavedAssessments" @click="loadSavedAssessments">
+              {{ loadingSavedAssessments ? 'Loading' : 'Refresh' }}
+            </button>
+          </div>
+          <div v-if="savedAssessments.length" class="saved-list">
+            <div v-for="item in savedAssessments.slice(0, 3)" :key="item.id" class="saved-item">
+              <strong>{{ Number(item.recommended_capacity || item.recommendedCapacity || item.savings_estimate?.targetCapacityKw || 0).toFixed(1) }} kW</strong>
+              <span>{{ item.city || item.savings_estimate?.locationName || 'Saved assessment' }}</span>
+              <small>{{ formatSavedDate(item.created_at || item.createdAt || item.savings_estimate?.calculatedAt) }}</small>
+            </div>
+          </div>
+          <p v-else class="saved-empty">No saved assessments loaded yet. Save this result, then refresh this list.</p>
+        </aside>
       </section>
     </section>
 
@@ -301,12 +334,14 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useThemeStore } from '../stores/themeStore'
 import {
   calculateAssessmentPlan,
+  fetchSavedAssessmentPlans,
   formatPeso,
   getLocation,
   getUsageProfile,
   INSTALLED_COST_PER_KW,
   loadLiveAssessmentData,
   persistAssessmentState,
+  saveAssessmentPlan,
   philippinesLocations,
   providerLabel,
   usageProfiles
@@ -323,6 +358,12 @@ const liveError = ref('')
 const billError = ref('')
 const liveSolarData = ref(null)
 const results = ref(null)
+const savedAssessmentId = ref('')
+const backendSavedAssessmentId = ref('')
+const saveError = ref('')
+const savingAssessment = ref(false)
+const savedAssessments = ref([])
+const loadingSavedAssessments = ref(false)
 const showLeadForm = ref(false)
 const leadSubmitted = ref(false)
 const submittingLead = ref(false)
@@ -459,12 +500,52 @@ async function processAssessment() {
   try {
     if (!liveSolarData.value) await waitForLiveData(3500)
     results.value = await calculateAssessmentPlan(form, liveSolarData.value)
+    backendSavedAssessmentId.value = results.value.backendAssessmentId || ''
+    savedAssessmentId.value = ''
+    saveError.value = ''
     persistAssessmentState(form, results.value, liveSolarData.value)
+    loadSavedAssessments()
     currentStep.value = 5
   } finally {
     window.clearInterval(interval)
     processing.value = false
   }
+}
+
+async function saveAssessment() {
+  if (!results.value || savingAssessment.value || savedAssessmentId.value) return
+  savingAssessment.value = true
+  saveError.value = ''
+  try {
+    if (backendSavedAssessmentId.value) {
+      savedAssessmentId.value = backendSavedAssessmentId.value
+    } else {
+      const saved = await saveAssessmentPlan(form, results.value, liveSolarData.value)
+      savedAssessmentId.value = saved.id || saved.data?.id || 'saved'
+    }
+    await loadSavedAssessments()
+  } catch (error) {
+    saveError.value = error.response?.status === 401
+      ? 'Please sign in again to save this assessment securely to your account.'
+      : 'Unable to save this assessment right now. Please try again.'
+  } finally {
+    savingAssessment.value = false
+  }
+}
+
+async function loadSavedAssessments() {
+  loadingSavedAssessments.value = true
+  try {
+    savedAssessments.value = await fetchSavedAssessmentPlans()
+  } catch {
+    savedAssessments.value = []
+  } finally {
+    loadingSavedAssessments.value = false
+  }
+}
+
+function formatSavedDate(date) {
+  return date ? new Date(date).toLocaleDateString() : 'Recently'
 }
 
 async function waitForLiveData(timeoutMs) {
@@ -505,6 +586,9 @@ function startOver() {
     targetCapacityKw: 4
   })
   results.value = null
+  savedAssessmentId.value = ''
+  backendSavedAssessmentId.value = ''
+  saveError.value = ''
   liveSolarData.value = null
   liveError.value = ''
   billError.value = ''
@@ -1192,12 +1276,120 @@ select:focus {
 }
 
 .savings-result {
-  background: #047857 !important;
-  color: #ffffff;
+  background: #f4c94c !important;
+  color: #1a1c1e;
+  border: 2px solid #1a1c1e;
+  box-shadow: 0 16px 34px rgba(244, 201, 76, 0.32);
+}
+
+.savings-result span {
+  color: #3a2a00;
+}
+
+.savings-result strong {
+  color: #111418;
+  font-size: clamp(2rem, 4vw, 3rem);
 }
 
 .savings-result.negative {
   background: #b45309 !important;
+  color: #ffffff;
+  border-color: #7c2d12;
+  box-shadow: 0 16px 34px rgba(180, 83, 9, 0.24);
+}
+
+.savings-result.negative span,
+.savings-result.negative strong {
+  color: #ffffff;
+}
+
+.save-assessment-card,
+.saved-assessments {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid #dbe5ee;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 18px;
+  box-shadow: 0 1px 16px rgba(15, 23, 42, 0.08);
+}
+
+.assessment-flow--dark .save-assessment-card,
+.assessment-flow--dark .saved-assessments {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.save-assessment-card h3 {
+  margin: 6px 0 0;
+  font-size: 1.35rem;
+}
+
+.save-assessment-card p {
+  margin: 8px 0 0;
+  color: #607080;
+  line-height: 1.45;
+}
+
+.save-button {
+  flex: 0 0 auto;
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: #0f6cbd;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 950;
+  padding: 12px 18px;
+  box-shadow: 0 12px 26px rgba(15, 108, 189, 0.2);
+}
+
+.save-button:disabled {
+  cursor: default;
+  opacity: 0.68;
+}
+
+.save-success {
+  color: #047857 !important;
+  font-weight: 900;
+}
+
+.saved-assessments {
+  display: grid;
+  align-items: stretch;
+}
+
+.saved-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.saved-item {
+  display: grid;
+  gap: 5px;
+  border-radius: 12px;
+  background: #f3f7fb;
+  padding: 12px;
+}
+
+.assessment-flow--dark .saved-item {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.saved-item strong {
+  color: #0f6cbd;
+  font-size: 1.15rem;
+}
+
+.saved-item span,
+.saved-item small,
+.saved-empty {
+  color: #607080;
+  font-weight: 800;
 }
 
 .results-detail-grid {
@@ -1295,6 +1487,7 @@ select:focus {
   .plan-summary,
   .payment-result-card,
   .results-grid,
+  .saved-list,
   .results-detail-grid {
     grid-template-columns: 1fr;
   }
@@ -1324,7 +1517,8 @@ select:focus {
   .savings-strip,
   .capacity-slider > div:first-child,
   .range-labels,
-  .results-hero {
+  .results-hero,
+  .save-assessment-card {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -1337,6 +1531,7 @@ select:focus {
   .primary-button,
   .secondary-button,
   .ghost-button,
+  .save-button,
   .link-button {
     width: 100%;
     justify-content: center;

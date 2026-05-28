@@ -4,6 +4,7 @@ import { useUserStore } from '../stores/userStore'
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
   withCredentials: true,
+  timeout: Number(import.meta.env.VITE_API_TIMEOUT_MS || 5000),
   headers: {
     'Content-Type': 'application/json'
   }

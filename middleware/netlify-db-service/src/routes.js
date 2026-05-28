@@ -36,6 +36,10 @@ function safeUser(user) {
   };
 }
 
+function canReadUserRecords(requestUser, userId) {
+  return requestUser?.id === userId || ['admin', 'superadmin'].includes(requestUser?.role);
+}
+
 // ============================================
 // USER ROUTES
 // ============================================
@@ -1408,7 +1412,7 @@ router.post('/assessments', authenticateToken, async (req, res) => {
  * GET /api/assessments/:id
  * Get assessment by ID
  */
-router.get('/assessments/:id', async (req, res) => {
+router.get('/assessments/:id', authenticateToken, async (req, res) => {
   try {
     const assessment = await assessments.getById(req.params.id);
 
@@ -1416,6 +1420,13 @@ router.get('/assessments/:id', async (req, res) => {
       return res.status(404).json({
         success: false,
         error: 'Assessment not found'
+      });
+    }
+
+    if (!canReadUserRecords(req.user, assessment.user_id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied'
       });
     }
 
@@ -1436,8 +1447,15 @@ router.get('/assessments/:id', async (req, res) => {
  * GET /api/users/:userId/assessments
  * Get user assessments
  */
-router.get('/users/:userId/assessments', async (req, res) => {
+router.get('/users/:userId/assessments', authenticateToken, async (req, res) => {
   try {
+    if (!canReadUserRecords(req.user, req.params.userId)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied'
+      });
+    }
+
     const userAssessments = await assessments.getByUserId(req.params.userId);
 
     res.json({
