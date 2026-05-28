@@ -23,11 +23,7 @@ async function login(driver, baseUrl) {
     await emailBtn.click();
     
     // Wait for redirect to dashboard or assessment
-    try {
-        await driver.wait(until.urlMatches(/\/(dashboard|)$/), 10000);
-    } catch (e) {
-        // Just let it pass, the application will redirect automatically
-    }
+    await driver.wait(until.urlContains('/'), 10000);
 }
 
 describe('Marketplace E2E Tests', function () {
@@ -62,7 +58,7 @@ describe('Marketplace E2E Tests', function () {
         // Navigate to the marketplace page
         await driver.get(`${baseUrl}/marketplace`);
         
-        await driver.wait(until.elementLocated(By.xpath('//h1[contains(text(), "Marketplace")]')), 10000).catch(() => {});
+        await driver.wait(until.elementLocated(By.xpath('//body')), 10000);
         await driver.sleep(3000);
         
         // Print the page source so we can see why it's not finding the tabs
@@ -72,13 +68,6 @@ describe('Marketplace E2E Tests', function () {
     });
 
     it('should switch between Equipment and Installers tabs', async function () {
-        const url = await driver.getCurrentUrl();
-        if (url.includes('/login')) {
-            await login(driver, baseUrl);
-            await driver.get(`${baseUrl}/marketplace`);
-            await driver.sleep(3000);
-        }
-
         // Find using a more general locator
         const allButtons = await driver.findElements(By.tagName('button'));
         let equipBtn = null;
@@ -97,19 +86,18 @@ describe('Marketplace E2E Tests', function () {
         }
 
         // Click on Installers Tab
-        if (instBtn) await instBtn.click();
-        else throw new Error("Could not click installer button");
-
+        await instBtn.click();
+        
         // Give time for UI update
         await driver.sleep(1000);
 
         // Verify we are now seeing installer filters (e.g. "Service Type:")
-        const serviceTypeSpans = await driver.findElements(By.xpath('//*[contains(text(), "Service Type")]'));
+        const serviceTypeSpans = await driver.findElements(By.xpath('//span[contains(text(), "Service Type")]'));
         expect(serviceTypeSpans.length).to.be.greaterThan(0);
 
         // Click back to Equipment
-        if (equipBtn) await equipBtn.click();
-
+        await equipBtn.click();
+        
         // Give time for UI update
         await driver.sleep(1000);
 
@@ -118,13 +106,6 @@ describe('Marketplace E2E Tests', function () {
     });
 
     it('should open and close the quotation modal in Installers tab', async function () {
-        const url = await driver.getCurrentUrl();
-        if (url.includes('/login')) {
-            await login(driver, baseUrl);
-            await driver.get(`${baseUrl}/marketplace`);
-            await driver.sleep(3000);
-        }
-
         // Go to installers tab
         const allButtons = await driver.findElements(By.tagName('button'));
         let instBtn = null;
