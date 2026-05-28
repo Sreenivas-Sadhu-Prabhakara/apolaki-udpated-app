@@ -23,7 +23,7 @@ const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
 export async function lookupSolarPotential(location) {
   try {
     const response = await axios.post(`${API_BASE}/solar/lookup`, location, {
-      timeout: 12000,
+      timeout: 5000,
       withCredentials: true
     })
     return response.data
