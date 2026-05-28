@@ -50,7 +50,7 @@ export const philippinesLocations = [
   { value: 'Batangas', province: 'Batangas', city: 'Batangas City', state: 'Batangas', zipCode: '4200' }
 ]
 
-const PHP_PER_KW = 155375
+export const INSTALLED_COST_PER_KW = 45000
 const UTILITY_RATE_PHP = 11.5
 const LOAN_APR = 0.085
 const LOAN_YEARS = 7
@@ -153,7 +153,7 @@ function normalizeAssessmentResult(input, liveSolarData, backendData, calculatio
   const annualProduction = Math.round(
     Number(calc.annualProduction || liveSolarData?.data?.annualProductionKwh || liveSolarData?.data?.bestConfig?.yearlyEnergyDcKwh || systemSize * peakSunHours(liveSolarData) * 365 * 0.8)
   )
-  const installedCost = Math.round(systemSize * PHP_PER_KW)
+  const installedCost = Math.round(systemSize * INSTALLED_COST_PER_KW)
   const downPayment = Math.round(installedCost * DOWN_PAYMENT_RATE)
   const loanPrincipal = installedCost - downPayment
   const solarPayment = monthlyPayment(loanPrincipal, LOAN_APR, LOAN_YEARS * 12)

@@ -4,7 +4,7 @@
       <div class="hero-copy">
         <span class="eyebrow">Solar payment assessment</span>
         <h1>Replace your electricity bill with a lower monthly payment</h1>
-        <p>Get a location-aware solar plan using Google Solar, DREI/NREL, NASA POWER, and regional fallbacks.</p>
+        <p>Get a location-aware solar plan using Google Solar, DREI/NREL, NASA POWER, and regional fallbacks, priced from a clear {{ costBasisLabel }} basis.</p>
       </div>
 
       <div class="payment-preview">
@@ -24,7 +24,7 @@
           <strong>{{ formatPeso(Math.max(0, heroBill - heroSolarPayment)) }}</strong>
         </div>
         <button class="primary-button" @click="startAssessment">See my new monthly cost</button>
-        <p class="trust-note">Takes under a minute. Uses live solar data when available.</p>
+        <p class="trust-note">Takes under a minute. Uses live solar data when available. Cost basis: {{ costBasisLabel }}.</p>
       </div>
     </section>
 
@@ -109,6 +109,10 @@
 
           <div class="source-grid">
             <div>
+              <span>Cost basis</span>
+              <strong>{{ costBasisLabel }}</strong>
+            </div>
+            <div>
               <span>Peak sun</span>
               <strong>{{ peakSunHours }} hrs/day</strong>
             </div>
@@ -126,6 +130,21 @@
           <span class="eyebrow">Step 3 of 3</span>
           <h2>Choose the usage profile</h2>
           <p>These three ranges are mutually exclusive and collectively cover the target systems this flow is designed to quote.</p>
+        </div>
+
+        <div class="plan-summary">
+          <div>
+            <span>Monthly bill</span>
+            <strong>{{ formatPeso(form.monthlyBill) }}</strong>
+          </div>
+          <div>
+            <span>Location</span>
+            <strong>{{ form.location }}</strong>
+          </div>
+          <div>
+            <span>Cost basis</span>
+            <strong>{{ costBasisLabel }}</strong>
+          </div>
         </div>
 
         <div class="usage-grid">
@@ -207,6 +226,7 @@
           <div class="metric-card">
             <span>Installed cost</span>
             <strong>{{ formatPeso(results.installedCost) }}</strong>
+            <small>{{ costBasisLabel }}</small>
           </div>
           <div class="metric-card">
             <span>Loan tenure</span>
@@ -284,6 +304,7 @@ import {
   formatPeso,
   getLocation,
   getUsageProfile,
+  INSTALLED_COST_PER_KW,
   loadLiveAssessmentData,
   persistAssessmentState,
   philippinesLocations,
@@ -328,7 +349,8 @@ const visibleSteps = [
 ]
 const quickBills = [5000, 12000, 25000, 50000]
 const heroBill = 12000
-const heroSolarPayment = 7500
+const heroSolarPayment = 2500
+const costBasisLabel = `${formatPeso(INSTALLED_COST_PER_KW)} / kW`
 const processingMessages = [
   'Checking live solar potential',
   'Reading irradiance and temperature signals',
@@ -390,7 +412,7 @@ async function continueFromBill() {
   validateBill()
   if (!isStep1Valid.value) return
   currentStep.value = 2
-  if (!liveSolarData.value) await refreshLiveData()
+  if (!liveSolarData.value) refreshLiveData()
 }
 
 function goToStep(step) {
@@ -635,6 +657,7 @@ onMounted(() => {
 .swap-row div,
 .payment-result-card > div,
 .metric-card,
+.plan-summary div,
 .source-grid div,
 .detail-card {
   border-radius: 14px;
@@ -645,6 +668,7 @@ onMounted(() => {
 .assessment-flow--dark .swap-row div,
 .assessment-flow--dark .payment-result-card > div,
 .assessment-flow--dark .metric-card,
+.assessment-flow--dark .plan-summary div,
 .assessment-flow--dark .source-grid div,
 .assessment-flow--dark .detail-card {
   background: rgba(255, 255, 255, 0.06);
@@ -653,6 +677,7 @@ onMounted(() => {
 .swap-row span,
 .payment-result-card span,
 .metric-card span,
+.plan-summary span,
 .source-grid span,
 .capacity-slider span {
   display: block;
@@ -665,12 +690,27 @@ onMounted(() => {
 .swap-row strong,
 .payment-result-card strong,
 .metric-card strong,
+.plan-summary strong,
 .source-grid strong,
 .capacity-slider strong {
   display: block;
   margin-top: 7px;
   font-size: clamp(1.35rem, 2.4vw, 2rem);
   line-height: 1;
+}
+
+.metric-card small {
+  display: block;
+  margin-top: 8px;
+  color: #607080;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.source-grid strong,
+.plan-summary strong {
+  font-size: 1.08rem;
+  line-height: 1.15;
 }
 
 .swap-connector {
@@ -1005,6 +1045,7 @@ select:focus {
 }
 
 .source-grid,
+.plan-summary,
 .results-grid,
 .results-detail-grid {
   display: grid;
@@ -1012,7 +1053,12 @@ select:focus {
 }
 
 .source-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.plan-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 18px;
 }
 
 .usage-grid {
@@ -1245,6 +1291,8 @@ select:focus {
   .step-panel--split,
   .step-panel--map,
   .usage-grid,
+  .source-grid,
+  .plan-summary,
   .payment-result-card,
   .results-grid,
   .results-detail-grid {
