@@ -29,6 +29,8 @@ This document serves as our master checklist and progress tracker. We will imple
 | **PRD 10** | [Trusted Notification Expansion](#-prd-10-trusted-notification-expansion) | ⏳ PENDING | *After trust controls mature* |
 | **PRD 11** | [Consent-Mapped Role Portals & Saved Assessment History](#-prd-11-consent-mapped-role-portals--saved-assessment-history) | ✅ COMPLETE | 2026-05-28 |
 | **PRD 12** | [Production Hardening, Policy Coverage, and Security Audit Remediation](#-prd-12-production-hardening-policy-coverage-and-security-audit-remediation) | ⏳ PENDING | *Next session* |
+| **PRD 13** | [AWS Production Platform Migration and Resilient Operations](#-prd-13-aws-production-platform-migration-and-resilient-operations) | ⏳ PENDING | *After PRD 12 hardening* |
+| **PRD 14** | [Human Interface Audit and Product UX Refinement](#-prd-14-human-interface-audit-and-product-ux-refinement) | ⏳ PENDING | *Design remediation session* |
 
 ---
 
@@ -528,3 +530,314 @@ Convert the 2026-05-29 distinguished-engineer audit into a focused remediation p
 - [ ] Attachment storage has documented encryption, scanning, retention, export, and deletion behavior.
 - [ ] CSP is tightened without breaking login, consent, admin, messaging, assessment, or marketplace flows.
 - [ ] Public health output is minimal, while detailed readiness remains protected/internal.
+
+---
+
+## 📋 [PRD 13] AWS Production Platform Migration and Resilient Operations
+
+### PRD 13 Goal
+
+Move Apolaki end-to-end from the current Netlify-oriented deployment into an AWS production platform that is resilient, secure, observable, and easy to operate. The migration should preserve current product behavior while upgrading the platform posture: smaller blast radius, predictable rollback, stronger secrets/data protection, lower operational ambiguity, and fast response times under normal and degraded conditions.
+
+### Architecture Posture
+
+Design the platform like a small distributed system that can grow into cells rather than a single fragile stack. Every service should be stateless where possible, every stateful dependency should have backup/restore and failover behavior, and every critical user flow should have a runbook, SLO, dashboard, and rollback path.
+
+### Working Assumptions
+
+- AWS is the target cloud for web hosting, APIs, database, object storage, messaging, observability, and security controls.
+- The first AWS release should prefer operational simplicity over premature platform complexity.
+- **Default compute recommendation:** ECS Fargate behind ALB/API Gateway for the frontend API services and admin service.
+- **Alternative compute path:** EKS can be selected later only if Kubernetes portability, Helm reuse, or multi-service orchestration becomes more valuable than the added operational overhead.
+- PostgreSQL remains the primary system of record.
+- The frontend remains a static Vite build distributed through CDN.
+- PRD 12 security hardening should happen before production cutover.
+
+### PRD 13 Scope & Requirements
+
+- [ ] **AWS Landing Zone:**
+  - Create separate AWS accounts or at minimum separated environments for `dev`, `staging`, and `production`.
+  - Use IAM Identity Center/SSO, least-privilege roles, MFA, break-glass roles, and CloudTrail from day one.
+  - Define region strategy and approved data residency boundaries before user data migration.
+
+- [ ] **Network And Edge:**
+  - Route public traffic through Route 53, CloudFront, ACM TLS, AWS WAF, and Shield Standard.
+  - Place application workloads in private subnets behind ALB/API Gateway.
+  - Keep databases, caches, queues, and admin-only services private.
+  - Add VPC endpoints for AWS service access where practical to reduce public egress paths.
+
+- [ ] **Frontend Hosting:**
+  - Host the built Vue/Vite frontend in S3 with CloudFront.
+  - Use immutable asset caching for hashed bundles and short/no-cache headers for `index.html`.
+  - Preserve SPA routing with CloudFront/S3 fallback behavior.
+
+- [ ] **API And Service Runtime:**
+  - Containerize `netlify-db-service` and `admin-service` for AWS runtime.
+  - Run services on ECS Fargate with autoscaling, health checks, rolling or blue/green deployments, and private security groups.
+  - Expose public APIs through ALB/API Gateway while keeping admin/control-plane endpoints restricted by policy and network controls.
+  - Replace Netlify function assumptions with explicit Express service startup, graceful shutdown, and readiness checks.
+
+- [ ] **Database Platform:**
+  - Move PostgreSQL to Amazon Aurora PostgreSQL or RDS PostgreSQL with Multi-AZ enabled.
+  - Use RDS Proxy or PgBouncer-compatible pooling to protect the database from connection storms.
+  - Enable automated backups, point-in-time recovery, encryption with KMS, performance insights, and slow-query monitoring.
+  - Create tested migration, rollback, and restore procedures before production cutover.
+
+- [ ] **Object Storage And Attachments:**
+  - Move uploads and messaging attachments to S3 with KMS encryption, bucket policies, object ownership controls, and blocked public access.
+  - Use presigned URLs or service-mediated downloads; never expose raw storage locations as authorization.
+  - Add lifecycle policies for retention, legal hold where required, export, and erasure workflows.
+  - Add malware scanning and content-type validation before files become visible to users.
+
+- [ ] **Async Work And Events:**
+  - Use SQS/EventBridge for audit events, notifications, attachment scanning, and future background jobs.
+  - Make event consumers idempotent and retry-safe.
+  - Send failed events to DLQs with alarms and operational dashboards.
+
+- [ ] **Secrets And Configuration:**
+  - Move secrets to AWS Secrets Manager or SSM Parameter Store.
+  - Rotate database and JWT/admin secrets according to documented intervals.
+  - Remove runtime dependency on committed `.env` files.
+  - Production must fail closed when required secrets are missing.
+
+- [ ] **Security And Compliance:**
+  - Enable CloudTrail, GuardDuty, AWS Config, Security Hub, IAM Access Analyzer, and centralized log retention.
+  - Encrypt all data in transit and at rest using AWS-managed or customer-managed KMS keys as appropriate.
+  - Use least-privilege task roles per service.
+  - Keep admin-service access separately protected through network, auth, MFA, and audit controls.
+  - Maintain GDPR-style user data rights for access, export, retention, and deletion.
+
+- [ ] **Observability And Operations:**
+  - Define golden signals for every service: latency, traffic, errors, saturation, and queue lag.
+  - Add CloudWatch dashboards, structured logs, metrics, traces, and alarms.
+  - Define SLOs and error budgets for login, consent, assessment, marketplace booking, messaging, and admin actions.
+  - Create runbooks for deploy rollback, database failover, queue backlog, attachment scan failure, auth outage, and elevated error rates.
+
+- [ ] **Performance And Resiliency:**
+  - Preserve or improve current response targets: API p95 under 200ms for lightweight operations and frontend LCP under 2.5s on supported networks.
+  - Use CDN caching for static assets and controlled API caching only where data sensitivity allows.
+  - Autoscale services on CPU, memory, request count, and queue depth where applicable.
+  - Define RTO/RPO targets and test restore/failover before production launch.
+
+- [ ] **CI/CD And Infrastructure As Code:**
+  - Manage AWS infrastructure through Terraform, CDK, or another approved IaC tool.
+  - Deploy through GitHub Actions with separate staging and production workflows.
+  - Use build artifacts, container image signing/scanning, environment approvals, and automated rollback criteria.
+  - Add smoke tests after every deployment and block promotion on critical regressions.
+
+### PRD 13 Target Reference Architecture
+
+| Layer | AWS Service Recommendation | Notes |
+| :--- | :--- | :--- |
+| DNS/TLS | Route 53, ACM | Managed DNS and certificates. |
+| Edge | CloudFront, WAF, Shield Standard | CDN, request filtering, DDoS baseline protection. |
+| Frontend | S3 + CloudFront | Static Vite build with SPA fallback. |
+| Public API | ALB or API Gateway | API routing, TLS termination, health checks, future throttling. |
+| App Runtime | ECS Fargate | Default path for ease of operations and autoscaling. |
+| Admin Runtime | Separate ECS service/private route | Separate security group, stricter auth, audit-first access. |
+| Database | Aurora PostgreSQL or RDS PostgreSQL Multi-AZ | Encrypted, backed up, monitored, pooled. |
+| Connection Pool | RDS Proxy or PgBouncer-compatible layer | Protects Postgres during scale events. |
+| Cache/Sessions | ElastiCache Redis, where needed | For rate limiting, cache, ephemeral coordination. |
+| Attachments | S3 + KMS + lifecycle policies | Private objects only; signed access through app policy. |
+| Events/Jobs | SQS, EventBridge, DLQs | Audit, notifications, scanning, background work. |
+| Secrets | Secrets Manager / SSM Parameter Store | Runtime injection, rotation, no committed secrets. |
+| Observability | CloudWatch, X-Ray/OpenTelemetry | Logs, metrics, traces, dashboards, alarms. |
+| Security Posture | CloudTrail, GuardDuty, Config, Security Hub | Detection, drift, compliance, audit trail. |
+
+### PRD 13 Migration Plan
+
+| Step | Description | Priority |
+| :--- | :--- | :---: |
+| **Step 1** | Confirm AWS account model, target region, compliance boundary, and ECS-vs-EKS decision. | P0 |
+| **Step 2** | Build landing zone: IAM, VPC, subnets, CloudTrail, KMS, WAF baseline, and environment separation. | P0 |
+| **Step 3** | Containerize services and remove Netlify-specific runtime assumptions. | P0 |
+| **Step 4** | Deploy staging frontend/API/admin stack on AWS with IaC and GitHub Actions. | P0 |
+| **Step 5** | Provision RDS/Aurora, migrate staging data, validate backups, restores, and schema migrations. | P0 |
+| **Step 6** | Move attachments to S3 with KMS, signed access, malware scanning, and lifecycle policies. | P1 |
+| **Step 7** | Add queues/DLQs for audit, notifications, scans, and background jobs. | P1 |
+| **Step 8** | Add full observability: dashboards, alarms, traces, log retention, and runbooks. | P1 |
+| **Step 9** | Run load, failover, security, and disaster-recovery tests against staging. | P1 |
+| **Step 10** | Execute production cutover with DNS plan, data freeze/window if needed, smoke tests, and rollback path. | P0 |
+
+### PRD 13 Non-Functional Targets
+
+| Area | Target |
+| :--- | :--- |
+| Availability | 99.9% minimum for MVP AWS launch; design path to 99.95%+. |
+| API Latency | p95 under 200ms for lightweight APIs; p95 under 750ms for heavier assessment/marketplace operations. |
+| Frontend Performance | LCP under 2.5s on supported networks; immutable CDN caching for bundles. |
+| Recovery | Define and test RTO/RPO before cutover; initial target RTO under 1 hour, RPO under 15 minutes for primary database. |
+| Security | No public database/cache, no committed secrets, TLS everywhere, encrypted storage, least-privilege IAM. |
+| Operations | Every critical service has dashboard, alarm, owner, runbook, and rollback plan. |
+
+### PRD 13 Open Decisions
+
+- [ ] **AWS Region:** choose primary region and whether data residency requires a specific geography.
+- [ ] **Compute Runtime:** confirm ECS Fargate as the first AWS platform or choose EKS to reuse Helm/Kubernetes assets.
+- [ ] **Database Migration Window:** decide whether cutover can tolerate a short write freeze or needs near-zero-downtime replication.
+- [ ] **Domain Strategy:** decide whether AWS becomes primary immediately or runs in parallel behind a staging/subdomain first.
+- [ ] **Compliance Baseline:** confirm whether GDPR-only posture is enough for launch or whether SOC 2-style controls should be designed now.
+- [ ] **Budget Guardrails:** define monthly AWS spend guardrails, alert thresholds, and cost allocation tags.
+
+### PRD 13 Definition Of Done
+
+- [ ] Staging runs fully on AWS through IaC with frontend, APIs, admin service, database, secrets, storage, and observability.
+- [ ] Production AWS environment is created separately from staging and uses least-privilege IAM and encrypted resources.
+- [ ] Current Netlify-oriented app behavior is preserved in AWS staging for login, consent, assessment, marketplace booking, messaging, attachments, admin, and saved assessment history.
+- [ ] Database backup, restore, failover, and rollback procedures are tested and documented.
+- [ ] Attachments are private, encrypted, scanned, lifecycle-managed, and accessible only through app authorization.
+- [ ] CI/CD can promote from staging to production with smoke tests, approval gates, image scanning, and rollback.
+- [ ] Dashboards and alarms exist for frontend availability, API latency/errors, DB health, queue lag, auth failures, admin actions, and attachment scan failures.
+- [ ] Security services are enabled and logs are retained according to policy.
+- [ ] Load tests meet the PRD latency targets before production cutover.
+- [ ] A production cutover runbook exists and has been rehearsed in staging.
+
+---
+
+## 📋 [PRD 14] Human Interface Audit and Product UX Refinement
+
+### PRD 14 Goal
+
+Raise Apolaki's product experience to a calmer, more coherent, high-trust interface standard: reliable first paint, clear navigation, purposeful hierarchy, accessible controls, restrained motion, and screen-by-screen flows that help consumers complete solar assessment, installer selection, messaging, finance, contracts, and monitoring without cognitive overload.
+
+The design direction should feel premium and operationally serious without becoming cold: fewer competing accents, fewer decorative icons, stronger information hierarchy, clearer next actions, and consistent interaction patterns across every screen.
+
+### UX Audit Baseline
+
+- **Code baseline:** latest local branch with PRDs 12 and 13 already added to this roadmap.
+- **Local browser check:** frontend was started on `http://127.0.0.1:5174`.
+- **Observed blocker:** the app intermittently rendered an empty shell/blank screen in a fresh browser tab, while logging a Vue Router warning that `<router-view>` is being used directly inside `<transition>`. A UX polish pass should not proceed until this render reliability issue is fixed.
+- **Audit scope:** app shell, login, consent, assessment, marketplace, messaging, dashboard/reference screens, design tokens, mobile behavior, accessibility, empty states, and visual consistency.
+
+### PRD 14 Priority Findings
+
+- [ ] **Render Reliability Is The First UX Issue:**
+  - A blank page is possible in local browser validation.
+  - Fix the `router-view`/`transition` structure and verify service worker behavior does not cache or serve stale empty shells during development or production updates.
+  - Add a smoke test proving `/login`, `/dashboard`, `/assessment`, `/marketplace`, `/consent`, `/messaging`, and `/profile` render at least one semantic heading or known landmark.
+
+- [ ] **Navigation Has Too Many Competing Models:**
+  - Desktop nav mixes numbered journey steps (`1. Intelligence`, `2. Assessment`) with persistent destinations (`Installations`, `Messages`, `Get Help`, `Role Portals`).
+  - Mobile menu currently emphasizes role/admin utilities and messaging, while core consumer destinations are not consistently present in the same hierarchy.
+  - Define one primary IA for consumers and a separate, clearly gated admin/operations IA.
+
+- [ ] **Visual System Drift:**
+  - The codebase mixes global design tokens, scoped CSS, Tailwind utility colors, hard-coded hex values, emoji icons, and multiple accent colors.
+  - Replace ad hoc color usage with a tighter token system: background, surface, primary action, secondary action, destructive action, warning, success, text hierarchy, border, focus, and elevation.
+  - Keep the Apolaki SVG as the brand mark; move feature icons to a consistent icon system instead of mixed emoji usage.
+
+- [ ] **Information Density Is Too High On Key Decision Screens:**
+  - Dashboard and assessment screens expose many metrics, cards, charts, alerts, saved records, recommendations, and CTAs at once.
+  - Marketplace installer cards can show multiple equivalent actions (`Message`, `Book`, `Schedule`, `Add`) without a clear primary path.
+  - Redesign around progressive disclosure: one recommended primary action, supporting context, then advanced details.
+
+- [ ] **Consent UX Needs More Trust And Less Legal Friction:**
+  - Consent is clearer than before, but still behaves like a checkbox gate.
+  - Users need contextual explanations of why each permission is needed, what stays off, what can be revoked, and what happens next.
+  - Consent unlocks should happen at the moment of need, not as a generic long list where possible.
+
+- [ ] **Messaging Trust Cues Are Too Small For The Sensitivity Of The Feature:**
+  - The encryption/audit messaging banner is small and conditional on an API fetch.
+  - Attachment and consent states need stronger visible reassurance, clearer limitations, and human-readable disclaimers.
+  - Empty conversation states should guide users toward recommended installers, support, or the next project action.
+
+- [ ] **Accessibility And Touch Targets Need A Dedicated Pass:**
+  - Several icon-only or symbol-only controls rely on `title` or visible symbols instead of durable accessible names.
+  - Some controls are below the recommended 44px touch target size.
+  - Focus styles are inconsistent, and some controls suppress focus outlines.
+  - Emoji and decorative symbols should be hidden from screen readers or replaced with accessible icons.
+
+- [ ] **States And Feedback Are Inconsistent:**
+  - Loading states range from blank screens to short text like `Loading...`.
+  - Error, empty, disabled, success, and saving states are visually inconsistent across consent, messaging, marketplace, finance, contracts, and assessment.
+  - Define reusable state components so the app feels predictable even when APIs fail.
+
+- [ ] **Mobile Experience Needs Product-Level Recomposition:**
+  - Screens designed as desktop grids and two-pane layouts need mobile-first compositions.
+  - Messaging needs a deliberate inbox-to-thread transition on small screens.
+  - Assessment and marketplace should prioritize one task per screen on mobile.
+
+- [ ] **Motion Needs Restraint And Purpose:**
+  - Transitions, hover scale, pulse, dropdowns, and route fades should be reduced to purposeful feedback.
+  - Respect `prefers-reduced-motion`.
+  - Avoid motion that competes with reading, trust decisions, or financial/contract decisions.
+
+### PRD 14 Design Principles
+
+- **Clarity Over Decoration:** every visible element should help the next user decision.
+- **One Primary Action:** each screen section should make the recommended next step obvious.
+- **Progressive Detail:** show summary first, details on demand.
+- **Trust Is Visible:** consent, encryption, admin review, data sharing, and financial assumptions must be plain-language and easy to find.
+- **Accessibility Is The Baseline:** keyboard, screen reader, color contrast, touch targets, focus state, and reduced-motion support are required, not polish.
+- **Mobile Is Not A Shrunk Desktop:** mobile flows should be sequenced, not merely stacked.
+
+### PRD 14 Scope & Requirements
+
+- [ ] **App Shell And IA:**
+  - Redesign desktop navigation around primary consumer destinations: Dashboard, Assessment, Marketplace, Installations, Messages.
+  - Move Finance and Contracts into contextual surfaces unless the user has active consent and relevant records.
+  - Keep role/admin portals behind a separate account/control-plane entry, not in the main consumer path.
+  - Add a consistent mobile bottom navigation or equivalent mobile-first app shell.
+
+- [ ] **Design System Foundation:**
+  - Consolidate color usage into semantic tokens and remove hard-coded one-off colors from major screens.
+  - Define type scale, spacing scale, radius scale, elevation scale, focus rings, button hierarchy, form fields, badges, cards, alerts, empty states, and modals.
+  - Replace mixed emoji UI icons with a consistent accessible icon approach.
+  - Document light and dark mode behavior for every token.
+
+- [ ] **Core Flow Redesign:**
+  - Login: make email/OAuth hierarchy intentional, simplify consent copy, and add trust/privacy affordances without clutter.
+  - Consent: move from checkbox gate to contextual consent cards with revoke/explain affordances.
+  - Assessment: make the first-run path feel like a guided consultation, with saved assessments as secondary history.
+  - Marketplace: distinguish recommended installer, browse mode, and booking mode; make one primary CTA per card.
+  - Messaging: strengthen trust banner, empty states, attachment affordance, unread states, and mobile thread behavior.
+  - Dashboard: separate "today's system health" from "planning/marketplace" and reduce competing cards.
+
+- [ ] **Accessibility:**
+  - All controls have accessible names and visible focus states.
+  - All actionable targets meet 44px minimum touch target guidance unless there is a documented exception.
+  - Screen headings follow a logical hierarchy.
+  - Color contrast meets WCAG AA for text, controls, and disabled states.
+  - Decorative icons are hidden from assistive tech; meaningful icons have text equivalents.
+
+- [ ] **Responsive Behavior:**
+  - Validate every core screen at mobile, tablet, laptop, and desktop widths.
+  - Remove horizontal overflow and dense multi-column layouts from small screens.
+  - Define responsive behavior for tables, cards, filters, chat, forms, and modals.
+
+- [ ] **State Design:**
+  - Standardize loading, empty, error, success, offline, permission-required, consent-required, and skeleton states.
+  - Avoid blank states. Every failed or loading experience should explain what is happening and what the user can do.
+  - Add copy guidelines for user-safe errors without exposing internal implementation details.
+
+- [ ] **UX Verification:**
+  - Add browser-based smoke screenshots or DOM assertions for key routes.
+  - Add accessibility checks for landmarks, headings, labels, contrast-sensitive tokens, and keyboard focus.
+  - Add visual regression snapshots for app shell, login, consent, assessment, marketplace, messaging, and dashboard.
+
+### PRD 14 Implementation Plan
+
+| Step | Description | Priority |
+| :--- | :--- | :---: |
+| **Step 1** | Fix blank-render reliability: router-view transition structure, service worker caching behavior, and route smoke tests. | P0 |
+| **Step 2** | Create a UX inventory: screen map, component inventory, token inventory, and interaction/state inventory. | P0 |
+| **Step 3** | Redesign app shell and navigation for desktop and mobile, separating consumer flows from role/admin flows. | P0 |
+| **Step 4** | Consolidate design tokens and shared components for buttons, forms, cards, alerts, empty states, badges, modals, and focus rings. | P1 |
+| **Step 5** | Redesign login and consent as high-trust onboarding surfaces. | P1 |
+| **Step 6** | Redesign assessment, marketplace, and messaging around one primary action per user moment. | P1 |
+| **Step 7** | Apply accessibility remediation across controls, headings, focus, contrast, icons, and touch targets. | P1 |
+| **Step 8** | Validate responsive layouts and simplify dense desktop grids for mobile. | P1 |
+| **Step 9** | Add visual/UX regression checks and design review gates to CI. | P2 |
+
+### PRD 14 Definition Of Done
+
+- [ ] `/login`, `/dashboard`, `/assessment`, `/marketplace`, `/consent`, `/messaging`, and `/profile` reliably render in a fresh browser session and after reload.
+- [ ] No core route can silently show a blank screen; failed states show a recoverable user-facing state.
+- [ ] Desktop and mobile navigation use one documented IA model with clear consumer/admin separation.
+- [ ] Core screens use semantic design tokens instead of one-off hard-coded visual styles.
+- [ ] Emoji are removed from primary UI controls or replaced with accessible, consistent iconography.
+- [ ] Every core screen has one clear primary action and a visibly calmer hierarchy.
+- [ ] Consent, encryption, admin review, and data sharing are explained in plain language at the moment of need.
+- [ ] All core controls meet accessible name, focus, contrast, and touch target requirements.
+- [ ] Mobile layouts are validated for login, consent, assessment, marketplace, messaging, dashboard, and profile.
+- [ ] UX smoke tests and visual regression checks run before future releases.
