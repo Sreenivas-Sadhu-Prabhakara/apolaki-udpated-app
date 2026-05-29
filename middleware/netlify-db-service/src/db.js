@@ -95,8 +95,13 @@ function createPgSqlInterface() {
       return result.rows;
     } catch (error) {
       console.error('Database query error:', error.message);
+      // Redact sensitive values in logs
+      const redactedValues = values.map(v => 
+        (typeof v === 'string' && v.length > 50) ? '[REDACTED_LONG_STRING]' : 
+        (typeof v === 'string' && (v.includes('@') || v.startsWith('$2a$'))) ? '[REDACTED_SENSITIVE]' : v
+      );
       console.error('Query:', query);
-      console.error('Values:', values);
+      console.error('Values:', redactedValues);
       throw error;
     }
   };

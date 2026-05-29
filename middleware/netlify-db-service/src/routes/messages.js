@@ -263,15 +263,31 @@ router.post('/conversations', authenticateToken, async (req, res) => {
   } else if (isPrivileged(req.user)) {
     consumerId = requestedConsumerId;
     assignmentSource = 'admin_allocation';
-  } else if (installerId || financierId || isSupport) {
-    // Hybrid: Users can start contextual chats if they provide a target
+  } else if (isSupport) {
+    // Users can always start support chats
     assignmentSource = 'contextual_initiation';
-    if (isSupport) {
-      targetContextType = 'support';
-      // Find a support user or use a placeholder
-      const supportUsers = await users.getByRole('admin');
-      installerId = supportUsers[0]?.id; // Simple assignment to first admin for MVP
-    } else if (financierId) {
+    targetContextType = 'support';
+    // Find a support user or use a placeholder
+    const supportUsers = await users.getByRole('admin');
+    installerId = supportUsers[0]?.id;
+  } else if (installerId || financierId) {
+    // SECURITY HARDENING: Verify boundary for direct initiation
+    if (role === 'customer') {
+      const activeRecs = await messaging.listRecommendations({ userId: req.user.id, role: 'customer' });
+      const isAllowedInstaller = activeRecs.some(r => r.installer_id === installerId && r.status === 'active');
+      
+      // If it's a marketplace booking, it should be allowed (v2.1 event-driven flow handles this automatically, 
+      // but if manually called, we check recommendations)
+      if (!isAllowedInstaller && !financierId) {
+        return res.status(403).json({
+          success: false,
+          error: 'You can only start conversations with recommended or allocated installers.',
+          code: 'RECIPIENT_BOUNDARY_DENIED'
+        });
+      }
+    }
+    assignmentSource = 'contextual_initiation';
+    if (financierId) {
       targetContextType = 'finance';
       installerId = financierId;
     }

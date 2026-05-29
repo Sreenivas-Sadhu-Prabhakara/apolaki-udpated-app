@@ -4,9 +4,30 @@ import jwt from 'jsonwebtoken';
 import { adminSessions, users } from './db.js';
 
 export const ASSIGNABLE_ROLES = ['customer', 'dealer', 'operations', 'admin', 'superadmin'];
+export const ADMIN_SESSION_COOKIE = 'apolaki_admin_session';
 
-const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET || 'dev-admin-jwt-secret-change-in-production';
-const ADMIN_REFRESH_SECRET = process.env.ADMIN_REFRESH_SECRET || process.env.JWT_REFRESH_SECRET || 'dev-admin-refresh-secret-change-in-production';
+const IS_PROD = process.env.NODE_ENV === 'production';
+const DEFAULT_JWT_SECRET = 'dev-admin-jwt-secret-change-in-production';
+const DEFAULT_REFRESH_SECRET = 'dev-admin-refresh-secret-change-in-production';
+
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET;
+const ADMIN_REFRESH_SECRET = process.env.ADMIN_REFRESH_SECRET || process.env.JWT_REFRESH_SECRET;
+
+// Fail closed in production if secrets are missing or defaults
+if (IS_PROD) {
+  if (!ADMIN_JWT_SECRET || ADMIN_JWT_SECRET === DEFAULT_JWT_SECRET) {
+    console.error('❌ FATAL: ADMIN_JWT_SECRET is missing or insecure in production.');
+    process.exit(1);
+  }
+  if (!ADMIN_REFRESH_SECRET || ADMIN_REFRESH_SECRET === DEFAULT_REFRESH_SECRET) {
+    console.error('❌ FATAL: ADMIN_REFRESH_SECRET is missing or insecure in production.');
+    process.exit(1);
+  }
+}
+
+const JWT_SECRET = ADMIN_JWT_SECRET || DEFAULT_JWT_SECRET;
+const REFRESH_SECRET = ADMIN_REFRESH_SECRET || DEFAULT_REFRESH_SECRET;
+
 const ACCESS_TOKEN_MINUTES = Number.parseInt(process.env.ADMIN_ACCESS_TOKEN_MINUTES || '15', 10);
 const IDLE_TIMEOUT_MINUTES = Number.parseInt(process.env.ADMIN_IDLE_TIMEOUT_MINUTES || '30', 10);
 const MFA_TOKEN_MINUTES = 5;
@@ -26,6 +47,23 @@ export async function verifyPassword(password, passwordHash) {
   return bcrypt.compare(password, passwordHash);
 }
 
+export function setAdminSessionCookie(res, accessToken) {
+  res.cookie(ADMIN_SESSION_COOKIE, accessToken, {
+    httpOnly: true,
+    secure: IS_PROD,
+    sameSite: 'lax',
+    maxAge: ACCESS_TOKEN_MINUTES * 60 * 1000,
+    path: '/'
+  });
+}
+
+export function clearAdminSessionCookie(res) {
+  res.clearCookie(ADMIN_SESSION_COOKIE, {
+    httpOnly: true,
+    path: '/'
+  });
+}
+
 export function createAdminTokens({ user, sessionId, adminScope }) {
   const accessToken = jwt.sign(
     {
@@ -36,7 +74,7 @@ export function createAdminTokens({ user, sessionId, adminScope }) {
       sessionId,
       tokenType: 'admin_access'
     },
-    ADMIN_JWT_SECRET,
+    JWT_SECRET,
     { expiresIn: `${ACCESS_TOKEN_MINUTES}m` }
   );
 
@@ -47,7 +85,7 @@ export function createAdminTokens({ user, sessionId, adminScope }) {
       sessionId,
       tokenType: 'admin_refresh'
     },
-    ADMIN_REFRESH_SECRET,
+    REFRESH_SECRET,
     { expiresIn: '7d' }
   );
 
@@ -61,20 +99,26 @@ export function createMfaToken({ user, sessionId }) {
       sessionId,
       tokenType: 'admin_mfa'
     },
-    ADMIN_JWT_SECRET,
+    JWT_SECRET,
     { expiresIn: `${MFA_TOKEN_MINUTES}m` }
   );
 }
 
 export async function authenticateAdmin(req, res, next) {
   try {
+    // Check for token in Authorization header OR secure cookie
     const header = req.get('authorization') || '';
-    const token = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : '';
+    let token = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : '';
+    
+    if (!token && req.cookies) {
+      token = req.cookies[ADMIN_SESSION_COOKIE];
+    }
+
     if (!token) {
       return res.status(401).json({ success: false, error: 'Admin access token required', code: 'ADMIN_TOKEN_REQUIRED' });
     }
 
-    const payload = jwt.verify(token, ADMIN_JWT_SECRET);
+    const payload = jwt.verify(token, JWT_SECRET);
     if (payload.tokenType !== 'admin_access' || !payload.adminScope) {
       return res.status(403).json({ success: false, error: 'Admin scope required', code: 'ADMIN_SCOPE_REQUIRED' });
     }
@@ -86,6 +130,7 @@ export async function authenticateAdmin(req, res, next) {
 
     if (Number(session.idle_seconds || 0) > IDLE_TIMEOUT_MINUTES * 60) {
       await adminSessions.revoke(session.id, null);
+      clearAdminSessionCookie(res);
       return res.status(401).json({ success: false, error: 'Admin session expired due to inactivity', code: 'ADMIN_SESSION_IDLE_EXPIRED' });
     }
 
@@ -139,7 +184,7 @@ export async function requireMfaToken(req, res, next) {
       return res.status(403).json({ success: false, error: 'MFA challenge token required', code: 'MFA_TOKEN_REQUIRED' });
     }
 
-    const payload = jwt.verify(mfaToken, ADMIN_JWT_SECRET);
+    const payload = jwt.verify(mfaToken, JWT_SECRET);
     if (payload.tokenType !== 'admin_mfa' || payload.sub !== req.admin.id || payload.sessionId !== req.admin.sessionId) {
       return res.status(403).json({ success: false, error: 'Invalid MFA challenge token', code: 'INVALID_MFA_TOKEN' });
     }

@@ -83,6 +83,9 @@ export const API_POLICY_MATRIX = [
   policy('*', '/personas/superadmin/break-glass/:sessionId/action', { access: 'public' }),
   policy('*', '/personas/superadmin/break-glass/:sessionId/end', { access: 'public' }),
 
+  policy('GET', '/marketplace/dealers', { access: 'public' }),
+  policy('POST', '/marketplace/bookings', { permission: 'marketplace:booking:create', requiredConsents: ['profile_account'], auditOnAllow: true }),
+  policy('GET', '/marketplace/bookings/me', { permission: 'marketplace:booking:list', requiredConsents: ['profile_account'] }),
   policy('GET', '/marketplace/products', { access: 'public' }),
   policy('GET', '/marketplace/products/category/:category', { access: 'public' }),
   policy('GET', '/marketplace/products/:id/reviews', { access: 'public' }),

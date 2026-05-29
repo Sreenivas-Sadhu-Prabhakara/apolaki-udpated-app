@@ -100,26 +100,10 @@ app.use((req, res, next) => {
 
 // Health check endpoint (no auth required)
 app.get('/health', async (req, res) => {
-  let dbStatus = 'unknown';
-  try {
-    const { ensureInitialized } = await import('./db.js');
-    const sqlInstance = ensureInitialized();
-    await sqlInstance`SELECT 1 AS ok`;
-    dbStatus = 'connected';
-  } catch (err) {
-    dbStatus = `error: ${err.message}`;
-  }
-
   res.json({
     status: 'ok',
     service: 'netlify-db-service',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    database: dbStatus,
-    environment: process.env.NODE_ENV || 'development',
-    hasDbUrl: !!(process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL),
-    hasJwtSecret: !!process.env.JWT_SECRET,
-    isNetlify: !!(process.env.NETLIFY || process.env.LAMBDA_TASK_ROOT)
+    timestamp: new Date().toISOString()
   });
 });
 

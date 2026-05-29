@@ -33,11 +33,8 @@
         <ul class="nav-menu hidden lg:flex items-center gap-0.5">
           <li><router-link to="/dashboard" class="nav-link transition">1. Intelligence</router-link></li>
           <li><router-link to="/assessment" class="nav-link transition">2. Assessment</router-link></li>
-          <li v-if="canAccessConsentFeature('finance_data')"><router-link to="/finance" class="nav-link transition">3. Financing</router-link></li>
-          <li><router-link to="/marketplace" class="nav-link transition">4. Marketplace</router-link></li>
-          <li v-if="canAccessConsentFeature('contracts_signing')"><router-link to="/contracts" class="nav-link transition">5. Contracts</router-link></li>
-          <li v-if="canAccessConsentFeature('installation_monitoring')"><router-link to="/monitoring" class="nav-link transition">6. Monitoring</router-link></li>
-          <li v-if="canAccessConsentFeature('installation_monitoring')"><router-link to="/installations" class="nav-link transition">Installations</router-link></li>
+          <li><router-link to="/marketplace" class="nav-link transition">3. Marketplace</router-link></li>
+          <li><router-link to="/installations" class="nav-link transition">4. Installations</router-link></li>
           <li>
             <button @click="messagingStore.toggleWidget()" class="nav-link transition flex items-center gap-1.5 focus:outline-none">
               Messages <span v-if="unreadCount" class="unread-dot"></span>
@@ -49,13 +46,23 @@
             </router-link>
           </li>
 
-          <!-- "More" dropdown for secondary + role-specific links -->
+          <!-- \"More\" dropdown for secondary + role-specific links -->
           <li class="nav-more-wrapper">
             <button @click="moreMenuOpen = !moreMenuOpen" class="nav-link nav-more-btn transition">
-              Role Portals ▾
+              More ▾
             </button>
             <transition name="dropdown">
               <ul v-if="moreMenuOpen" class="nav-dropdown" @mouseleave="moreMenuOpen = false">
+                <li v-if="canAccessConsentFeature('finance_data')">
+                  <router-link to="/finance" class="dropdown-link" @click="moreMenuOpen = false">💰 Financing</router-link>
+                </li>
+                <li v-if="canAccessConsentFeature('contracts_signing')">
+                  <router-link to="/contracts" class="dropdown-link" @click="moreMenuOpen = false">📜 Contracts</router-link>
+                </li>
+                <li v-if="canAccessConsentFeature('installation_monitoring')">
+                  <router-link to="/monitoring" class="dropdown-link" @click="moreMenuOpen = false">📊 Monitoring</router-link>
+                </li>
+                <div class="dropdown-divider"></div>
                 <li v-if="canOpenDealerPortal">
                   <router-link to="/dealer" class="dropdown-link" @click="moreMenuOpen = false">🔧 Dealer Portal</router-link>
                 </li>
@@ -68,8 +75,8 @@
                 <li v-if="canOpenBreakGlassPortal">
                   <router-link to="/superadmin" class="dropdown-link dropdown-link--emergency" @click="moreMenuOpen = false">🚨 Break-Glass</router-link>
                 </li>
-                <li v-if="!hasRoleLinks" class="dropdown-link text-gray-400 text-xs">
-                  No active role portals. Role plus consent are required.
+                <li v-if="!hasRoleLinks && !canAccessConsentFeature('finance_data', 'contracts_signing', 'installation_monitoring')" class="dropdown-link text-gray-400 text-xs">
+                  No additional tools available.
                 </li>
               </ul>
             </transition>
@@ -125,7 +132,7 @@
     <!-- Main Content Area -->
     <main class="main-content flex-1" :class="mainBgClass">
       <transition name="fade">
-        <router-view />
+        <router-view :key="$route.fullPath" />
       </transition>
     </main>
 

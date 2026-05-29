@@ -2,58 +2,68 @@
   <div class="login-container">
     <section class="login-card" aria-labelledby="login-title">
       <div class="brand">
-        <BrandLogo size="md" text="Apolaki Solar" />
+        <BrandLogo size="md" text="Apolaki" />
       </div>
 
-      <h1 id="login-title">Sign in to continue</h1>
+      <h1 id="login-title">Welcome to Apolaki</h1>
       <p class="intro">
-        Access solar insights and services through your account.
+        Your unified gateway to solar intelligence and local installer networks.
       </p>
 
       <div v-if="errorMessage" class="alert-error" role="alert">
         {{ errorMessage }}
       </div>
 
-      <form class="password-login" @submit.prevent="handleLogin">
-        <label for="email">Email</label>
-        <input
-          id="email"
-          v-model.trim="email"
-          type="email"
-          autocomplete="username"
-          placeholder="you@example.com"
-          required
-        >
+      <!-- PRIMARY: OAuth -->
+      <div class="oauth-section">
+        <OAuthLogin />
+      </div>
 
-        <label for="password">Password</label>
-        <input
-          id="password"
-          v-model="password"
-          type="password"
-          autocomplete="current-password"
-          placeholder="Enter your password"
-          required
-        >
+      <div class="divider"><span>or continue with email</span></div>
+
+      <!-- SECONDARY: Password -->
+      <form class="password-login" @submit.prevent="handleLogin">
+        <div class="field-group">
+          <label for="email">Email</label>
+          <input
+            id="email"
+            v-model.trim="email"
+            type="email"
+            autocomplete="username"
+            placeholder="you@example.com"
+            required
+          >
+        </div>
+
+        <div class="field-group">
+          <div class="label-row">
+            <label for="password">Password</label>
+          </div>
+          <input
+            id="password"
+            v-model="password"
+            type="password"
+            autocomplete="current-password"
+            placeholder="••••••••"
+            required
+          >
+        </div>
 
         <button class="email-submit" type="submit" :disabled="userStore.loading">
-          {{ userStore.loading ? 'Signing in...' : 'Continue with email' }}
+          {{ userStore.loading ? 'Signing in...' : 'Sign In' }}
         </button>
       </form>
 
-      <div class="divider"><span>or</span></div>
-
-      <OAuthLogin />
-
-      <div class="notice">
-        <h2>Access with consent</h2>
-        <p>
-          Signing in verifies your identity. You choose the data access needed
-          for your workspace on the next step.
-        </p>
+      <div class="trust-notice">
+        <div class="trust-icon">🛡️</div>
+        <div class="trust-text">
+          <strong>Privacy First</strong>
+          <p>Signing in verifies your identity. You control exactly what data is shared on the next step.</p>
+        </div>
       </div>
 
       <p class="policy">
-        Your application permissions remain controlled by consent.
+        By signing in, you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.
       </p>
     </section>
   </div>
@@ -88,154 +98,192 @@ async function handleLogin() {
 .login-container {
   align-items: center;
   background:
-    radial-gradient(circle at 68% 14%, rgba(255, 202, 79, 0.36), transparent 29%),
-    linear-gradient(145deg, #fbfdff 0%, #ecf6ff 100%);
+    radial-gradient(circle at 68% 14%, rgba(15, 108, 189, 0.08), transparent 29%),
+    linear-gradient(145deg, #fbfdff 0%, #f0f7ff 100%);
   display: flex;
   justify-content: center;
   min-height: 100vh;
-  padding: 1.25rem;
+  padding: 1.5rem;
 }
 
 .login-card {
   background: #fff;
   border: 1px solid rgba(15, 108, 189, 0.12);
   border-radius: 1.5rem;
-  box-shadow: 0 22px 70px rgba(15, 23, 42, 0.14);
+  box-shadow: 0 25px 80px rgba(15, 23, 42, 0.12);
   max-width: 440px;
-  padding: 2.5rem 2.25rem 2rem;
+  padding: 3rem 2.5rem;
   width: 100%;
 }
 
 .brand {
   align-items: center;
-  color: #0f6cbd;
+  color: var(--kinetic-azure);
   display: flex;
-  margin-bottom: 1.7rem;
+  margin-bottom: 2rem;
 }
 
 h1 {
   color: #101828;
-  font-size: 1.8rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-size: 1.875rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   line-height: 1.2;
-  margin: 0 0 0.55rem;
+  margin: 0 0 0.6rem;
 }
 
 .intro {
-  color: #5f6f86;
+  color: #64748b;
+  font-size: 1rem;
   line-height: 1.5;
-  margin: 0 0 1.65rem;
+  margin: 0 0 2rem;
 }
 
 .alert-error {
   background: #fff1f2;
   border: 1px solid #fecdd3;
-  border-radius: 0.65rem;
+  border-radius: 0.75rem;
   color: #9f1239;
   font-size: 0.9rem;
-  margin-bottom: 1rem;
-  padding: 0.8rem 0.95rem;
+  margin-bottom: 1.5rem;
+  padding: 0.85rem 1rem;
 }
 
-.password-login {
-  display: flex;
-  flex-direction: column;
-  gap: 0.48rem;
-}
-
-.password-login label {
-  color: #344054;
-  font-size: 0.88rem;
-  font-weight: 600;
-  margin-top: 0.3rem;
-}
-
-.password-login input {
-  background: #fff;
-  border: 1px solid #d0d9e5;
-  border-radius: 0.7rem;
-  color: #101828;
-  font-size: 1rem;
-  min-height: 3rem;
-  padding: 0 0.85rem;
-}
-
-.password-login input:focus {
-  border-color: #0f6cbd;
-  box-shadow: 0 0 0 3px rgba(15, 108, 189, 0.12);
-  outline: none;
-}
-
-.email-submit {
-  background: #0f6cbd;
-  border: 0;
-  border-radius: 0.72rem;
-  color: #fff;
-  cursor: pointer;
-  font-size: 0.98rem;
-  font-weight: 600;
-  margin-top: 0.7rem;
-  min-height: 3.15rem;
-}
-
-.email-submit:disabled {
-  cursor: wait;
-  opacity: 0.7;
+.oauth-section {
+  margin-bottom: 1.5rem;
 }
 
 .divider {
   align-items: center;
-  color: #8a99ad;
+  color: #94a3b8;
   display: flex;
-  font-size: 0.82rem;
-  gap: 0.85rem;
-  margin: 1.3rem 0;
-  text-transform: uppercase;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  gap: 1rem;
+  margin: 2rem 0;
+  text-transform: lowercase;
 }
 
 .divider::before,
 .divider::after {
-  background: #e3e9f1;
+  background: #e2e8f0;
   content: '';
   flex: 1;
   height: 1px;
 }
 
-.notice {
-  background: #f1f8ff;
+.password-login {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+label {
+  color: #334155;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+input {
+  background: #fff;
+  border: 1px solid #e2e8f0;
   border-radius: 0.75rem;
-  margin-top: 1.8rem;
-  padding: 1rem;
+  color: #0f172a;
+  font-size: 1rem;
+  min-height: 3.25rem;
+  padding: 0 1rem;
+  transition: all 0.2s;
 }
 
-.notice h2 {
-  color: #103c68;
-  font-size: 0.88rem;
-  font-weight: 700;
-  margin: 0 0 0.35rem;
+input:focus {
+  border-color: var(--kinetic-azure);
+  box-shadow: 0 0 0 4px rgba(15, 108, 189, 0.1);
+  outline: none;
 }
 
-.notice p,
-.policy {
-  color: #566b85;
-  font-size: 0.82rem;
-  line-height: 1.5;
+.email-submit {
+  background: var(--kinetic-azure);
+  border: 0;
+  border-radius: 0.875rem;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  min-height: 3.25rem;
+  transition: all 0.2s;
+}
+
+.email-submit:hover:not(:disabled) {
+  background: var(--kinetic-azure-dark);
+  transform: translateY(-1px);
+}
+
+.email-submit:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.trust-notice {
+  display: flex;
+  gap: 1rem;
+  background: #f8fafc;
+  border-radius: 1rem;
+  margin-top: 2rem;
+  padding: 1.25rem;
+}
+
+.trust-icon {
+  font-size: 1.25rem;
+}
+
+.trust-text strong {
+  display: block;
+  font-size: 0.875rem;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.trust-text p {
+  font-size: 0.8125rem;
+  color: #64748b;
+  line-height: 1.4;
   margin: 0;
 }
 
 .policy {
-  margin: 1.25rem 0 0;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  margin: 1.5rem 0 0;
   text-align: center;
 }
 
+.policy a {
+  color: var(--kinetic-azure);
+  text-decoration: none;
+}
+
 :global(.dark-theme) .login-container {
-  background: linear-gradient(145deg, #111418, #182333);
+  background: linear-gradient(145deg, #111418, #0f172a);
 }
 
 :global(.dark-theme) .login-card {
   background: #1e293b;
   border-color: #334155;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
 }
 
 :global(.dark-theme) h1 {
@@ -244,28 +292,37 @@ h1 {
 
 :global(.dark-theme) .intro,
 :global(.dark-theme) .policy {
-  color: #a9bbd2;
+  color: #94a3b8;
 }
 
-:global(.dark-theme) .password-login label {
-  color: #d4dfed;
+:global(.dark-theme) label {
+  color: #cbd5e1;
 }
 
-:global(.dark-theme) .password-login input {
-  background: #172334;
-  border-color: #46566f;
+:global(.dark-theme) input {
+  background: #0f172a;
+  border-color: #334155;
   color: #f1f5f9;
 }
 
-:global(.dark-theme) .notice {
-  background: #14243a;
+:global(.dark-theme) .divider {
+  color: #64748b;
 }
 
-:global(.dark-theme) .notice h2 {
-  color: #94c8ff;
+:global(.dark-theme) .divider::before,
+:global(.dark-theme) .divider::after {
+  background: #334155;
 }
 
-:global(.dark-theme) .notice p {
-  color: #afbed0;
+:global(.dark-theme) .trust-notice {
+  background: #0f172a;
+}
+
+:global(.dark-theme) .trust-text strong {
+  color: #f1f5f9;
+}
+
+:global(.dark-theme) .trust-text p {
+  color: #94a3b8;
 }
 </style>

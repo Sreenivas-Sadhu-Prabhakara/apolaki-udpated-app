@@ -1,63 +1,83 @@
 <template>
   <div class="consent-page">
     <section class="consent-card">
-      <p class="eyebrow">One last step</p>
-      <h1>Set up your workspace</h1>
-      <p class="intro">
-        To create your solar assessment, Apolaki needs your account profile and
-        the property location you submit.
-      </p>
+      <div class="card-header">
+        <span class="badge">Privacy & Access</span>
+        <h1>Control your workspace</h1>
+        <p class="intro">
+          Apolaki is designed to be private by default. Choose which features you'd like to enable.
+        </p>
+      </div>
 
-      <div v-if="loadingStatus" class="loading" aria-live="polite">Loading...</div>
+      <div v-if="loadingStatus" class="loading-state">
+        <div class="spinner"></div>
+        <span>Syncing your preferences...</span>
+      </div>
 
-      <div v-else-if="!status" class="error" role="alert">
+      <div v-else-if="!status" class="alert-error" role="alert">
         {{ message }}
       </div>
 
       <form v-else @submit.prevent="submitChoice">
-        <label class="essential-choice">
-          <input v-model="essentialAccepted" type="checkbox">
-          <span>
-            <strong>I consent to essential assessment access</strong>
-            <small>
-              Use my profile and submitted location to calculate and save my
-              solar assessment.
-            </small>
-          </span>
-        </label>
-
-        <p class="privacy-note">
-          Monitoring, contracts, financing, and data sharing stay off unless
-          you choose those features later.
-        </p>
-
-        <div class="feature-consents">
-          <div class="section-heading">
-            <strong>{{ requestedConsentKeys.length ? 'Unlock this feature' : 'Optional feature consents' }}</strong>
-            <small>Turn on only what you need. You can leave the rest off.</small>
+        <!-- ESSENTIALS -->
+        <div class="consent-group">
+          <h2>Required for Core Features</h2>
+          <div class="consent-item essential" :class="{ active: essentialAccepted }">
+            <div class="item-icon">⚡</div>
+            <div class="item-content">
+              <div class="item-header">
+                <strong>Essential Assessment</strong>
+                <span class="status-tag">Required</span>
+              </div>
+              <p>Calculate your solar potential using your location and basic profile data.</p>
+              <div class="explain-link" @click="showExplain('essential')">How we use this data ▾</div>
+            </div>
+            <div class="item-toggle">
+              <input v-model="essentialAccepted" type="checkbox" disabled checked>
+            </div>
           </div>
-
-          <label
-            v-for="consent in optionalConsents"
-            :key="consent.key"
-            class="feature-choice"
-            :class="{ requested: requestedConsentKeys.includes(consent.key) }"
-          >
-            <input v-model="featureChoices[consent.key]" type="checkbox">
-            <span>
-              <strong>{{ consent.title }}</strong>
-              <small>{{ consent.purpose }}</small>
-            </span>
-          </label>
         </div>
 
-        <p v-if="message" class="error" role="alert">{{ message }}</p>
+        <!-- OPTIONAL FEATURES -->
+        <div class="consent-group">
+          <h2>Optional Experience</h2>
+          <p class="group-subtitle">Enable only what you need. You can revoke access any time.</p>
+          
+          <div 
+            v-for="consent in optionalConsents" 
+            :key="consent.key" 
+            class="consent-item optional"
+            :class="{ active: featureChoices[consent.key], requested: requestedConsentKeys.includes(consent.key) }"
+          >
+            <div class="item-icon">{{ getIcon(consent.key) }}</div>
+            <div class="item-content">
+              <div class="item-header">
+                <strong>{{ consent.title }}</strong>
+                <span v-if="requestedConsentKeys.includes(consent.key)" class="status-tag requested">Unlock needed</span>
+              </div>
+              <p>{{ consent.purpose }}</p>
+              <div class="explain-link" @click="showExplain(consent.key)">Privacy details ▾</div>
+            </div>
+            <div class="item-toggle">
+              <label class="switch">
+                <input v-model="featureChoices[consent.key]" type="checkbox">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
 
-        <button class="continue" type="submit" :disabled="userStore.loading || !essentialAccepted">
-          {{ userStore.loading ? 'Saving...' : continueLabel }}
-        </button>
+        <div class="form-footer">
+          <p v-if="message" class="error-text" role="alert">{{ message }}</p>
+          <button class="btn-continue" type="submit" :disabled="userStore.loading">
+            {{ userStore.loading ? 'Saving...' : continueLabel }}
+          </button>
+          <p class="safe-note">🔒 Your data is encrypted and never sold to 3rd parties.</p>
+        </div>
       </form>
     </section>
+
+    <!-- Simple modal or expanded area could go here for "explain" affordance -->
   </div>
 </template>
 
@@ -70,7 +90,7 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const status = ref(null)
-const essentialAccepted = ref(false)
+const essentialAccepted = ref(true)
 const loadingStatus = ref(true)
 const message = ref('')
 const featureChoices = reactive({})
@@ -81,20 +101,35 @@ const requestedConsentKeys = computed(() => {
     .map(key => key.trim())
     .filter(Boolean)
 })
+
 const optionalConsents = computed(() => status.value?.consents?.filter(consent => !consent.required) || [])
-const continueLabel = computed(() => route.query.next ? 'Save and continue' : 'Continue to assessment')
+const continueLabel = computed(() => route.query.next ? 'Unlock & Continue' : 'Enter Workspace')
+
+function getIcon(key) {
+  const icons = {
+    finance_data: '💰',
+    installation_monitoring: '📊',
+    contracts_signing: '📜',
+    partner_sharing: '🤝',
+    installer_messaging: '💬'
+  }
+  return icons[key] || '✨'
+}
+
+function showExplain(key) {
+  // MVP: alert or simple console log. Could be a proper modal.
+  console.log('Explain data usage for:', key)
+}
 
 onMounted(async () => {
   try {
     status.value = userStore.consentStatus || await userStore.getConsentStatus()
-    essentialAccepted.value = status.value.consents
-      .filter(consent => consent.required)
-      .every(consent => consent.decision === 'granted')
     optionalConsents.value.forEach(consent => {
+      // Default to granted if already granted, OR if requested in query
       featureChoices[consent.key] = consent.decision === 'granted' || requestedConsentKeys.value.includes(consent.key)
     })
   } catch {
-    message.value = 'Your consent settings could not be loaded. Please sign in again.'
+    message.value = 'Failed to load settings. Please try again.'
   } finally {
     loadingStatus.value = false
   }
@@ -102,190 +137,297 @@ onMounted(async () => {
 
 async function submitChoice() {
   message.value = ''
-  if (!essentialAccepted.value) {
-    message.value = 'Consent is required to open your assessment workspace.'
-    return
-  }
-
   const choices = status.value.consents.map(consent => ({
     key: consent.key,
     decision: consent.required
       ? 'granted'
       : (featureChoices[consent.key] ? 'granted' : 'declined')
   }))
+  
   const updatedStatus = await userStore.completeConsentOnboarding(choices)
-
   if (!updatedStatus) {
-    message.value = userStore.error
+    message.value = userStore.error || 'Failed to save choices.'
     return
   }
-  await router.replace(route.query.next || '/assessment')
+  
+  await router.replace(route.query.next || '/dashboard')
 }
 </script>
 
 <style scoped>
 .consent-page {
   align-items: center;
-  background: linear-gradient(145deg, #f8fcff, #e8f4fb);
+  background: radial-gradient(circle at top right, #f0f7ff, #f8fafc);
   display: flex;
   justify-content: center;
   min-height: 100vh;
-  padding: 1.25rem;
+  padding: 1.5rem;
 }
 
 .consent-card {
   background: #fff;
-  border-radius: 1.4rem;
-  box-shadow: 0 24px 65px rgba(15, 44, 68, 0.13);
-  max-width: 470px;
-  padding: 2.25rem;
+  border-radius: 2rem;
+  box-shadow: 0 30px 100px rgba(15, 23, 42, 0.1);
+  max-width: 520px;
+  padding: 3rem;
   width: 100%;
 }
 
-.eyebrow {
-  color: #0f6cbd;
+.card-header {
+  margin-bottom: 2.5rem;
+}
+
+.badge {
+  background: #eef2ff;
+  color: var(--kinetic-azure);
+  display: inline-block;
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.13em;
-  margin: 0 0 0.65rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 2rem;
   text-transform: uppercase;
 }
 
 h1 {
-  color: #102a43;
-  font-size: 1.8rem;
-  letter-spacing: -0.03em;
-  line-height: 1.2;
-  margin: 0 0 0.7rem;
+  color: #0f172a;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 0.75rem;
 }
 
 .intro {
-  color: #526b7a;
-  line-height: 1.55;
-  margin: 0 0 1.45rem;
+  color: #64748b;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
-.essential-choice {
+.consent-group {
+  margin-bottom: 2rem;
+}
+
+.consent-group h2 {
+  color: #334155;
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.group-subtitle {
+  color: #94a3b8;
+  font-size: 0.8125rem;
+  margin-bottom: 1rem;
+  margin-top: -0.5rem;
+}
+
+.consent-item {
   align-items: flex-start;
-  background: #f1f8ff;
-  border: 1px solid #d4e8fb;
-  border-radius: 0.9rem;
-  cursor: pointer;
+  border: 2px solid #f1f5f9;
+  border-radius: 1.25rem;
   display: flex;
-  gap: 0.8rem;
-  padding: 1rem;
+  gap: 1.25rem;
+  margin-bottom: 0.75rem;
+  padding: 1.25rem;
+  transition: all 0.2s ease;
 }
 
-.essential-choice input {
-  accent-color: #0f6cbd;
-  height: 1.12rem;
-  margin-top: 0.15rem;
-  width: 1.12rem;
+.consent-item.active {
+  border-color: #e2e8f0;
+  background: #f8fafc;
 }
 
-.essential-choice strong {
-  color: #102a43;
-  display: block;
-  font-size: 0.96rem;
-  margin-bottom: 0.35rem;
+.consent-item.requested {
+  border-color: var(--kinetic-azure);
+  background: #f0f7ff;
 }
 
-.essential-choice small,
-.privacy-note {
-  color: #60788a;
-  font-size: 0.88rem;
-  line-height: 1.45;
-}
-
-.privacy-note {
-  margin: 1.1rem 0 1.3rem;
-}
-
-.feature-consents {
-  display: grid;
-  gap: 0.75rem;
-  margin: 0 0 1.3rem;
-}
-
-.section-heading {
-  display: grid;
-  gap: 0.25rem;
-}
-
-.section-heading strong {
-  color: #102a43;
-}
-
-.section-heading small {
-  color: #60788a;
-  font-size: 0.88rem;
-  line-height: 1.45;
-}
-
-.feature-choice {
-  align-items: flex-start;
-  border: 1px solid #d4e8fb;
-  border-radius: 0.9rem;
-  cursor: pointer;
+.item-icon {
+  align-items: center;
+  background: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   display: flex;
-  gap: 0.8rem;
-  padding: 0.85rem;
+  font-size: 1.25rem;
+  height: 3rem;
+  justify-content: center;
+  min-width: 3rem;
+  width: 3rem;
 }
 
-.feature-choice.requested {
-  border-color: #0f6cbd;
-  box-shadow: 0 0 0 3px rgba(15, 108, 189, 0.1);
+.item-content {
+  flex: 1;
 }
 
-.feature-choice input {
-  accent-color: #0f6cbd;
-  height: 1rem;
-  margin-top: 0.15rem;
-  width: 1rem;
-}
-
-.feature-choice strong {
-  color: #102a43;
-  display: block;
-  font-size: 0.9rem;
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 0.25rem;
 }
 
-.feature-choice small {
-  color: #60788a;
-  font-size: 0.82rem;
-  line-height: 1.4;
+.item-header strong {
+  color: #1e293b;
+  font-size: 1rem;
 }
 
-.error {
-  background: #fff1f2;
+.status-tag {
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
   border-radius: 0.5rem;
-  color: #9f1239;
-  font-size: 0.9rem;
-  margin: 0 0 1rem;
-  padding: 0.65rem 0.8rem;
+  background: #f1f5f9;
+  color: #64748b;
+  text-transform: uppercase;
 }
 
-.continue {
-  background: #0f6cbd;
+.status-tag.requested {
+  background: var(--kinetic-azure);
+  color: #fff;
+}
+
+.item-content p {
+  color: #64748b;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  margin-bottom: 0.5rem;
+}
+
+.explain-link {
+  color: var(--kinetic-azure);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Toggle Switch Styling */
+.switch {
+  display: inline-block;
+  height: 24px;
+  position: relative;
+  width: 44px;
+}
+
+.switch input {
+  height: 0;
+  opacity: 0;
+  width: 0;
+}
+
+.slider {
+  background-color: #cbd5e1;
+  border-radius: 24px;
+  bottom: 0;
+  cursor: pointer;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transition: .4s;
+}
+
+.slider:before {
+  background-color: white;
+  border-radius: 50%;
+  bottom: 4px;
+  content: "";
+  height: 16px;
+  left: 4px;
+  position: absolute;
+  transition: .4s;
+  width: 16px;
+}
+
+input:checked + .slider {
+  background-color: var(--kinetic-azure);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.form-footer {
+  margin-top: 2.5rem;
+  text-align: center;
+}
+
+.btn-continue {
+  background: var(--kinetic-azure);
   border: 0;
-  border-radius: 0.7rem;
+  border-radius: 1rem;
   color: #fff;
   cursor: pointer;
-  font-size: 1rem;
-  font-weight: 600;
-  padding: 0.85rem 1.25rem;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  height: 3.5rem;
+  transition: all 0.2s;
   width: 100%;
 }
 
-.continue:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
+.btn-continue:hover:not(:disabled) {
+  background: var(--kinetic-azure-dark);
+  transform: translateY(-2px);
 }
 
-.loading {
-  color: #60788a;
-  padding: 1rem 0;
-  text-align: center;
+.btn-continue:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.safe-note {
+  color: #94a3b8;
+  font-size: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.error-text {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.loading-state {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 3rem 0;
+}
+
+.spinner {
+  border: 3px solid #f1f5f9;
+  border-top: 3px solid var(--kinetic-azure);
+  border-radius: 50%;
+  height: 2.5rem;
+  width: 2.5rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+:global(.dark-theme) .consent-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+:global(.dark-theme) h1,
+:global(.dark-theme) .item-header strong {
+  color: #f1f5f9;
+}
+
+:global(.dark-theme) .consent-item {
+  border-color: #334155;
+}
+
+:global(.dark-theme) .consent-item.active {
+  background: #172334;
+}
+
+:global(.dark-theme) .item-icon {
+  background: #0f172a;
 }
 </style>

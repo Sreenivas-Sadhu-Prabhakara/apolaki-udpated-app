@@ -3,12 +3,14 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import {
   ASSIGNABLE_ROLES,
   authenticateAdmin,
+  clearAdminSessionCookie,
   createAdminTokens,
   createMfaToken,
   generateTotpSecret,
@@ -16,6 +18,7 @@ import {
   normalizeRole,
   requireAdminScope,
   requireMfaToken,
+  setAdminSessionCookie,
   totpUri,
   verifyPassword,
   verifyTotp
@@ -47,6 +50,7 @@ const sensitiveLimiter = rateLimit({ max: 3, keyPrefix: 'sensitive-admin' });
 app.disable('x-powered-by');
 app.set('trust proxy', process.env.NODE_ENV === 'production');
 app.use(express.json({ limit: '1mb' }));
+app.use(cookieParser());
 app.use(cors({ origin: FRONTEND_ORIGINS, credentials: true, allowedHeaders: ['Content-Type', 'Authorization', 'X-MFA-Token', 'X-Internal-Audit-Secret'] }));
 app.use(ipAllowlist());
 app.use(rateLimit({ max: 20, keyPrefix: 'admin-service' }));
@@ -59,8 +63,7 @@ app.get('/health', (_req, res) => {
   res.json({
     status: 'ok',
     service: 'admin-service',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -138,6 +141,9 @@ app.post('/api/admin/auth/login', async (req, res) => {
     afterState: { adminScope }
   });
 
+  // Set secure httpOnly cookie
+  setAdminSessionCookie(res, tokens.accessToken);
+
   res.json({
     success: true,
     accessToken: tokens.accessToken,
@@ -164,10 +170,19 @@ app.post('/api/admin/auth/refresh', async (req, res) => {
     const user = await users.getById(payload.sub);
     const tokens = createAdminTokens({ user, sessionId: session.id, adminScope: payload.adminScope });
     await query('UPDATE admin_sessions SET refresh_token_hash = $2, last_active_at = CURRENT_TIMESTAMP WHERE id = $1', [session.id, hashToken(tokens.refreshToken)]);
+    
+    // Update cookie
+    setAdminSessionCookie(res, tokens.accessToken);
+    
     res.json({ success: true, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, expiresIn: tokens.expiresInSeconds });
   } catch {
     res.status(401).json({ success: false, error: 'Invalid refresh token', code: 'INVALID_REFRESH_TOKEN' });
   }
+});
+
+app.post('/api/admin/auth/logout', (req, res) => {
+  clearAdminSessionCookie(res);
+  res.json({ success: true, message: 'Admin session cleared' });
 });
 
 app.use('/api/admin', authenticateAdmin);

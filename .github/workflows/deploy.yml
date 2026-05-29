@@ -20,17 +20,47 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  # 1. Regression Testing & Security Validation
+  validate:
+    name: Regression & Security Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          npm install --prefix middleware/netlify-db-service
+          npm install --prefix middleware/admin-service
+          npm install --prefix middleware/marketplace-service
+          npm install --prefix tests
+
+      - name: Run Pre-Deployment Check
+        run: ./scripts/pre-deploy-check.sh
+        env:
+          NODE_ENV: test
+          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.TEST_JWT_SECRET }}
+          ADMIN_JWT_SECRET: ${{ secrets.TEST_ADMIN_JWT_SECRET }}
+
   deploy-staging:
     name: Deploy to Staging
+    needs: validate
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/staging' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
     environment:
       name: staging
       url: https://staging.apolaki-solar.com
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+...
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
