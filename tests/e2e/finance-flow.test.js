@@ -45,7 +45,7 @@ describe('E2E > Finance Flow', function () {
     
     // Move the first slider (assume Monthly Bill)
     const billSlider = await driver.findElement(By.css('input[type="range"]'));
-    await billSlider.sendKeys('ARROW_RIGHT'); // Increment slightly
+    await billSlider.sendKeys('ARROW_LEFT', 'ARROW_LEFT', 'ARROW_LEFT', 'ARROW_LEFT', 'ARROW_LEFT', 'ARROW_LEFT', 'ARROW_LEFT', 'ARROW_LEFT', 'ARROW_LEFT', 'ARROW_LEFT'); // Increment slightly
     
     await driver.sleep(500); // Wait for debounce/calc
     

@@ -80,7 +80,7 @@
               <div class="p-6 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/10 border border-emerald-500/30">
                 <span class="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Monthly Net Savings</span>
                 <p class="text-4xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
-                  {{ formatCurrency(estimatedMonthlySavings) }}
+                  {{ php(estimatedMonthlySavings) }}
                 </p>
                 <p class="text-xs text-emerald-600/80 dark:text-emerald-400/80 mt-1">That's {{ Math.round((estimatedMonthlySavings / inputBill) * 100) }}% off your current utility profile bill.</p>
               </div>
@@ -93,7 +93,7 @@
                 </div>
                 <div class="p-4 rounded-xl" :class="isDark ? 'bg-slate-900 border border-slate-700' : 'bg-white border border-gray-100 shadow-sm'">
                   <span class="text-xs text-gray-400 font-medium block">25-Yr System Profit</span>
-                  <span class="text-xl font-bold text-emerald-500">{{ formatCurrency(lifetimeProfit) }}</span>
+                  <span class="text-xl font-bold text-emerald-500">{{ php(lifetimeProfit) }}</span>
                   <span class="text-[10px] text-gray-400 block mt-0.5">Estimated Net Gain</span>
                 </div>
               </div>
@@ -325,16 +325,16 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div class="rounded-xl shadow-sm border p-6" :class="cardClass">
             <p class="text-sm font-medium" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Total Income / Savings</p>
-            <p class="text-3xl font-bold text-green-600 dark:text-emerald-400">{{ formatCurrency(financeStore.totalIncome) }}</p>
+            <p class="text-3xl font-bold text-green-600 dark:text-emerald-400">{{ php(financeStore.totalIncome) }}</p>
           </div>
           <div class="rounded-xl shadow-sm border p-6" :class="cardClass">
             <p class="text-sm font-medium" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Total Expenses</p>
-            <p class="text-3xl font-bold text-red-600 dark:text-red-400">{{ formatCurrency(financeStore.totalExpenses) }}</p>
+            <p class="text-3xl font-bold text-red-600 dark:text-red-400">{{ php(financeStore.totalExpenses) }}</p>
           </div>
           <div class="rounded-xl shadow-sm border p-6" :class="cardClass">
             <p class="text-sm font-medium" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Net Balance</p>
             <p class="text-3xl font-bold" :class="financeStore.netBalance >= 0 ? 'text-green-600' : 'text-red-600'">
-              {{ formatCurrency(financeStore.netBalance) }}
+              {{ php(financeStore.netBalance) }}
             </p>
           </div>
           <div class="rounded-xl shadow-sm border p-6" :class="cardClass">
@@ -350,8 +350,8 @@
               <span class="text-2xl">{{ typeIcon(s.type) }}</span>
               <p class="text-sm font-medium capitalize" :class="isDark ? 'text-slate-400' : 'text-gray-500'">{{ s.type }}</p>
             </div>
-            <p class="text-2xl font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">{{ formatCurrency(s.total || 0) }}</p>
-            <p class="text-sm" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ s.count }} transaction{{ s.count != 1 ? 's' : '' }} · Avg {{ formatCurrency(s.average || 0) }}</p>
+            <p class="text-2xl font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">{{ php(s.total || 0) }}</p>
+            <p class="text-sm" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ s.count }} transaction{{ s.count != 1 ? 's' : '' }} · Avg {{ php(s.average || 0) }}</p>
           </div>
         </div>
 
@@ -456,7 +456,7 @@
                 <td class="px-6 py-4 capitalize">{{ (txn.category || '').replace(/_/g, ' ') }}</td>
                 <td class="px-6 py-4 max-w-xs truncate" :class="isDark ? 'text-slate-400' : 'text-gray-600'">{{ txn.description || '—' }}</td>
                 <td class="px-6 py-4 text-right font-semibold" :class="isPositive(txn.type) ? 'text-green-500' : 'text-red-500'">
-                  {{ isPositive(txn.type) ? '+' : '-' }}{{ formatCurrency(txn.amount || 0) }}
+                  {{ isPositive(txn.type) ? '+' : '-' }}{{ php(txn.amount || 0) }}
                 </td>
                 <td class="px-6 py-4">
                   <span :class="txn.status === 'completed' ? 'text-green-500' : 'text-yellow-500'" class="text-xs font-medium capitalize">
@@ -519,7 +519,7 @@
               </div>
               <div class="rounded-lg p-3" :class="isDark ? 'bg-slate-800' : 'bg-gray-50'">
                 <p class="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Est. Savings</p>
-                <p class="font-bold text-sm text-emerald-500">{{ formatCurrency(item.monthly_savings || item.monthlySavings || 0) }}/mo</p>
+                <p class="font-bold text-sm text-emerald-500">{{ php(item.savings_estimate?.monthlySavings || 0) }}/mo</p>
               </div>
               <div class="rounded-lg p-3" :class="isDark ? 'bg-slate-800' : 'bg-gray-50'">
                 <p class="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Payback</p>
@@ -561,39 +561,53 @@ const annualIncome = ref('₱1,500,000')
 
 const isDark = computed(() => themeStore.isDarkMode)
 
+function php(amount) {
+  return formatCurrency(Number(amount || 0), { fromUSD: false, currency: 'PHP', decimals: 0 })
+}
+
+const assessmentsCount = computed(() => assessmentStore.assessments?.length || 0)
+const hasAssessments = computed(() => assessmentsCount.value > 0)
+
 // Calculations
 const systemCost = computed(() => {
   // Approximate custom cost based on kW scale index
-  return systemSizeKW.value * 72000
+  return (systemSizeKW.value || 5) * 72000
 })
 
 const estimatedMonthlySavings = computed(() => {
   // Monthly output estimate in kWh multiplied by solar unit rates vs grid rates index
-  const monthlyKwh = systemSizeKW.value * 125 // 125 kWh generated per kW solar per month in PH
+  const monthlyKwh = (systemSizeKW.value || 5) * 125 // 125 kWh generated per kW solar per month in PH
   const gridRateKwh = 12.5 // Average grid price
   const solarSavingsVal = monthlyKwh * gridRateKwh
-  return Math.min(inputBill.value * 0.85, solarSavingsVal) // Up to 85% peak utility deflection
+  return Math.min((inputBill.value || 15000) * 0.85, solarSavingsVal) // Up to 85% peak utility deflection
+})
+
+const estimatedRoi = computed(() => {
+  if (systemCost.value === 0) return 0
+  return Math.round((lifetimeProfit.value / systemCost.value) * 100)
 })
 
 const calculatedDownPayment = computed(() => {
-  return (systemCost.value * loanDownPaymentPct.value) / 100
+  return (systemCost.value * (loanDownPaymentPct.value || 20)) / 100
 })
 
 const calculatedEMI = computed(() => {
   const principal = systemCost.value - calculatedDownPayment.value
   const yearlyRate = 0.0625 // 6.25% APR
   const monthlyRate = yearlyRate / 12
-  const totalMonths = loanTenureYears.value * 12
+  const totalMonths = (loanTenureYears.value || 5) * 12
   
   if (principal <= 0) return 0
-  return (
-    (principal * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) /
-    (Math.pow(1 + monthlyRate, totalMonths) - 1)
-  )
+  if (!monthlyRate) return principal / totalMonths
+  
+  const factor = Math.pow(1 + monthlyRate, totalMonths)
+  return (principal * monthlyRate * factor) / (factor - 1)
 })
 
 const computedPaybackYears = computed(() => {
-  const years = systemCost.value / (estimatedMonthlySavings.value * 12)
+  const annualSavings = estimatedMonthlySavings.value * 12
+  if (!annualSavings) return 0
+  const years = systemCost.value / annualSavings
   return parseFloat(years.toFixed(1))
 })
 
@@ -605,7 +619,7 @@ const lifetimeProfit = computed(() => {
   
   for (let year = 1; year <= 25; year++) {
     compoundedSavings += annualSavings * currentMultiplier
-    currentMultiplier *= (1 + (inflationRate.value / 100))
+    currentMultiplier *= (1 + ((inflationRate.value || 4.5) / 100))
   }
   return compoundedSavings - totalOutlay
 })
@@ -616,15 +630,16 @@ const paybackPath = computed(() => {
   const initialCost = systemCost.value
   const annualSavings = estimatedMonthlySavings.value * 12
   let netGain = -initialCost
-  let breakEvenYr = computedPaybackYears.value
+  
+  const divisor = Math.max(1, lifetimeProfit.value + initialCost * 1.5)
   
   for (let i = 0; i <= 25; i++) {
     if (i > 0) {
-      netGain += annualSavings * Math.pow(1 + (inflationRate.value / 100), i - 1)
+      netGain += annualSavings * Math.pow(1 + ((inflationRate.value || 4.5) / 100), i - 1)
     }
     const x = 40 + (i / 25) * 440
     // Normalize logic: maps min/max of ROI projections within grid vertical heights (20-180px)
-    const normalizedY = 180 - ((netGain + initialCost) / (lifetimeProfit.value + initialCost * 1.5)) * 160
+    const normalizedY = 180 - ((netGain + initialCost) / divisor) * 160
     pts.push(`${x},${Math.min(180, Math.max(20, normalizedY))}`)
   }
   return `M ${pts.join(' L ')}`
@@ -757,6 +772,21 @@ async function handleCreateTransaction() {
 }
 
 async function loadData() {
+  // Restore assessment context if available
+  const saved = localStorage.getItem('financingAssessmentState')
+  if (saved) {
+    try {
+      const state = JSON.parse(saved)
+      if (state.monthlyBill) inputBill.value = state.monthlyBill
+      if (state.systemSize) systemSizeKW.value = state.systemSize
+      // Default tenure and downpayment if coming from assessment
+      loanTenureYears.value = 7 // Matches assessmentDomain.js LOAN_YEARS
+      loanDownPaymentPct.value = 20
+    } catch (e) {
+      console.warn('Failed to restore assessment context in Finance view', e)
+    }
+  }
+
   await Promise.all([
     financeStore.fetchTransactions(),
     financeStore.fetchSummary(),
@@ -767,20 +797,25 @@ async function loadData() {
 async function saveCurrentSimulation() {
   saveSuccess.value = false
   await assessmentStore.saveAssessment({
-    description: `${systemSizeKW.value} kWp Solar — ${new Date().toLocaleDateString()}`,
-    annualUsage: Math.round(systemSizeKW.value * 125 * 12),
-    recommendedCapacity: systemSizeKW.value,
-    financingOption: loanDownPaymentPct.value === 100 ? 'cash' : loanDownPaymentPct.value === 0 ? 'lease' : 'loan',
-    monthlySavings: Math.round(estimatedMonthlySavings.value),
-    paybackYears: computedPaybackYears.value,
-    roofArea: systemSizeKW.value * 6,
-    sunExposure: 'high',
-    obstructionLevel: 'low',
-    roofCondition: 'good',
     address: 'Philippines',
     city: 'Manila',
     state: 'NCR',
     zipCode: '1000',
+    roofCondition: 'good',
+    roofArea: systemSizeKW.value * 6,
+    annualUsage: Math.round(systemSizeKW.value * 125 * 12),
+    sunExposure: 'high',
+    obstructionLevel: 'low',
+    recommendedCapacity: systemSizeKW.value,
+    estimatedCost: systemCost.value,
+    savingsEstimate: {
+      monthlySavings: Math.round(estimatedMonthlySavings.value),
+      paybackYears: computedPaybackYears.value,
+      roi: estimatedRoi.value,
+      lifetimeProfit: lifetimeProfit.value,
+      financingOption: loanDownPaymentPct.value === 100 ? 'cash' : loanDownPaymentPct.value === 0 ? 'lease' : 'loan',
+      description: `${systemSizeKW.value} kWp Solar — ${new Date().toLocaleDateString()}`
+    }
   })
   saveSuccess.value = true
   setTimeout(() => { saveSuccess.value = false }, 3000)
@@ -788,7 +823,7 @@ async function saveCurrentSimulation() {
 
 function loadSavedSimulation(item) {
   if (item.recommended_capacity) systemSizeKW.value = parseFloat(item.recommended_capacity)
-  const option = item.financing_option || item.financingOption || 'loan'
+  const option = item.savings_estimate?.financingOption || item.financing_option || 'loan'
   if (option === 'cash') loanDownPaymentPct.value = 100
   else if (option === 'lease') loanDownPaymentPct.value = 0
   else loanDownPaymentPct.value = 20
