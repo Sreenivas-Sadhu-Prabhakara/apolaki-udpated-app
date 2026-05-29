@@ -309,6 +309,7 @@
             </div>
             <p>Projected 20-year value: {{ formatPeso(results.lifetimeSavings) }}</p>
             <p>Down payment: {{ formatPeso(results.downPayment) }}. Principal: {{ formatPeso(results.loanPrincipal) }}.</p>
+          </article>
           <article class="detail-card detail-card--highlight">
             <div class="section-title">
               <span class="eyebrow">Financing Swap</span>
