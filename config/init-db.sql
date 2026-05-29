@@ -466,5 +466,67 @@ INSERT INTO marketplace_products (name, category, description, price, inventory,
 ('Enphase IQ Battery 5P', 'batteries', '5 kWh modular battery system, scalable up to 80 kWh', 5500.00, 120, 4.50),
 ('IronRidge XR100', 'mounting', 'Universal rail-based roof mounting system for residential', 150.00, 1000, 4.40),
 ('SolarEdge Home EV Charger', 'accessories', 'Smart EV charger with solar boost mode, 40A output', 900.00, 200, 4.60),
-('Sense Home Energy Monitor', 'monitoring', 'Real-time home energy monitoring with solar tracking', 350.00, 300, 4.30)
+('Sense Home Energy Monitor', 'monitoring', 'Real-time home energy monitoring with solar tracking', 350.00, 300, 4.30),
+('Jinko Tiger Neo 440W', 'panels', 'N-type monocrystalline module with SMBB technology', 320.00, 600, 4.65),
+('Huawei SUN2000-5KTL', 'inverters', 'Smart string inverter with AI-powered MPPT', 1200.00, 100, 4.75),
+('BYD Battery-Box HVM', 'batteries', 'Modular LFP battery system for residential storage', 6200.00, 40, 4.60)
+ON CONFLICT DO NOTHING;
+
+-- Seed dealer profiles
+INSERT INTO users (id, email, first_name, last_name, role) VALUES
+('00000000-0000-0000-0000-000000000001', 'installer1@mock.com', 'Mock', 'Installer1', 'dealer'),
+('00000000-0000-0000-0000-000000000002', 'installer2@mock.com', 'Mock', 'Installer2', 'dealer'),
+('00000000-0000-0000-0000-000000000003', 'supplier1@mock.com', 'Mock', 'Supplier1', 'supplier')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO dealer_profiles (user_id, name, type, icon, description, contact_enabled, booking_enabled, scheduling_enabled, provinces, rating) VALUES
+('00000000-0000-0000-0000-000000000001', 'Solara Energy Solutions', 'installer', '☀️', 'Premium Tier 1 solar installations in Metro Manila.', true, true, false, '["NCR", "Bulacan"]', 4.80),
+('00000000-0000-0000-0000-000000000002', 'Lumina Solar PH', 'installer', '🔋', 'Commercial and residential systems specialist.', true, true, false, '["NCR", "Cebu"]', 4.90),
+('00000000-0000-0000-0000-000000000003', 'Solaric Panels', 'supplier', '📦', 'Direct supplier of panels and batteries.', true, false, false, '["NCR", "Davao"]', 4.70)
+ON CONFLICT DO NOTHING;
+
+-- Seed sample user for assessments/finance
+INSERT INTO users (id, email, first_name, last_name, role) VALUES
+('00000000-0000-0000-0000-000000000100', 'demo@apolaki.local', 'Demo', 'User', 'customer')
+ON CONFLICT DO NOTHING;
+
+-- Seed sample assessments
+INSERT INTO assessments (user_id, address, city, state, recommended_capacity, estimated_cost, status, savings_estimate) VALUES
+('00000000-0000-0000-0000-000000000100', '123 Solar St', 'Quezon City', 'NCR', 5.2, 350000.00, 'saved', '{"monthlySavings": 4500, "solarPayment": 7200, "confidenceScore": 92}'),
+('00000000-0000-0000-0000-000000000100', '456 Bright Ave', 'Makati', 'NCR', 3.6, 240000.00, 'saved', '{"monthlySavings": 3200, "solarPayment": 5100, "confidenceScore": 88}'),
+('00000000-0000-0000-0000-000000000100', '789 Sun Rd', 'Cebu City', 'Cebu', 8.4, 620000.00, 'saved', '{"monthlySavings": 8100, "solarPayment": 12500, "confidenceScore": 95}'),
+('00000000-0000-0000-0000-000000000100', '101 Energy Ln', 'Davao City', 'Davao', 10.0, 750000.00, 'saved', '{"monthlySavings": 10500, "solarPayment": 15000, "confidenceScore": 91}')
+ON CONFLICT DO NOTHING;
+
+-- Seed finance transactions
+INSERT INTO finance (user_id, transaction_id, amount, type, category, description, transaction_date) VALUES
+('00000000-0000-0000-0000-000000000100', 'txn-001', 12500.00, 'expense', 'utility', 'Meralco Bill - April 2026', '2026-04-15'),
+('00000000-0000-0000-0000-000000000100', 'txn-002', 7200.00, 'expense', 'solar_loan', 'Apolaki Solar Loan Payment', '2026-05-01'),
+('00000000-0000-0000-0000-000000000100', 'txn-003', 4500.00, 'income', 'grid_export', 'Solar Excess Export Credit', '2026-05-15')
+ON CONFLICT DO NOTHING;
+
+-- Seed installations
+INSERT INTO solar_installations (id, user_id, name, address, city, state, capacity, panel_count, inverter_type, status) VALUES
+('00000000-0000-0000-0000-000000000200', '00000000-0000-0000-0000-000000000100', 'Home Solar System', '123 Solar St', 'Quezon City', 'NCR', 5.2, 12, 'Apex Hybrid 5kW', 'active')
+ON CONFLICT DO NOTHING;
+
+-- Seed monitoring data for the installation
+INSERT INTO monitoring_data (installation_id, power_output, voltage_ac, current_ac, frequency, temperature, efficiency, status) VALUES
+('00000000-0000-0000-0000-000000000200', 4.8, 230.5, 20.8, 60.0, 42.5, 98.4, 'normal'),
+('00000000-0000-0000-0000-000000000200', 4.2, 231.0, 18.2, 60.0, 40.2, 98.1, 'normal'),
+('00000000-0000-0000-0000-000000000200', 3.5, 229.8, 15.2, 60.0, 38.4, 97.8, 'normal')
+ON CONFLICT DO NOTHING;
+
+-- Seed performance data
+INSERT INTO performance_data (installation_id, date, energy_generated, peak_power, avg_efficiency) VALUES
+('00000000-0000-0000-0000-000000000200', '2026-05-28', 24.5, 5.1, 98.2),
+('00000000-0000-0000-0000-000000000200', '2026-05-27', 22.8, 4.9, 97.9),
+('00000000-0000-0000-0000-000000000200', '2026-05-26', 26.1, 5.2, 98.5)
+ON CONFLICT DO NOTHING;
+
+-- Seed contracts
+INSERT INTO contracts (user_id, contract_type, title, provider, amount, status, term_months) VALUES
+('00000000-0000-0000-0000-000000000100', 'purchase', 'Solar Installation Agreement', 'Solara Energy Solutions', 350000.00, 'signed', 0),
+('00000000-0000-0000-0000-000000000100', 'maintenance', 'Annual Service Plan', 'EcoGrid Ops', 15000.00, 'active', 12),
+('00000000-0000-0000-0000-000000000100', 'finance', 'Solar Loan Agreement', 'Apolaki Finance', 240000.00, 'active', 60)
 ON CONFLICT DO NOTHING;

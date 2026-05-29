@@ -347,7 +347,7 @@
           </div>
         </div>
 
-        <aside class="saved-assessments">
+        <aside class="saved-assessments" :class="{ 'saved-assessments--list': savedAssessments.length > 3 }">
           <div class="section-title">
             <div>
               <span class="eyebrow">Saved assessments</span>
@@ -357,8 +357,8 @@
               {{ loadingSavedAssessments ? 'Loading' : 'Refresh' }}
             </button>
           </div>
-          <div v-if="savedAssessments.length" class="saved-list">
-            <div v-for="item in savedAssessments.slice(0, 3)" :key="item.id" class="saved-item">
+          <div v-if="savedAssessments.length" class="saved-list" :class="{ 'saved-list--scrollable': savedAssessments.length > 3 }">
+            <div v-for="item in savedAssessments" :key="item.id" class="saved-item">
               <strong>{{ assessmentCapacity(item) }}</strong>
               <span>{{ assessmentLocation(item) }}</span>
               <small>{{ formatSavedDate(item.created_at || item.createdAt || item.savings_estimate?.calculatedAt) }}</small>
@@ -398,7 +398,9 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/themeStore'
+import { useMarketplaceStore } from '../stores/marketplaceStore'
 import {
   calculateAssessmentPlan,
   fetchSavedAssessmentPlans,
@@ -414,7 +416,9 @@ import {
   usageProfiles
 } from '../domains/assessment/assessmentDomain'
 
+const router = useRouter()
 const themeStore = useThemeStore()
+const marketplaceStore = useMarketplaceStore()
 const isDark = computed(() => themeStore.isDarkMode)
 
 const currentStep = ref(0)
@@ -502,7 +506,18 @@ const solarBars = computed(() => {
 })
 
 const matchedInstallers = computed(() => {
-  // PRD 8: Mock matched installers based on province
+  // Use real data from marketplace store if available
+  if (marketplaceStore.dealers.length > 0) {
+    const province = getLocation(form.location).province
+    // Filter dealers that serve this province or NCR
+    return marketplaceStore.dealers.filter(d => 
+      !d.provinces || 
+      d.provinces.includes(province) || 
+      d.provinces.includes('NCR')
+    ).slice(0, 3)
+  }
+
+  // Fallback to mock matched installers based on province
   const province = getLocation(form.location).province
   const base = [
     { id: 'i1', name: 'Solara Energy Solutions', rating: 4.8, icon: '☀️' },
@@ -732,6 +747,7 @@ function buildMapTiles(lat, lng, zoom) {
 
 onMounted(() => {
   loadSavedAssessments()
+  marketplaceStore.fetchDealers()
 
   const saved = localStorage.getItem('financingAssessmentState')
   if (!saved) return
@@ -1486,6 +1502,21 @@ select:focus {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+}
+
+.saved-list--scrollable {
+  display: flex;
+  flex-direction: column;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.saved-list--scrollable .saved-item {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
 .saved-list--compact {
