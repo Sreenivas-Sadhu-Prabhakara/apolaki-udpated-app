@@ -10,6 +10,7 @@ const config = {
   api: {
     baseUrl: process.env.API_BASE_URL || 'http://localhost:3001',
     adminBaseUrl: process.env.ADMIN_API_BASE_URL || 'http://localhost:3002',
+    marketplaceBaseUrl: process.env.MARKETPLACE_API_BASE_URL || 'http://localhost:3004',
   },
   frontend: {
     baseUrl: process.env.FRONTEND_URL || 'http://localhost:5173',

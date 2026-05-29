@@ -51,6 +51,12 @@
         </button>
       </div>
       
+      <!-- Error Feedback (Non-blocking) -->
+      <div v-if="marketplaceStore.error" class="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-lg mb-6 flex justify-between items-center">
+        <span>⚠️ {{ marketplaceStore.error }}</span>
+        <button @click="marketplaceStore.error = null" class="text-sm font-bold underline">Dismiss</button>
+      </div>
+
       <!-- Marketplace Tabs -->
       <div class="flex border-b mb-6" :class="isDark ? 'border-slate-700' : 'border-gray-200'">
         <button 
@@ -206,12 +212,7 @@
       </div>
 
       <!-- Loading -->
-      <div v-if="marketplaceStore.loading" class="text-center py-20 text-gray-500">Loading products…</div>
-
-      <!-- Error -->
-      <div v-else-if="marketplaceStore.error" class="bg-red-50 border border-red-200 rounded-xl p-6 text-red-700">
-        {{ marketplaceStore.error }}
-      </div>
+      <div v-if="marketplaceStore.loading && !marketplaceStore.products.length" class="text-center py-20 text-gray-500">Loading products…</div>
 
       <!-- Product Detail Modal -->
       <div v-else-if="selectedProduct" class="bg-white rounded-xl shadow-lg border border-gray-200 p-8 mb-8">
@@ -421,6 +422,11 @@ const compareList = ref([])
 const selectedProduct = ref(null)
 const productReviews = ref([])
 const showReviewForm = ref(false)
+const reviewForm = reactive({
+  rating: 0,
+  title: '',
+  comment: ''
+})
 
 const activeTab = ref('equipment') // 'equipment' or 'installers'
 const activeServiceType = ref('all')
@@ -456,6 +462,7 @@ const serviceTypes = [
 ]
 
 const filteredInstallers = computed(() => {
+    if (!marketplaceStore.dealers) return []
     return marketplaceStore.dealers.filter(installer => {
         const typeMatch = activeServiceType.value === 'all' || installer.type === activeServiceType.value
         // Assume installer.provinces is an array from JSONB. If it's a string, parse it.

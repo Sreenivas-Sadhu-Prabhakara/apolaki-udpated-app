@@ -307,7 +307,9 @@
           <div class="prd-mini-stat"><span>Monthly Comparison</span><strong>{{ php(assessmentResults.monthlyInstallment) }}</strong></div>
           <div class="prd-mini-stat"><span>Payback Period</span><strong>{{ assessmentResults.payback }} yrs</strong></div>
         </div>
-        <p class="prd-insight">Your solar installment is {{ php(Math.max(0, assessmentResults.monthlyBill - assessmentResults.monthlyInstallment)) }} cheaper than the current monthly bill.</p>
+        <p v-if="assessmentResults.monthlyBill" class="prd-insight">
+          Your solar installment is {{ php(Math.max(0, assessmentResults.monthlyBill - assessmentResults.monthlyInstallment)) }} cheaper than the current monthly bill.
+        </p>
         <div class="prd-card-actions">
           <router-link class="prd-button prd-button--ghost" to="/finance">Explore Financing Options</router-link>
           <router-link class="prd-button" to="/marketplace">Explore Installer Packages</router-link>
@@ -840,17 +842,26 @@ function persistAssessmentContext() {
 
 function restoreAssessmentContext() {
   try {
+    // Try new storage key first
+    const savedState = localStorage.getItem('financingAssessmentState')
+    if (savedState) {
+      const state = JSON.parse(savedState)
+      assessmentResults.value = {
+        capacity: state.systemSize || state.targetCapacityKw,
+        cost: (state.systemSize || state.targetCapacityKw) * 45000, // Matching INSTALLED_COST_PER_KW
+        monthlyBill: state.monthlyBill,
+        monthlyInstallment: state.monthlyPayment,
+        payback: state.paybackYears || '—'
+      }
+      return
+    }
+
+    // Fallback to legacy key
     const saved = JSON.parse(localStorage.getItem('apolaki-assessment-context') || 'null')
     if (!saved) return
     if (saved.form) Object.assign(assessmentForm, saved.form)
-    if (saved.solarApiData) {
-      solarApiData.value = saved.solarApiData
-      lastSolarLookupKey.value = solarLookupKey()
-    }
     if (saved.assessmentResults) {
       assessmentResults.value = saved.assessmentResults
-      financeForm.capacity = Number(saved.assessmentResults.capacity || financeForm.capacity)
-      transactionForm.amount = Number(saved.assessmentResults.monthlyBill || transactionForm.amount)
     }
   } catch {
     localStorage.removeItem('apolaki-assessment-context')

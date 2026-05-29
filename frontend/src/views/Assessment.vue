@@ -309,6 +309,13 @@
             </div>
             <p>Projected 20-year value: {{ formatPeso(results.lifetimeSavings) }}</p>
             <p>Down payment: {{ formatPeso(results.downPayment) }}. Principal: {{ formatPeso(results.loanPrincipal) }}.</p>
+          <article class="detail-card detail-card--highlight">
+            <div class="section-title">
+              <span class="eyebrow">Financing Swap</span>
+              <strong>{{ formatPeso(results.solarPayment) }}/mo</strong>
+            </div>
+            <p>Replace your current <strong>{{ formatPeso(form.monthlyBill) }}</strong> bill with a lower solar payment. You could start saving <strong>{{ formatPeso(results.monthlySavings) }}</strong> immediately.</p>
+            <router-link to="/finance" class="card-link">View detailed ROI and loan options →</router-link>
           </article>
         </div>
 
@@ -1554,6 +1561,24 @@ select:focus {
 .detail-card {
   display: grid;
   gap: 10px;
+}
+
+.detail-card--highlight {
+  border-color: #0f6cbd;
+  background: #f0f7ff;
+}
+
+.detail-card--highlight strong {
+  color: #0f6cbd;
+}
+
+.card-link {
+  display: inline-block;
+  margin-top: 10px;
+  color: #0f6cbd;
+  font-weight: 800;
+  font-size: 0.85rem;
+  text-decoration: underline;
 }
 
 .detail-card p,

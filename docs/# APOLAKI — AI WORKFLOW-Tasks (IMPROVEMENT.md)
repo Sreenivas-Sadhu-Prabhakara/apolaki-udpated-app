@@ -12,240 +12,240 @@ Primary hook:
 
 ---
 
-## Phase 1 — Intent Capture
+## Phase 1 — Intent Capture ✅
 
 ### Task 1.1 — Add Financing-First Hero
-- Add headline: “Replace your electricity bill with a lower monthly payment”
-- Add supporting copy: “See how your current bill could become a lower solar payment”
-- Add CTA: “See My New Monthly Cost”
-- Ensure CTA scrolls or routes user into the assessment flow
+- [x] Add headline: “Replace your electricity bill with a lower monthly payment”
+- [x] Add supporting copy: “See how your current bill could become a lower solar payment”
+- [x] Add CTA: “See My New Monthly Cost”
+- [x] Ensure CTA scrolls or routes user into the assessment flow
 
 ### Task 1.2 — Add Example Payment Swap
-- Display sample transformation:
+- [x] Display sample transformation:
   - Current bill: ₱12,000
   - Solar payment: ₱7,500
   - Monthly savings: ₱4,500
-- Make this visual and prominent
+- [x] Make this visual and prominent
 
 ---
 
-## Phase 2 — Input Capture
+## Phase 2 — Input Capture ✅
 
 ### Task 2.1 — Convert Assessment Into Guided Steps
-- Step 1: Monthly electricity bill
-- Step 2: Location
-- Step 3: Property type
-- Add progress indicator: “Step X of 3”
-- Add helper text: “Takes less than 30 seconds”
+- [x] Step 1: Monthly electricity bill
+- [x] Step 2: Location
+- [x] Step 3: Property type
+- [x] Add progress indicator: “Step X of 3”
+- [x] Add helper text: “Takes less than 30 seconds”
 
 ### Task 2.2 — Improve Bill Input
-- Make monthly bill the primary input
-- Add currency formatting for PHP
-- Add validation:
+- [x] Make monthly bill the primary input
+- [x] Add currency formatting for PHP
+- [x] Add validation:
   - Required
   - Must be numeric
   - Must be greater than 0
 
 ### Task 2.3 — Improve Location Input
-- Add city/province dropdown for Philippines
-- Add optional auto-detect location
-- Add fallback manual selection
+- [x] Add city/province dropdown for Philippines
+- [x] Add optional auto-detect location
+- [x] Add fallback manual selection
 
 ### Task 2.4 — Default Property Type
-- Default to Residential
-- Keep SME as optional secondary selection
-- Do not include Enterprise in MVP
+- [x] Default to Residential
+- [x] Keep SME as optional secondary selection
+- [x] Do not include Enterprise in MVP
 
 ---
 
-## Phase 3 — Processing Layer
+## Phase 3 — Processing Layer ✅
 
 ### Task 3.1 — Add Processing Screen
-- Show after assessment submission
-- Duration: 2–3 seconds
-- Add progress animation
+- [x] Show after assessment submission
+- [x] Duration: 2–3 seconds
+- [x] Add progress animation
 
 ### Task 3.2 — Add Processing Messages
 Rotate messages:
-- “Analyzing your electricity usage…”
-- “Checking solar potential in your area…”
-- “Optimizing your lower monthly payment…”
+- [x] “Analyzing your electricity usage…”
+- [x] “Checking solar potential in your area…”
+- [x] “Optimizing your lower monthly payment…”
 
 ---
 
-## Phase 4 — Calculation Engine
+## Phase 4 — Calculation Engine ✅
 
 ### Task 4.1 — Estimate Solar Recommendation
 Calculate:
-- Estimated kWh usage from monthly bill
-- Recommended system size in kW
-- Estimated solar offset
+- [x] Estimated kWh usage from monthly bill
+- [x] Recommended system size in kW
+- [x] Estimated solar offset
 
 ### Task 4.2 — Calculate Financing Scenario
 Calculate:
-- Estimated system cost
-- Monthly solar payment
-- Monthly savings
-- Annual savings
-- Payback period
+- [x] Estimated system cost
+- [x] Monthly solar payment
+- [x] Monthly savings
+- [x] Annual savings
+- [x] Payback period
 
 ### Task 4.3 — Add Confidence Score
 Create simple MVP confidence score using:
-- Monthly bill completeness
-- Location availability
-- Property type
-- Data quality
+- [x] Monthly bill completeness
+- [x] Location availability
+- [x] Property type
+- [x] Data quality
 
 ---
 
-## Phase 5 — Insight Delivery / Results Page
+## Phase 5 — Insight Delivery / Results Page ✅
 
 ### Task 5.1 — Replace Generic Result Header
-- Remove “Step 2 of 2” style language
-- Rename result section to: “Your Lower Monthly Plan”
+- [x] Remove “Step 2 of 2” style language
+- [x] Rename result section to: “Your Lower Monthly Plan”
 
 ### Task 5.2 — Add Payment Swap Card
 Display:
-- Current electricity bill
-- Estimated solar monthly payment
-- Net monthly savings
+- [x] Current electricity bill
+- [x] Estimated solar monthly payment
+- [x] Net monthly savings
 
 ### Task 5.3 — Make Monthly Savings the Hero Metric
-- Show: “You save ₱X/month”
-- Make this the largest number on the results page
+- [x] Show: “You save ₱X/month”
+- [x] Make this the largest number on the results page
 
 ### Task 5.4 — Add Financing Breakdown
 Display:
-- Estimated loan tenure
-- Estimated monthly payment
-- Estimated system size
-- Ownership message after payoff
+- [x] Estimated loan tenure
+- [x] Estimated monthly payment
+- [x] Estimated system size
+- [x] Ownership message after payoff
 
 ### Task 5.5 — Add Trust Layer
 Display:
-- “Based on your location and electricity usage”
-- Confidence score
-- Disclaimer: “Estimates may vary after installer inspection”
+- [x] “Based on your location and electricity usage”
+- [x] Confidence score
+- [x] Disclaimer: “Estimates may vary after installer inspection”
 
 ### Task 5.6 — De-emphasize ROI
-- Move payback and lifetime savings below the primary payment swap section
-- Do not make ROI the first result
+- [x] Move payback and lifetime savings below the primary payment swap section
+- [x] Do not make ROI the first result
 
 ---
 
-## Phase 6 — Decision Trigger
+## Phase 6 — Decision Trigger ✅
 
 ### Task 6.1 — Add Primary CTA
 Primary CTA:
-- “Get My Lower Monthly Plan Installed”
+- [x] “Get My Lower Monthly Plan Installed”
 
 ### Task 6.2 — Add Secondary CTA
 Secondary CTA:
-- “Talk to a Solar Advisor”
-- “See Financing Options”
+- [x] “Talk to a Solar Advisor”
+- [x] “See Financing Options”
 
 ### Task 6.3 — Add Conditional CTA Logic
-- If monthly savings > 0: show install CTA strongly
-- If savings are low: show advisory CTA
-- If inputs are weak: ask user to refine inputs
+- [x] If monthly savings > 0: show install CTA strongly
+- [x] If savings are low: show advisory CTA
+- [x] If inputs are weak: ask user to refine inputs
 
 ### Task 6.4 — Add Mobile Sticky CTA
-- Sticky CTA visible after results are shown
-- CTA should not appear before value is displayed
+- [x] Sticky CTA visible after results are shown
+- [x] CTA should not appear before value is displayed
 
 ---
 
-## Phase 7 — Lead Capture
+## Phase 7 — Lead Capture ✅
 
 ### Task 7.1 — Add Lead Capture Form
 Fields:
-- Name
-- Phone number
+- [x] Name
+- [x] Phone number
 
 Optional:
-- Email
+- [x] Email
 
 ### Task 7.2 — Keep Lead Form After Results
-- Do not ask for contact details before showing value
-- Trigger form only after CTA click
+- [x] Do not ask for contact details before showing value
+- [x] Trigger form only after CTA click
 
 ### Task 7.3 — Add Lead Confirmation Screen
 Show:
-- “Your solar advisor will contact you”
-- “We’ll match you with a verified installer in your area”
+- [x] “Your solar advisor will contact you”
+- [x] “We’ll match you with a verified installer in your area”
 
 ---
 
-## Phase 8 — Human-in-the-Loop MVP
+## Phase 8 — Human-in-the-Loop MVP 🔄
 
 ### Task 8.1 — Create Manual Installer Assignment Process
-- Store lead details
-- Store assessment result
-- Allow manual assignment to installer
+- [x] Store lead details (Local Storage MVP)
+- [ ] Store assessment result (Backend)
+- [ ] Allow manual assignment to installer
 
 ### Task 8.2 — Add Lead Statuses
 Statuses:
-- New
-- Contacted
-- Assigned
-- Quoted
-- Converted
-- Lost
+- [ ] New
+- [ ] Contacted
+- [ ] Assigned
+- [ ] Quoted
+- [ ] Converted
+- [ ] Lost
 
 ---
 
-## Phase 9 — Feedback Loop / Analytics
+## Phase 9 — Feedback Loop / Analytics ⏳
 
 ### Task 9.1 — Add Event Tracking
 Track:
-- assessment_started
-- bill_entered
-- location_entered
-- assessment_completed
-- processing_viewed
-- result_viewed
-- cta_clicked
-- lead_submitted
+- [ ] assessment_started
+- [ ] bill_entered
+- [ ] location_entered
+- [ ] assessment_completed
+- [ ] processing_viewed
+- [ ] result_viewed
+- [ ] cta_clicked
+- [ ] lead_submitted
 
 ### Task 9.2 — Track Drop-Off Points
 Track where users abandon:
-- Hero
-- Bill input
-- Location input
-- Processing
-- Results
-- Lead form
+- [ ] Hero
+- [ ] Bill input
+- [ ] Location input
+- [ ] Processing
+- [ ] Results
+- [ ] Lead form
 
 ### Task 9.3 — Capture Outcome Feedback
 Capture:
-- Installer contacted user
-- Quote provided
-- User converted
-- User rejected
-- Reason for rejection
+- [ ] Installer contacted user
+- [ ] Quote provided
+- [ ] User converted
+- [ ] User rejected
+- [ ] Reason for rejection
 
 ---
 
-## Phase 10 — Optimization
+## Phase 10 — Optimization ⏳
 
 ### Task 10.1 — A/B Test Copy
 Test:
-- “See My New Monthly Cost”
-- “Replace My Electricity Bill”
-- “Get My Lower Monthly Plan”
+- [ ] “See My New Monthly Cost”
+- [ ] “Replace My Electricity Bill”
+- [ ] “Get My Lower Monthly Plan”
 
 ### Task 10.2 — A/B Test Result Layout
 Test:
-- Payment swap first
-- Savings first
-- Financing breakdown first
+- [ ] Payment swap first
+- [ ] Savings first
+- [ ] Financing breakdown first
 
 ### Task 10.3 — Tune Calculation Assumptions
 Refine:
-- Cost per kW
-- Financing interest rate
-- Solar offset assumptions
-- Location-based irradiance assumptions
+- [ ] Cost per kW
+- [ ] Financing interest rate
+- [ ] Solar offset assumptions
+- [ ] Location-based irradiance assumptions
 
 ---
 
@@ -268,10 +268,10 @@ Refine:
 
 The MVP is complete when:
 
-- User can enter bill, location, and property type
-- System shows a lower monthly solar payment estimate
-- Results prioritize monthly payment swap
-- User can submit name and phone after seeing results
-- Lead is stored with assessment context
-- Core funnel events are tracked
-- Flow works well on mobile
+- [x] User can enter bill, location, and property type
+- [x] System shows a lower monthly solar payment estimate
+- [x] Results prioritize monthly payment swap
+- [x] User can submit name and phone after seeing results
+- [x] Lead is stored with assessment context (LocalStorage)
+- [ ] Core funnel events are tracked
+- [x] Flow works well on mobile

@@ -28,9 +28,9 @@ router.post('/bookings', authenticateToken, async (req, res) => {
     const booking = await marketplaceBookings.create({
       userId: req.user.id,
       dealerId,
-      bookingType,
-      scheduledAt,
-      notes
+      bookingType: bookingType || 'book',
+      scheduledAt: scheduledAt || null,
+      notes: notes || null
     });
 
     // Publish event for event-driven messaging/notifications
