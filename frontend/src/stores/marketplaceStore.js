@@ -136,16 +136,11 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     loading.value = true
     error.value = null
     try {
-      let url = '/products'
+      const url = '/products'
       const params = new URLSearchParams()
       if (search) params.set('search', search)
-      if (category && category !== 'all') {
-        if (!search) {
-          url = `/products/category/${category}`
-        } else {
-          params.set('category', category)
-        }
-      }
+      if (category && category !== 'all') params.set('category', category)
+      
       const queryString = params.toString()
       const response = await marketplaceApi.get(queryString ? `${url}?${queryString}` : url, options)
       products.value = response.data.data || []

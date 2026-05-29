@@ -314,7 +314,8 @@
 
         <div class="results-actions">
           <button class="primary-button" type="button" @click="showLeadForm = true">Get my lower monthly plan installed</button>
-          <router-link class="secondary-button link-button" to="/marketplace">View matching installers</router-link>
+          <router-link class="secondary-button link-button" to="/finance">Explore Financing Options</router-link>
+          <router-link class="ghost-button link-button" to="/marketplace">View matching installers</router-link>
           <button class="ghost-button" type="button" @click="startOver">Start a new assessment</button>
         </div>
 

@@ -65,7 +65,16 @@ router.get('/bookings/me', authenticateToken, async (req, res) => {
 router.get('/products', async (req, res) => {
   try {
     const { search, category } = req.query;
-    let products = search ? await marketplace.search(search, category) : await marketplace.getAll();
+    let products;
+    
+    if (search) {
+      products = await marketplace.search(search, category);
+    } else if (category && category !== 'all') {
+      products = await marketplace.getByCategory(category);
+    } else {
+      products = await marketplace.getAll();
+    }
+    
     res.json({ success: true, count: products.length, data: products });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

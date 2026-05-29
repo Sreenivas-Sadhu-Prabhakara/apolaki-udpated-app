@@ -33,8 +33,9 @@
         <ul class="nav-menu hidden lg:flex items-center gap-0.5">
           <li><router-link to="/dashboard" class="nav-link transition">1. Intelligence</router-link></li>
           <li><router-link to="/assessment" class="nav-link transition">2. Assessment</router-link></li>
-          <li><router-link to="/marketplace" class="nav-link transition">3. Marketplace</router-link></li>
-          <li><router-link to="/installations" class="nav-link transition">4. Installations</router-link></li>
+          <li><router-link to="/finance" class="nav-link transition">3. Financing</router-link></li>
+          <li><router-link to="/marketplace" class="nav-link transition">4. Marketplace</router-link></li>
+          <li><router-link to="/installations" class="nav-link transition">5. Installations</router-link></li>
           <li>
             <button @click="messagingStore.toggleWidget()" class="nav-link transition flex items-center gap-1.5 focus:outline-none">
               Messages <span v-if="unreadCount" class="unread-dot"></span>
@@ -109,6 +110,12 @@
       <transition name="slide-down">
         <div v-if="mobileMenuOpen" class="mobile-menu mobile-menu-kinetic md:hidden" :class="isDarkMode ? 'mobile-menu-kinetic--dark' : 'mobile-menu-kinetic--light'">
           <ul class="flex flex-col py-3 px-4 gap-1">
+            <li><router-link to="/dashboard" class="mobile-link" @click="mobileMenuOpen = false">1. Intelligence</router-link></li>
+            <li><router-link to="/assessment" class="mobile-link" @click="mobileMenuOpen = false">2. Assessment</router-link></li>
+            <li><router-link to="/finance" class="mobile-link" @click="mobileMenuOpen = false">3. Financing</router-link></li>
+            <li><router-link to="/marketplace" class="mobile-link" @click="mobileMenuOpen = false">4. Marketplace</router-link></li>
+            <li><router-link to="/installations" class="mobile-link" @click="mobileMenuOpen = false">5. Installations</router-link></li>
+            <div class="dropdown-divider"></div>
             <li v-if="canOpenDealerPortal">
               <router-link to="/dealer" class="mobile-link" @click="mobileMenuOpen = false">🔧 Dealer Portal</router-link>
             </li>

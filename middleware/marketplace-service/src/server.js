@@ -9,7 +9,12 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3004;
 
-app.use(cors());
+// Enable CORS with credentials for session support
+app.use(cors({
+  origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : true,
+  credentials: true
+}));
+
 app.use(express.json());
 
 // Health check
