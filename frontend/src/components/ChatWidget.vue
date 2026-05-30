@@ -234,7 +234,13 @@ watch(() => messagingStore.isWidgetOpen, (isOpen) => {
 })
 
 onMounted(() => {
-  messagingStore.fetchSecurityBanner()
+  // Only fetch the (auth-protected) banner when signed in. Firing it while
+  // unauthenticated returns 401, which the API interceptor turns into a hard
+  // redirect to /login — and since this widget mounts on every route, that
+  // created an infinite reload loop on the login page itself.
+  if (userStore.isAuthenticated) {
+    messagingStore.fetchSecurityBanner()
+  }
 })
 </script>
 
