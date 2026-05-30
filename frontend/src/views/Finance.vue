@@ -135,12 +135,12 @@
                 <span :class="isDark ? 'text-slate-300' : 'text-gray-700'">Monthly electricity bill</span>
                 <span class="font-semibold text-blue-600">{{ formatCurrency(inputBill) }}/mo</span>
               </div>
-              <input type="range" min="2000" max="40000" step="500" v-model.number="inputBill"
+              <input type="range" min="500" max="20000" step="200" v-model.number="inputBill"
                 class="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-blue-600"
                 :class="isDark ? 'bg-slate-700' : 'bg-blue-100'" />
               <div class="flex justify-between text-xs mt-1.5"
                 :class="isDark ? 'text-slate-600' : 'text-gray-400'">
-                <span>₱2,000</span><span>₱40,000</span>
+                <span>₱500</span><span>₱20,000</span>
               </div>
             </div>
 
@@ -218,11 +218,11 @@
             </div>
             <div class="rounded-xl border p-4 flex-1" :class="cardClass">
               <p class="text-xs mb-1.5" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
-                25-year profit
+                10-year profit
               </p>
               <p class="text-2xl font-bold text-emerald-600">{{ php(lifetimeProfit) }}</p>
               <p class="text-xs mt-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
-                Est. lifetime gain
+                Est. decade gain
               </p>
             </div>
             <button @click="saveCurrentSimulation" :disabled="assessmentStore.saving"
@@ -235,48 +235,74 @@
           </div>
         </div>
 
-        <!-- ROI Chart -->
+        <!-- ROI Chart — 10-year, fixed aspect ratio, Y-axis labels -->
         <div class="rounded-xl border overflow-hidden" :class="cardClass">
           <div class="flex items-center justify-between px-6 py-4 border-b"
             :class="isDark ? 'border-slate-700' : 'border-gray-100'">
             <div>
               <p class="text-sm font-semibold"
-                :class="isDark ? 'text-slate-200' : 'text-gray-900'">25-Year ROI Projection</p>
+                :class="isDark ? 'text-slate-200' : 'text-gray-900'">10-Year ROI Projection</p>
               <p class="text-xs mt-0.5"
                 :class="isDark ? 'text-slate-500' : 'text-gray-400'">
-                Gold marker shows your break-even year
+                Gold marker = break-even · Blue = cumulative net savings
               </p>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
-                {{ estimatedRoi }}% ROI
+              <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                <span class="w-2 h-2 rounded-full bg-blue-600 inline-block"></span>{{ estimatedRoi }}% ROI
+              </span>
+              <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
+                <span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>Break-even Yr {{ computedPaybackYears }}
               </span>
             </div>
           </div>
-          <div :class="isDark ? 'bg-slate-900/80' : 'bg-slate-950'" class="px-4 pt-4 pb-2">
-            <svg viewBox="0 0 500 160" class="w-full" preserveAspectRatio="none" style="height:150px">
+          <!-- Fixed-size SVG viewport so it never stretches horizontally -->
+          <div class="px-5 pt-5 pb-3" :class="isDark ? 'bg-slate-900/60' : 'bg-slate-50'">
+            <svg viewBox="0 0 520 200" class="w-full" style="max-height:220px" preserveAspectRatio="xMidYMid meet">
               <defs>
-                <linearGradient id="roiGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#0066CC" stop-opacity="0.25"/>
+                <linearGradient id="roiGrad10" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#0066CC" stop-opacity="0.18"/>
                   <stop offset="100%" stop-color="#0066CC" stop-opacity="0"/>
                 </linearGradient>
+                <linearGradient id="lossGrad10" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#ef4444" stop-opacity="0"/>
+                  <stop offset="100%" stop-color="#ef4444" stop-opacity="0.12"/>
+                </linearGradient>
               </defs>
-              <line x1="40" y1="40"  x2="480" y2="40"  stroke="#1e293b" stroke-dasharray="3,4"/>
-              <line x1="40" y1="90"  x2="480" y2="90"  stroke="#1e293b" stroke-dasharray="3,4"/>
-              <line x1="40" y1="140" x2="480" y2="140" stroke="#334155" stroke-width="1"/>
-              <path :d="paybackPathFill" fill="url(#roiGrad)"/>
-              <path :d="paybackPath" fill="none" stroke="#0066CC" stroke-width="2.5"
+              <!-- Y-axis labels -->
+              <text x="0" y="25"  fill="#64748b" font-size="8" text-anchor="start">{{ yAxisTop }}</text>
+              <text x="0" y="108" fill="#64748b" font-size="8" text-anchor="start">0</text>
+              <text x="0" y="185" fill="#64748b" font-size="8" text-anchor="start">{{ yAxisBot }}</text>
+              <!-- Grid lines -->
+              <line x1="52" y1="22"  x2="512" y2="22"  stroke="#334155" stroke-dasharray="3,4" stroke-width="0.8"/>
+              <line x1="52" y1="105" x2="512" y2="105" stroke="#475569" stroke-width="1"/>
+              <line x1="52" y1="185" x2="512" y2="185" stroke="#334155" stroke-dasharray="3,4" stroke-width="0.8"/>
+              <!-- Y axis -->
+              <line x1="52" y1="10" x2="52" y2="190" stroke="#334155" stroke-width="1"/>
+              <!-- Filled areas -->
+              <path :d="roiPathFillGain" fill="url(#roiGrad10)" opacity="0.8"/>
+              <path :d="roiPathFillLoss" fill="url(#lossGrad10)" opacity="0.8"/>
+              <!-- Main line -->
+              <path :d="roiPath10" fill="none" stroke="#0066CC" stroke-width="2.5"
                 stroke-linecap="round" stroke-linejoin="round"/>
-              <line :x1="paybackIntersectX" y1="10" :x2="paybackIntersectX" y2="140"
+              <!-- Break-even vertical -->
+              <line v-if="computedPaybackYears <= 10"
+                :x1="breakEvenX" y1="15" :x2="breakEvenX" y2="185"
                 stroke="#FFB81C" stroke-width="1.5" stroke-dasharray="4,3"/>
-              <circle :cx="paybackIntersectX" :cy="paybackIntersectY" r="5"
+              <circle v-if="computedPaybackYears <= 10"
+                :cx="breakEvenX" cy="105" r="5.5"
                 fill="#FFB81C" stroke="#0f172a" stroke-width="2"/>
-              <text :x="Math.min(paybackIntersectX + 7, 420)" :y="paybackIntersectY - 9"
+              <text v-if="computedPaybackYears <= 10"
+                :x="Math.min(breakEvenX + 6, 480)" y="98"
                 fill="#FFB81C" font-size="9" font-weight="700">Yr {{ computedPaybackYears }}</text>
+              <!-- X-axis ticks -->
+              <g fill="#64748b" font-size="8">
+                <text v-for="yr in [0,2,4,6,8,10]" :key="yr"
+                  :x="52 + (yr/10)*460" y="198" text-anchor="middle">{{ yr }}</text>
+              </g>
+              <!-- X-axis label -->
+              <text x="282" y="208" fill="#64748b" font-size="8" text-anchor="middle">Years</text>
             </svg>
-            <div class="flex justify-between text-[10px] px-6 pb-1 text-slate-500">
-              <span>0</span><span>5</span><span>10</span><span>15</span><span>20</span><span>25</span>
-            </div>
           </div>
         </div>
 
@@ -775,7 +801,7 @@ async function grantFinanceConsent() {
 }
 
 // ── Calculator state ──────────────────────────────────────────────
-const inputBill          = ref(15000)
+const inputBill          = ref(5000)
 const systemSizeKW       = ref(5)
 const inflationRate      = ref(4.5)
 const loanDownPaymentPct = ref(20)
@@ -790,11 +816,14 @@ function php(amount) {
 }
 
 // ── Computed financials ───────────────────────────────────────────
-const systemCost = computed(() => (systemSizeKW.value || 5) * 72000)
+// ₱45,000 per kWp — aligned with Apolaki assessment pricing
+const systemCost = computed(() => (systemSizeKW.value || 5) * 45000)
 
 const estimatedMonthlySavings = computed(() => {
-  const solarKwh = (systemSizeKW.value || 5) * 125 * 12.5
-  return Math.min((inputBill.value || 15000) * 0.85, solarKwh)
+  // Avg PH solar yield: ~4.5 peak sun hours/day, tariff ~₱12/kWh
+  const monthlyKwh = (systemSizeKW.value || 5) * 4.5 * 30
+  const savingsFromSolar = monthlyKwh * 12
+  return Math.min((inputBill.value || 5000) * 0.85, savingsFromSolar)
 })
 
 const estimatedRoi = computed(() =>
@@ -819,36 +848,83 @@ const computedPaybackYears = computed(() => {
   return ann ? parseFloat((systemCost.value / ann).toFixed(1)) : 0
 })
 
+// 10-year cumulative net savings (replaces 25-year)
 const lifetimeProfit = computed(() => {
   const ann = estimatedMonthlySavings.value * 12
   let total = 0, m = 1
-  for (let y = 1; y <= 25; y++) {
+  for (let y = 1; y <= 10; y++) {
     total += ann * m
     m *= 1 + (inflationRate.value || 4.5) / 100
   }
   return total - systemCost.value
 })
 
-// ── ROI chart ─────────────────────────────────────────────────────
-const paybackPath = computed(() => {
+// ── ROI chart — 10-year, proper aspect-ratio SVG ─────────────────
+// Chart canvas: x 52→512 (460px wide), y 22→185 (163px tall)
+// y=22 → max positive, y=105 → zero line, y=185 → max negative
+const chartPoints10 = computed(() => {
   const ic  = systemCost.value
   const ann = estimatedMonthlySavings.value * 12
-  const div = Math.max(1, lifetimeProfit.value + ic * 1.5)
-  let net   = -ic
+  const infl = (inflationRate.value || 4.5) / 100
   const pts = []
-  for (let i = 0; i <= 25; i++) {
-    if (i > 0) net += ann * Math.pow(1 + (inflationRate.value || 4.5) / 100, i - 1)
-    const x = 40 + (i / 25) * 440
-    const y = 180 - ((net + ic) / div) * 160
-    pts.push(`${x},${Math.min(180, Math.max(20, y))}`)
+  let net = -ic
+  for (let i = 0; i <= 10; i++) {
+    if (i > 0) net += ann * Math.pow(1 + infl, i - 1)
+    pts.push({ x: 52 + (i / 10) * 460, net })
   }
-  return `M ${pts.join(' L ')}`
+  return pts
 })
-const paybackPathFill    = computed(() => `${paybackPath.value} L 480,180 L 40,180 Z`)
-const paybackIntersectX  = computed(() => 40 + Math.min(1, computedPaybackYears.value / 25) * 440)
-const paybackIntersectY  = computed(() =>
-  180 - (systemCost.value / (lifetimeProfit.value + systemCost.value * 1.5)) * 160
+
+const chartMaxAbs = computed(() => {
+  const vals = chartPoints10.value.map(p => Math.abs(p.net))
+  return Math.max(...vals, 1)
+})
+
+function netToY(net) {
+  // 0 → y=105, +max → y=22, -max → y=185
+  const pct = net / chartMaxAbs.value  // −1 to +1
+  return 105 - pct * 83
+}
+
+const roiPath10 = computed(() =>
+  chartPoints10.value.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${netToY(p.net).toFixed(1)}`).join(' ')
 )
+
+const roiPathFillGain = computed(() => {
+  const pts = chartPoints10.value
+  const above = pts.filter(p => netToY(p.net) <= 105)
+  if (!above.length) return ''
+  const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${netToY(p.net).toFixed(1)}`).join(' ')
+  const last = pts[pts.length - 1]
+  return `${line} L ${last.x.toFixed(1)},105 L ${pts[0].x.toFixed(1)},105 Z`
+})
+
+const roiPathFillLoss = computed(() => {
+  const pts = chartPoints10.value
+  const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${netToY(p.net).toFixed(1)}`).join(' ')
+  const last = pts[pts.length - 1]
+  return `${line} L ${last.x.toFixed(1)},105 L ${pts[0].x.toFixed(1)},105 Z`
+})
+
+const breakEvenX = computed(() =>
+  52 + Math.min(1, computedPaybackYears.value / 10) * 460
+)
+
+// Y-axis labels (human-readable ₱)
+const yAxisTop = computed(() => {
+  const v = chartMaxAbs.value
+  return v >= 1000000 ? `+₱${(v / 1000000).toFixed(1)}M` : `+₱${Math.round(v / 1000)}K`
+})
+const yAxisBot = computed(() => {
+  const v = chartMaxAbs.value
+  return v >= 1000000 ? `-₱${(v / 1000000).toFixed(1)}M` : `-₱${Math.round(v / 1000)}K`
+})
+
+// Keep old names referenced in save/load
+const paybackIntersectX = breakEvenX
+const paybackIntersectY = computed(() => 105)
+const paybackPath       = roiPath10
+const paybackPathFill   = roiPathFillGain
 
 // ── Financing options (reactive) ──────────────────────────────────
 const financingOptions = computed(() => [
@@ -995,7 +1071,7 @@ async function loadData() {
   if (saved) {
     try {
       const s = JSON.parse(saved)
-      if (s.monthlyBill) inputBill.value    = s.monthlyBill
+      if (s.monthlyBill) inputBill.value    = Math.min(s.monthlyBill, 20000)
       if (s.systemSize)  systemSizeKW.value = s.systemSize
       loanTenureYears.value    = 7
       loanDownPaymentPct.value = 20
@@ -1016,12 +1092,11 @@ async function saveCurrentSimulation() {
     roofCondition: 'good', roofArea: systemSizeKW.value * 6,
     annualUsage: Math.round(systemSizeKW.value * 125 * 12),
     sunExposure: 'high', obstructionLevel: 'low',
-    recommendedCapacity: systemSizeKW.value, estimatedCost: systemCost.value,
-    savingsEstimate: {
+    recommendedCapacity: systemSizeKW.value, estimatedCost: systemCost.value,      savingsEstimate: {
       monthlySavings: Math.round(estimatedMonthlySavings.value),
       paybackYears:   computedPaybackYears.value,
       roi:            estimatedRoi.value,
-      lifetimeProfit: lifetimeProfit.value,
+      decadeProfit:   lifetimeProfit.value,
       financingOption: loanDownPaymentPct.value === 100 ? 'cash'
                      : loanDownPaymentPct.value === 0   ? 'lease' : 'loan',
       description: `${systemSizeKW.value} kWp Solar — ${new Date().toLocaleDateString()}`
