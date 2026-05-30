@@ -406,93 +406,137 @@
           </div>
         </div>
 
-        <!-- Financing options — side-by-side selector -->
+        <!-- Financing options -->
         <div class="rounded-2xl border overflow-hidden" :class="cardClass">
-          <div class="px-6 py-4 border-b" :class="isDark ? 'border-slate-700' : 'border-gray-100'">
-            <p class="text-sm font-semibold" :class="isDark ? 'text-slate-200' : 'text-gray-900'">
-              Choose Your Financing
-            </p>
-            <p class="text-xs mt-0.5" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
-              Select a plan — the calculator updates instantly
-            </p>
-          </div>
-          <!-- 3-column selector buttons, perfectly aligned with table columns -->
-          <div class="relative">
-            <div class="grid grid-cols-3 divide-x rounded-t-2xl overflow-hidden border border-b-0 max-w-5xl mx-auto"
-              :class="isDark ? 'divide-slate-700 border-slate-700' : 'divide-gray-100 border-gray-200'">
-              <button v-for="opt in financingOptions" :key="opt.key"
-                @click="selectFinancingOption(opt.key)"
-                class="flex flex-col items-center gap-1 py-4 px-3 transition-colors focus:outline-none w-full"
-                :class="[
-                  selectedFinancing === opt.key
-                    ? (isDark ? 'bg-blue-900/30 text-blue-300 shadow-[0_2px_8px_-2px_rgba(0,102,204,0.08)]' : 'bg-blue-50 text-blue-700 shadow-[0_2px_8px_-2px_rgba(0,102,204,0.08)]')
-                    : (isDark ? 'text-slate-400 hover:bg-slate-800/40' : 'text-gray-500 hover:bg-gray-50'),
-                  'transition-all duration-150'
-                ]">
-                <span class="text-xs font-bold uppercase tracking-wide">{{ opt.name }}</span>
-                <span class="text-[10px] mt-0.5" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ opt.badge }}</span>
-                <!-- selected indicator -->
-                <span v-if="selectedFinancing === opt.key"
-                  class="mt-1 w-7 h-0.5 rounded-full bg-blue-600"></span>
-              </button>
+          <div class="px-6 py-5 border-b flex flex-col gap-3 md:flex-row md:items-end md:justify-between"
+            :class="isDark ? 'border-slate-700' : 'border-gray-100'">
+            <div>
+              <p class="text-sm font-semibold" :class="isDark ? 'text-slate-200' : 'text-gray-900'">
+                Choose Your Financing
+              </p>
+              <p class="text-xs mt-0.5" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
+                Compare only what changes your monthly cash flow.
+              </p>
+            </div>
+            <div class="text-xs font-semibold px-3 py-2 rounded-lg"
+              :class="isDark ? 'bg-slate-900 text-slate-300' : 'bg-blue-50 text-blue-700'">
+              Current bill {{ php(inputBill) }}/mo
             </div>
           </div>
-          <!-- Comparison table, perfectly aligned and wider -->
-          <div class="overflow-x-auto rounded-b-2xl border border-t-0 shadow-sm max-w-5xl mx-auto"
-            :class="isDark ? 'border-slate-700 bg-slate-900/60' : 'border-gray-200 bg-white'">
-            <table class="w-full text-sm table-fixed align-middle">
-            <colgroup>
-              <col style="width: 28%" />
-              <col v-for="opt in financingOptions" :key="opt.key" style="width: 24%" />
-            </colgroup>
-            <thead>
-              <tr :class="isDark ? 'bg-slate-800/60 text-slate-400' : 'bg-gray-50 text-gray-500'">
-                <th class="px-5 py-2 text-left text-xs font-semibold uppercase tracking-wide align-middle">Detail</th>
-                <th v-for="opt in financingOptions" :key="opt.key"
-                  class="px-4 py-2 text-center text-xs font-semibold uppercase tracking-wide transition-colors align-middle"
-                  :class="selectedFinancing === opt.key
-                    ? (isDark ? 'text-blue-300 bg-blue-900/20' : 'text-blue-700 bg-blue-50')
-                    : ''">
-                  <span class="inline-block align-middle leading-tight">{{ opt.name }}</span>
-                  <span class="block text-[11px] font-normal mt-0.5" :class="isDark ? 'text-slate-400' : 'text-gray-400'">{{ opt.badge }}</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody :class="isDark ? 'divide-y divide-slate-700/60' : 'divide-y divide-gray-100'">
-              <tr v-for="row in comparisonRows" :key="row.label"
-                :class="isDark ? 'hover:bg-slate-800/30' : 'hover:bg-gray-50/60'">
-                <td class="px-5 py-2 text-xs font-medium align-middle"
-                  :class="[
-                    'whitespace-nowrap',
-                    (row.label === '10-yr net profit' || row.label === 'Maintenance') ? 'max-w-30' : '',
-                    isDark ? 'text-slate-400' : 'text-gray-500'
-                  ]">{{ row.label }}</td>
-                <td v-for="opt in financingOptions" :key="opt.key"
-                  class="px-4 py-2 text-center text-sm font-semibold transition-colors align-middle"
-                  :class="[
-                    selectedFinancing === opt.key
-                      ? (isDark ? 'bg-blue-900/10 text-blue-300 ring-1 ring-blue-700/30 z-10 relative' : 'bg-blue-50 text-blue-700 ring-1 ring-blue-200/40 z-10 relative')
-                      : (isDark ? 'text-slate-200' : 'text-gray-800'),
-                    row.highlight?.[opt.key] || ''
-                  ]">
-                  <span class="inline-block align-middle leading-tight">{{ row.values[opt.key] }}</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          </div>
-          <!-- CTA row -->
-          <div class="px-5 py-4 border-t flex flex-wrap gap-3 items-center justify-between rounded-b-xl"
-            :class="isDark ? 'border-slate-700 bg-slate-900/60' : 'border-gray-100 bg-white'">
-            <p class="text-xs" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
-              Selected: <span class="font-semibold" :class="isDark ? 'text-slate-200' : 'text-gray-800'">
-                {{ financingOptions.find(o => o.key === selectedFinancing)?.name }}
-              </span>
-            </p>
-            <router-link to="/messaging?financierId=f1"
-              class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition">
-              Talk to a Financing Advisor
-            </router-link>
+
+          <div class="p-5 space-y-5">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
+              <button v-for="opt in financingOptions" :key="opt.key"
+                type="button"
+                :aria-pressed="selectedFinancing === opt.key"
+                @click="selectFinancingOption(opt.key)"
+                class="h-full text-left rounded-xl border p-4 transition focus:outline-none focus:ring-2 focus:ring-blue-500/30 flex flex-col"
+                :class="selectedFinancing === opt.key
+                  ? (isDark ? 'bg-blue-950/40 border-blue-600 shadow-lg shadow-blue-950/20' : 'bg-blue-50 border-blue-300 shadow-sm')
+                  : (isDark ? 'bg-slate-900/40 border-slate-700 hover:border-slate-500' : 'bg-white border-gray-200 hover:border-blue-200 hover:bg-blue-50/40')">
+                <div class="min-h-12 flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-bold" :class="selectedFinancing === opt.key ? 'text-blue-600' : (isDark ? 'text-slate-100' : 'text-gray-900')">
+                      {{ opt.name }}
+                    </p>
+                    <p class="text-[11px] mt-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ opt.badge }}</p>
+                  </div>
+                  <span class="w-5 h-5 rounded-full border flex items-center justify-center text-[11px] font-bold"
+                    :class="selectedFinancing === opt.key
+                      ? 'bg-blue-600 border-blue-600 text-white'
+                      : (isDark ? 'border-slate-600 text-slate-600' : 'border-gray-300 text-gray-300')">
+                    {{ selectedFinancing === opt.key ? '✓' : '' }}
+                  </span>
+                </div>
+                <p class="mt-3 text-xs leading-relaxed flex-1" :class="isDark ? 'text-slate-400' : 'text-gray-500'">
+                  {{ opt.desc }}
+                </p>
+                <div class="mt-4 grid grid-cols-2 gap-3 pt-4 border-t"
+                  :class="isDark ? 'border-slate-700/70' : 'border-gray-100'">
+                  <div>
+                    <p class="text-[10px] uppercase tracking-wide" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ opt.line1Label }}</p>
+                    <p class="text-sm font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">{{ opt.line1Value }}</p>
+                  </div>
+                  <div>
+                    <p class="text-[10px] uppercase tracking-wide" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ opt.line2Label }}</p>
+                    <p class="text-sm font-bold" :class="opt.line2Color">{{ opt.line2Value }}</p>
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            <div class="rounded-xl border p-4"
+              :class="isDark ? 'border-blue-800/50 bg-blue-950/20' : 'border-blue-100 bg-blue-50'">
+              <div class="grid grid-cols-1 lg:grid-cols-[1.1fr_2fr] gap-4 lg:items-center">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-widest text-blue-600">Selected plan</p>
+                  <h3 class="mt-1 text-xl font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">
+                    {{ selectedFinancingOption.name }}
+                  </h3>
+                  <p class="mt-1 text-xs leading-relaxed" :class="isDark ? 'text-slate-400' : 'text-gray-600'">
+                    {{ selectedFinancingOption.desc }}
+                  </p>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div v-for="item in selectedPlanDetails" :key="item.label"
+                    class="rounded-lg p-3 min-h-20"
+                    :class="isDark ? 'bg-slate-900/60' : 'bg-white'">
+                    <p class="text-[10px] uppercase tracking-wide" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ item.label }}</p>
+                    <p class="mt-1 text-base font-bold leading-tight" :class="item.color || (isDark ? 'text-slate-100' : 'text-gray-900')">
+                      {{ item.value }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border"
+              :class="isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-white'">
+              <table class="w-full min-w-[780px] table-fixed text-sm">
+                <colgroup>
+                  <col style="width: 30%" />
+                  <col style="width: 23.333%" />
+                  <col style="width: 23.333%" />
+                  <col style="width: 23.333%" />
+                </colgroup>
+                <thead>
+                  <tr :class="isDark ? 'bg-slate-800/70 text-slate-400' : 'bg-gray-50 text-gray-500'">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Decision point</th>
+                    <th v-for="opt in financingOptions" :key="opt.key"
+                      class="px-3 py-3 text-center text-xs font-semibold align-middle"
+                      :class="selectedFinancing === opt.key ? 'text-blue-600' : ''">
+                      <span class="block leading-tight">{{ opt.name }}</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody :class="isDark ? 'divide-y divide-slate-700/70' : 'divide-y divide-gray-100'">
+                  <tr v-for="row in comparisonRows" :key="row.label">
+                    <td class="px-4 py-3 text-xs font-medium align-middle"
+                      :class="isDark ? 'text-slate-400' : 'text-gray-500'">{{ row.label }}</td>
+                    <td v-for="opt in financingOptions" :key="opt.key"
+                      class="px-3 py-3 text-center font-semibold align-middle"
+                      :class="[
+                        selectedFinancing === opt.key
+                          ? (isDark ? 'bg-blue-950/30 text-blue-300' : 'bg-blue-50 text-blue-700')
+                          : (isDark ? 'text-slate-200' : 'text-gray-800'),
+                        row.highlight?.[opt.key] || ''
+                      ]">
+                      <span class="block leading-tight">{{ row.values[opt.key] }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <p class="text-xs" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
+                You can adjust the sliders above and these terms update immediately.
+              </p>
+              <router-link to="/messaging?financierId=f1"
+                class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition">
+                Talk to a Financing Advisor
+              </router-link>
+            </div>
           </div>
         </div>
 
@@ -1152,7 +1196,7 @@ const financingOptions = computed(() => [
   },
   {
     key: 'loan', name: 'Apolaki PowerLoan', badge: 'Popular',
-       desc: '6.25% APR — own your system, payments replace your bill.',
+    desc: '6.25% APR — own your system, payments replace your bill.',
     line1Label: 'Down payment', line1Value: php(calculatedDownPayment.value),
     line2Label: 'Monthly EMI', line2Value: `${php(calculatedEMI.value)}/mo`,
     line2Color: 'text-blue-600'
@@ -1160,17 +1204,54 @@ const financingOptions = computed(() => [
   {
     key: 'lease', name: 'Zero-Down Lease', badge: '₱0 down',
     desc: 'Pay 30% less than your current bill. No ownership required.',
-    line1Label: 'Monthly',     line1Value: `${php(inputBill.value * 0.7)}/mo`,
-       line2Label: 'Maintenance', line2Value: 'Included',
+    line1Label: 'Monthly', line1Value: `${php(inputBill.value * 0.7)}/mo`,
+    line2Label: 'Maintenance', line2Value: 'Included',
     line2Color: 'text-emerald-600'
   }
 ])
+
+const selectedFinancingOption = computed(() =>
+  financingOptions.value.find(option => option.key === selectedFinancing.value) || financingOptions.value[0]
+)
+
+const selectedPlanDetails = computed(() => {
+  const rows = comparisonRows.value
+  return [
+    {
+      label: 'Upfront cost',
+      value: rows.find(row => row.label === 'Upfront cost')?.values[selectedFinancing.value] || '—'
+    },
+    {
+      label: 'Monthly payment',
+      value: rows.find(row => row.label === 'Monthly payment')?.values[selectedFinancing.value] || '—',
+      color: selectedFinancing.value === 'lease' || selectedFinancing.value === 'loan' ? 'text-blue-600' : ''
+    },
+    {
+      label: 'Bill change',
+      value: rows.find(row => row.label === 'vs. current bill')?.values[selectedFinancing.value] || '—',
+      color: rows.find(row => row.label === 'vs. current bill')?.highlight?.[selectedFinancing.value] || ''
+    },
+    {
+      label: '10-yr net value',
+      value: rows.find(row => row.label === '10-yr net profit')?.values[selectedFinancing.value] || '—',
+      color: 'text-emerald-600'
+    }
+  ]
+})
 
 // Side-by-side comparison rows for the table
 const comparisonRows = computed(() => {
   const cashEmi  = 0
   const loanEmi  = calculatedEMI.value
   const leaseEmi = inputBill.value * 0.7
+  const paymentDelta = (payment) => {
+    const bill = Number(inputBill.value) || 0
+    if (!bill) return '—'
+    const diff = bill - payment
+    const pct = Math.round(Math.abs(diff / bill) * 100)
+    return diff >= 0 ? `−${pct}%` : `+${pct}%`
+  }
+
   return [
     {
       label: 'Upfront cost',
@@ -1183,7 +1264,7 @@ const comparisonRows = computed(() => {
     {
       label: 'Monthly payment',
       values: {
-        cash:  '₱0 after',
+        cash:  '₱0/mo after purchase',
         loan:  php(loanEmi) + '/mo',
         lease: php(leaseEmi) + '/mo'
       }
@@ -1191,9 +1272,9 @@ const comparisonRows = computed(() => {
     {
       label: 'vs. current bill',
       values: {
-        cash:  '−' + Math.round((estimatedMonthlySavings.value / inputBill.value) + '%'),
-        loan:  loanEmi < inputBill.value ? '−' + Math.round(((inputBill.value - loanEmi) / inputBill.value) * 100) + '%' : '+' + Math.round(((loanEmi - inputBill.value) / inputBill.value) * 100) + '%',
-        lease: '−30%'
+        cash:  paymentDelta(cashEmi),
+        loan:  paymentDelta(loanEmi),
+        lease: paymentDelta(leaseEmi)
       },
       highlight: {
         cash:  'text-emerald-600',
