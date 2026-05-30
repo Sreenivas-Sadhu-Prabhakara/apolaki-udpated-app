@@ -45,18 +45,18 @@ try {
 import cors from 'cors';
 import express from 'express';
 import passportModule from 'passport';
-import { initializePassport } from './auth/passport.js';
 import { adminIpAllowlist, adminStandardLimiter } from './auth/adminAuth.js';
+import { initializePassport } from './auth/passport.js';
 import { enforceApiPolicy } from './auth/policy.js';
 import routesModule from './routes.js';
+import adminAuditLogRoutesModule from './routes/admin/auditLogs.js';
+import adminAuthRoutesModule from './routes/admin/auth.js';
+import adminBreakGlassRoutesModule from './routes/admin/breakGlass.js';
+import adminMfaRoutesModule from './routes/admin/mfa.js';
+import adminUserRoutesModule from './routes/admin/users.js';
 import authRoutesModule from './routes/auth.js';
 import messageRoutesModule from './routes/messages.js';
 import personaRoutesModule from './routes/personas.js';
-import adminAuthRoutesModule from './routes/admin/auth.js';
-import adminUserRoutesModule from './routes/admin/users.js';
-import adminAuditLogRoutesModule from './routes/admin/auditLogs.js';
-import adminBreakGlassRoutesModule from './routes/admin/breakGlass.js';
-import adminMfaRoutesModule from './routes/admin/mfa.js';
 
 // Handle CJS/ESM interop — esbuild bundling on Netlify can wrap default exports
 const passport = passportModule.default || passportModule;

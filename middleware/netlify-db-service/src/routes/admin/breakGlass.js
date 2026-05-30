@@ -8,7 +8,7 @@
 
 import expressModule from 'express';
 import { auditEvents, breakGlass } from '../../adminDb.js';
-import { authenticateAdmin, getClientIp, requireSuperAdmin, adminStrictLimiter } from '../../auth/adminAuth.js';
+import { adminStrictLimiter, authenticateAdmin, getClientIp, requireSuperAdmin } from '../../auth/adminAuth.js';
 
 const express = expressModule.default || expressModule;
 const router = express.Router();

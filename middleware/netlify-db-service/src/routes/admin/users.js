@@ -8,7 +8,7 @@
 import expressModule from 'express';
 import * as OTPAuth from 'otpauth';
 import { adminUsers, auditEvents } from '../../adminDb.js';
-import { authenticateAdmin, getClientIp, requireSuperAdmin, adminStrictLimiter } from '../../auth/adminAuth.js';
+import { adminStrictLimiter, authenticateAdmin, getClientIp, requireSuperAdmin } from '../../auth/adminAuth.js';
 
 const express = expressModule.default || expressModule;
 const router = express.Router();

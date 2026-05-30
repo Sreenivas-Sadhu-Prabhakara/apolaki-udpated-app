@@ -9,7 +9,7 @@ import bcrypt from 'bcryptjs';
 import expressModule from 'express';
 import jwt from 'jsonwebtoken';
 import { adminSessions, adminUsers } from '../../adminDb.js';
-import { authenticateAdmin, getClientIp, requireSuperAdmin, adminStrictLimiter } from '../../auth/adminAuth.js';
+import { adminStrictLimiter, authenticateAdmin, getClientIp, requireSuperAdmin } from '../../auth/adminAuth.js';
 
 const express = expressModule.default || expressModule;
 const router = express.Router();
