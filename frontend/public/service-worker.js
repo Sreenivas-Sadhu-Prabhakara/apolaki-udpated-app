@@ -3,6 +3,33 @@
  * PRD 9: Web Push Notifications for Messaging
  */
 
+// Cache version — bump to force old SW to clear
+const CACHE_VERSION = 'v3'
+
+// Handle messages from the app (e.g. skipWaiting, ping)
+self.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
+  // Always respond so the message channel closes cleanly
+  if (event.ports && event.ports[0]) {
+    event.ports[0].postMessage({ received: true })
+  }
+})
+
+// Activate immediately and claim clients so the new SW takes over
+self.addEventListener('activate', function(event) {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys
+          .filter(key => key !== CACHE_VERSION)
+          .map(key => caches.delete(key))
+      )
+    ).then(() => self.clients.claim())
+  )
+})
+
 self.addEventListener('push', function(event) {
   if (!event.data) return
 

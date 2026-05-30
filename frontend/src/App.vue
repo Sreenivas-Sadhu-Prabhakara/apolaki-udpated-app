@@ -213,6 +213,21 @@ onMounted(async () => {
     try {
       const registration = await navigator.serviceWorker.register('/service-worker.js')
       console.log('Service Worker registered with scope:', registration.scope)
+
+      // If a new SW is waiting, activate it immediately
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' })
+      }
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              newWorker.postMessage({ type: 'SKIP_WAITING' })
+            }
+          })
+        }
+      })
     } catch (error) {
       console.warn('Service Worker registration failed:', error)
     }
