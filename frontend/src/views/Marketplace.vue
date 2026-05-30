@@ -403,7 +403,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMarketplaceStore } from '../stores/marketplaceStore'
 import { useThemeStore } from '../stores/themeStore'
