@@ -234,7 +234,9 @@ watch(() => messagingStore.isWidgetOpen, (isOpen) => {
 })
 
 onMounted(() => {
-  messagingStore.fetchSecurityBanner()
+  if (userStore.isAuthenticated) {
+    messagingStore.fetchSecurityBanner()
+  }
 })
 </script>
 
