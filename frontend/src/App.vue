@@ -150,11 +150,11 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useThemeStore } from './stores/themeStore'
-import { useUserStore } from './stores/userStore'
-import { useMessagingStore } from './stores/messagingStore'
 import BrandLogo from './components/BrandLogo.vue'
 import ChatWidget from './components/ChatWidget.vue'
+import { useMessagingStore } from './stores/messagingStore'
+import { useThemeStore } from './stores/themeStore'
+import { useUserStore } from './stores/userStore'
 
 const route = useRoute()
 
