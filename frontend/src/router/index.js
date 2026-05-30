@@ -168,18 +168,28 @@ const router = createRouter({
 function missingRouteConsents(to, userStore) {
   const requiredConsents = to.meta.requiredConsents || []
   const bypassRoles = to.meta.consentBypassRoles || []
-  if (!requiredConsents.length || bypassRoles.includes(userStore.userRole)) return []
+
+  // No consents required, or no consentStatus loaded yet — don't block
+  if (!requiredConsents.length) return []
+
+  // Bypass for elevated roles
+  if (bypassRoles.includes(userStore.userRole)) return []
+
+  // If consentStatus hasn't loaded yet, don't redirect — let the page handle it
+  if (!userStore.consentStatus) return []
+
   return requiredConsents.filter(key => !userStore.hasConsent(key))
 }
 
 // Navigation guard for authentication & role-based access
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
+  const isElevated = ['admin', 'superadmin'].includes(userStore.userRole)
   const missingConsents = missingRouteConsents(to, userStore)
 
   if (to.meta.requiresAuth && !userStore.isAuthenticated) {
     next('/login')
-  } else if (to.meta.requiresAuth && !to.meta.allowsPendingConsent && !userStore.onboardingComplete) {
+  } else if (to.meta.requiresAuth && !to.meta.allowsPendingConsent && !userStore.onboardingComplete && !isElevated) {
     next('/consent')
   } else if (to.name === 'ConsentOnboarding' && userStore.onboardingComplete) {
     next('/assessment')

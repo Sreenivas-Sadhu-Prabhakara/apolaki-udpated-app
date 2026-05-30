@@ -1,6 +1,24 @@
 <template>
   <div class="min-h-screen py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-300" :class="isDark ? 'bg-[#111418]' : 'bg-gray-50'">
     <div class="max-w-7xl mx-auto">
+
+      <!-- Consent banner for users with finance_data declined/pending -->
+      <div v-if="!hasFinanceConsent" class="mb-8 rounded-2xl border p-8 text-center shadow-lg"
+        :class="isDark ? 'bg-slate-800 border-amber-700/50' : 'bg-amber-50 border-amber-200'">
+        <div class="text-4xl mb-3">💰</div>
+        <h2 class="text-xl font-bold mb-2" :class="isDark ? 'text-slate-100' : 'text-gray-900'">Enable Finance Features</h2>
+        <p class="mb-5 text-sm" :class="isDark ? 'text-slate-400' : 'text-gray-600'">
+          To view your transactions, ROI calculations, and financing options, you need to enable <strong>Finance Data</strong> access in your privacy settings.
+        </p>
+        <button @click="grantFinanceConsent"
+          class="inline-flex items-center gap-2 bg-[#0F6CBD] text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-[#0a5aa0] transition shadow-md">
+          🔓 Enable Finance Access
+        </button>
+        <p class="mt-3 text-xs" :class="isDark ? 'text-slate-500' : 'text-gray-400'">You can revoke this any time from Profile → Privacy Settings</p>
+      </div>
+
+      <!-- Main content — only shown when consent is granted -->
+      <template v-if="hasFinanceConsent">
       <!-- Header -->
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
@@ -530,20 +548,25 @@
           </div>
         </div>
       </div>
+      </template><!-- end v-if="hasFinanceConsent" -->
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useFinanceStore } from '../stores/financeStore'
 import { useFinancingAssessmentStore } from '../stores/financingAssessmentStore'
 import { useThemeStore } from '../stores/themeStore'
+import { useUserStore } from '../stores/userStore'
 import { formatCurrency } from '../utils/currency'
 
 const financeStore = useFinanceStore()
 const assessmentStore = useFinancingAssessmentStore()
 const themeStore = useThemeStore()
+const userStore = useUserStore()
+const router = useRouter()
 const showAddForm = ref(false)
 const createSuccess = ref(false)
 const saveSuccess = ref(false)
@@ -560,6 +583,16 @@ const creditScore = ref(720)
 const annualIncome = ref('₱1,500,000')
 
 const isDark = computed(() => themeStore.isDarkMode)
+
+// Finance consent gate
+const isElevatedRole = computed(() => ['admin', 'superadmin'].includes(userStore.userRole))
+const hasFinanceConsent = computed(() =>
+  isElevatedRole.value || userStore.hasConsent('finance_data')
+)
+
+function grantFinanceConsent() {
+  router.push({ name: 'ConsentOnboarding', query: { required: 'finance_data', next: '/finance' } })
+}
 
 function php(amount) {
   return formatCurrency(Number(amount || 0), { fromUSD: false, currency: 'PHP', decimals: 0 })
