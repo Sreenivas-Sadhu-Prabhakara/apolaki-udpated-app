@@ -419,7 +419,7 @@
           </div>
           <!-- 3-column selector buttons, perfectly aligned with table columns -->
           <div class="relative">
-            <div class="grid grid-cols-3 divide-x rounded-t-2xl overflow-hidden border border-b-0"
+            <div class="grid grid-cols-3 divide-x rounded-t-2xl overflow-hidden border border-b-0 max-w-5xl mx-auto"
               :class="isDark ? 'divide-slate-700 border-slate-700' : 'divide-gray-100 border-gray-200'">
               <button v-for="opt in financingOptions" :key="opt.key"
                 @click="selectFinancingOption(opt.key)"
@@ -438,13 +438,13 @@
               </button>
             </div>
           </div>
-          <!-- Comparison table, perfectly aligned -->
-          <div class="overflow-x-auto rounded-b-2xl border border-t-0 shadow-sm"
+          <!-- Comparison table, perfectly aligned and wider -->
+          <div class="overflow-x-auto rounded-b-2xl border border-t-0 shadow-sm max-w-5xl mx-auto"
             :class="isDark ? 'border-slate-700 bg-slate-900/60' : 'border-gray-200 bg-white'">
             <table class="w-full text-sm table-fixed">
               <colgroup>
-                <col style="width: 36%" />
-                <col v-for="opt in financingOptions" :key="opt.key" style="width: 21.33%" />
+                <col style="width: 28%" />
+                <col v-for="opt in financingOptions" :key="opt.key" style="width: 24%" />
               </colgroup>
               <thead>
                 <tr :class="isDark ? 'bg-slate-800/60 text-slate-400' : 'bg-gray-50 text-gray-500'">
