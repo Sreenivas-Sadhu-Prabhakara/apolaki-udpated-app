@@ -65,7 +65,7 @@ export const useUserStore = defineStore('user', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await api.post('/auth/login', { email, password })
+      const response = await api.post('/auth/login', { email, password }, { skipAuthRedirect: true })
       user.value = response.data.user
       connectedProviders.value = response.data.user.providers || []
       consentStatus.value = response.data.consentStatus

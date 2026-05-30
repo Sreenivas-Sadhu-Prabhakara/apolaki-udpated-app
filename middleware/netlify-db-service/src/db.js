@@ -320,15 +320,29 @@ async function ensureMessagingSchema() {
       )
     `;
 
+    // Migrate existing tables — add columns that may be missing from older schema deployments
+    await sqlInstance`ALTER TABLE messaging_messages ADD COLUMN IF NOT EXISTS read_at TIMESTAMP`;
+    await sqlInstance`ALTER TABLE messaging_messages ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMP`;
+    await sqlInstance`ALTER TABLE messaging_messages ADD COLUMN IF NOT EXISTS edited_at TIMESTAMP`;
+    await sqlInstance`ALTER TABLE messaging_messages ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP`;
+    await sqlInstance`ALTER TABLE messaging_messages ADD COLUMN IF NOT EXISTS attachment_count INTEGER DEFAULT 0`;
+    await sqlInstance`ALTER TABLE messaging_messages ADD COLUMN IF NOT EXISTS encryption_metadata JSONB DEFAULT '{}'`;
+    await sqlInstance`ALTER TABLE in_app_notifications ADD COLUMN IF NOT EXISTS read_at TIMESTAMP`;
+    await sqlInstance`ALTER TABLE in_app_notifications ADD COLUMN IF NOT EXISTS resource_type VARCHAR(100)`;
+    await sqlInstance`ALTER TABLE in_app_notifications ADD COLUMN IF NOT EXISTS resource_id UUID`;
+    await sqlInstance`ALTER TABLE messaging_conversations ADD COLUMN IF NOT EXISTS context_id UUID`;
+    await sqlInstance`ALTER TABLE messaging_conversations ADD COLUMN IF NOT EXISTS assignment_source VARCHAR(50) NOT NULL DEFAULT 'recommendation'`;
+    await sqlInstance`ALTER TABLE messaging_conversations ADD COLUMN IF NOT EXISTS encryption_scheme VARCHAR(100) NOT NULL DEFAULT 'client_envelope_v1'`;
+    await sqlInstance`ALTER TABLE messaging_conversations ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id) ON DELETE SET NULL`;
+
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_installer_recommendations_consumer ON installer_recommendations(consumer_id, status)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_installer_recommendations_installer ON installer_recommendations(installer_id, status)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_conversations_consumer ON messaging_conversations(consumer_id, status)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_conversations_installer ON messaging_conversations(installer_id, status)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_messages_conversation ON messaging_messages(conversation_id, created_at)`;
-    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_messages_read ON messaging_messages(conversation_id, read_at) WHERE read_at IS NULL`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_attachments_message ON messaging_attachments(message_id)`;
-    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_in_app_notifications_user ON in_app_notifications(user_id, read_at, created_at DESC)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_in_app_notifications_user ON in_app_notifications(user_id, created_at DESC)`;
     messagingSchemaEnsured = true;
   } catch (error) {
     messagingSchemaEnsured = false;
@@ -411,11 +425,22 @@ async function ensureMarketplaceSchema() {
       }
     }
 
+    // Migrate existing tables — add columns that may be missing from older deployments
+    await sqlInstance`ALTER TABLE dealer_profiles ADD COLUMN IF NOT EXISTS icon VARCHAR(50)`;
+    await sqlInstance`ALTER TABLE dealer_profiles ADD COLUMN IF NOT EXISTS verified BOOLEAN DEFAULT false`;
+    await sqlInstance`ALTER TABLE dealer_profiles ADD COLUMN IF NOT EXISTS rating DECIMAL(3,2) DEFAULT 0`;
+    await sqlInstance`ALTER TABLE dealer_profiles ADD COLUMN IF NOT EXISTS review_count INTEGER DEFAULT 0`;
+    await sqlInstance`ALTER TABLE dealer_profiles ADD COLUMN IF NOT EXISTS contact_enabled BOOLEAN DEFAULT true`;
+    await sqlInstance`ALTER TABLE dealer_profiles ADD COLUMN IF NOT EXISTS booking_enabled BOOLEAN DEFAULT true`;
+    await sqlInstance`ALTER TABLE dealer_profiles ADD COLUMN IF NOT EXISTS scheduling_enabled BOOLEAN DEFAULT false`;
+    await sqlInstance`ALTER TABLE dealer_profiles ADD COLUMN IF NOT EXISTS provinces JSONB DEFAULT '[]'`;
+    await sqlInstance`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS status VARCHAR(50) NOT NULL DEFAULT 'pending'`;
+    await sqlInstance`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMP`;
+    await sqlInstance`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS notes TEXT`;
+
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_dealer_profiles_type ON dealer_profiles(type)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings(user_id)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_bookings_dealer_id ON bookings(dealer_id)`;
-    
-    marketplaceSchemaEnsured = true;
   } catch (error) {
     marketplaceSchemaEnsured = false;
     throw error;

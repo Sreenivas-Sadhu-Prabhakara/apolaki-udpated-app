@@ -17,7 +17,7 @@ api.interceptors.response.use(
     const status = error.response?.status
     const code = error.response?.data?.code
 
-    if (status === 401 && !error.config?.skipAuthRedirect) {
+    if (status === 401 && !error.config?.skipAuthRedirect && !window.location.pathname.startsWith('/login')) {
       const userStore = useUserStore()
       userStore.clearSession()
       window.location.href = '/login'
