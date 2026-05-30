@@ -448,9 +448,9 @@
               </colgroup>
               <thead>
                 <tr :class="isDark ? 'bg-slate-800/60 text-slate-400' : 'bg-gray-50 text-gray-500'">
-                  <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide align-middle">Detail</th>
+                  <th class="px-5 py-2 text-left text-xs font-semibold uppercase tracking-wide align-middle">Detail</th>
                   <th v-for="opt in financingOptions" :key="opt.key"
-                    class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide transition-colors align-middle"
+                    class="px-4 py-2 text-center text-xs font-semibold uppercase tracking-wide transition-colors align-middle"
                     :class="selectedFinancing === opt.key
                       ? (isDark ? 'text-blue-300 bg-blue-900/20' : 'text-blue-700 bg-blue-50')
                       : ''">
