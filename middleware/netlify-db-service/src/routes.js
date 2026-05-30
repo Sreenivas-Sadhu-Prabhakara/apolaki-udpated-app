@@ -11,6 +11,7 @@ import {
     assessments,
     contracts,
     ensureConsentSchema,
+    ensureMarketplaceSchema,
     finance,
     maintenanceLog,
     marketplace,
@@ -1677,6 +1678,7 @@ router.delete('/marketplace/wishlist/:productId', authenticateToken, async (req,
  */
 router.get('/marketplace/dealers', authenticateToken, async (req, res) => {
   try {
+    await ensureMarketplaceSchema();
     const dealers = await marketplaceDealers.getAll();
     res.json({ success: true, count: dealers.length, data: dealers });
   } catch (err) {
@@ -1716,7 +1718,7 @@ router.post('/marketplace/bookings', authenticateToken, async (req, res) => {
  */
 router.post('/finance/transactions', authenticateToken, async (req, res) => {
   try {
-    if (!(await requireConsent(req, res, 'finance_data'))) return;
+    if (!(await requireConsent(req, res, 'finance_data', { allowElevated: true }))) return;
 
     const {
       transactionId,
@@ -1761,7 +1763,7 @@ router.post('/finance/transactions', authenticateToken, async (req, res) => {
  */
 router.get('/finance/transactions', authenticateToken, async (req, res) => {
   try {
-    if (!(await requireConsent(req, res, 'finance_data'))) return;
+    if (!(await requireConsent(req, res, 'finance_data', { allowElevated: true }))) return;
 
     const transactions = await finance.getByUserId(req.user.id);
     res.json({
@@ -1781,7 +1783,7 @@ router.get('/finance/transactions', authenticateToken, async (req, res) => {
  */
 router.get('/finance/summary', authenticateToken, async (req, res) => {
   try {
-    if (!(await requireConsent(req, res, 'finance_data'))) return;
+    if (!(await requireConsent(req, res, 'finance_data', { allowElevated: true }))) return;
 
     const summary = await finance.getSummary(req.user.id);
     res.json({

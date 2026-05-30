@@ -708,7 +708,7 @@ async function ensureSchema() {
   }
 }
 
-export { ensureAdminSchema, ensureConsentSchema, ensureInitialized, ensureMessagingSchema, ensureSchema, initializeDatabase };
+export { ensureAdminSchema, ensureConsentSchema, ensureInitialized, ensureMarketplaceSchema, ensureMessagingSchema, ensureSchema, initializeDatabase };
 
 /**
  * User operations
