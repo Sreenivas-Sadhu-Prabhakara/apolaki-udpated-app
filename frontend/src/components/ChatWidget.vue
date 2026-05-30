@@ -132,7 +132,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useMessagingStore } from '../stores/messagingStore'
 import { useUserStore } from '../stores/userStore'
 

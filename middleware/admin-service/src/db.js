@@ -1,343 +1,342 @@
-import crypto from 'node:crypto';
-import pkg from 'pg';
+/**
+ * Admin Service — Database Layer
+ * Connects to PostgreSQL with a read-write admin role.
+ * Tables touched: users, admin_sessions, audit_events, break_glass_sessions
+ */
 
-const { Pool } = pkg;
+import dotenv from 'dotenv';
+import pg from 'pg';
 
-const databaseUrl = process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
-const isNeonUrl = databaseUrl?.includes('neon.tech') || databaseUrl?.includes('neon-');
-const needsSsl = isNeonUrl || databaseUrl?.includes('sslmode=require') || process.env.DB_SSL === 'true';
+dotenv.config();
 
-export const pool = new Pool({
-  connectionString: databaseUrl,
-  ssl: needsSsl ? { rejectUnauthorized: false } : false,
-  max: Number.parseInt(process.env.ADMIN_DB_POOL_MAX || '10', 10)
-});
+const { Pool } = pg;
 
-pool.on('connect', client => {
-  client.query('SET search_path TO public').catch(() => {});
-});
+let pool;
 
-export async function query(text, params = []) {
-  const result = await pool.query(text, params);
-  return result.rows;
+export function getPool() {
+  if (!pool) {
+    const connStr = process.env.DATABASE_URL;
+    if (!connStr) {
+      throw new Error('DATABASE_URL environment variable is not set');
+    }
+    pool = new Pool({
+      connectionString: connStr,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      max: 10,
+      idleTimeoutMillis: 30000,
+    });
+
+    pool.on('error', (err) => {
+      console.error('Unexpected error on idle DB client:', err);
+    });
+  }
+  return pool;
 }
 
-export async function ensureAdminSchema() {
-  await query(`
-    ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS admin_totp_secret TEXT,
-    ADD COLUMN IF NOT EXISTS admin_totp_enabled BOOLEAN DEFAULT false
-  `);
+/**
+ * Ensures admin-service-specific tables exist.
+ */
+export async function ensureSchema() {
+  const db = getPool();
 
-  await query(`
+  await db.query(`
     CREATE TABLE IF NOT EXISTS admin_sessions (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      user_id UUID NOT NULL,
       ip_address VARCHAR(45),
       user_agent TEXT,
-      admin_scope VARCHAR(20) NOT NULL CHECK (admin_scope IN ('admin', 'superadmin')),
-      mfa_verified BOOLEAN DEFAULT false,
-      refresh_token_hash TEXT,
+      admin_scope VARCHAR(20) NOT NULL DEFAULT 'admin',
+      mfa_verified BOOLEAN NOT NULL DEFAULT false,
       logged_in_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       revoked_at TIMESTAMP,
-      revoked_by UUID REFERENCES users(id) ON DELETE SET NULL
-    )
+      revoked_by UUID
+    );
   `);
 
-  await query(`
+  await db.query(`
+    CREATE INDEX IF NOT EXISTS idx_admin_sessions_user_id ON admin_sessions(user_id);
+  `);
+
+  await db.query(`
+    CREATE INDEX IF NOT EXISTS idx_admin_sessions_revoked ON admin_sessions(revoked_at);
+  `);
+
+  await db.query(`
     CREATE TABLE IF NOT EXISTS audit_events (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      service VARCHAR(100) NOT NULL,
-      actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
+      service VARCHAR(100) NOT NULL DEFAULT 'admin-service',
+      actor_id UUID,
       actor_role VARCHAR(50),
-      action VARCHAR(100) NOT NULL,
+      action VARCHAR(200) NOT NULL,
       resource_type VARCHAR(100),
-      resource_id VARCHAR(255),
+      resource_id UUID,
       before_state JSONB,
       after_state JSONB,
       ip_address VARCHAR(45),
       user_agent TEXT,
-      status VARCHAR(50) DEFAULT 'success',
       timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
+    );
   `);
 
-  await query('CREATE INDEX IF NOT EXISTS idx_admin_sessions_user_active ON admin_sessions(user_id, revoked_at, last_active_at)');
-  await query('CREATE INDEX IF NOT EXISTS idx_audit_events_actor_id ON audit_events(actor_id)');
-  await query('CREATE INDEX IF NOT EXISTS idx_audit_events_action ON audit_events(action)');
-  await query('CREATE INDEX IF NOT EXISTS idx_audit_events_resource ON audit_events(resource_type, resource_id)');
-  await query('CREATE INDEX IF NOT EXISTS idx_audit_events_timestamp ON audit_events(timestamp DESC)');
-  await query('CREATE INDEX IF NOT EXISTS idx_audit_events_before_state ON audit_events USING GIN (before_state)');
-  await query('CREATE INDEX IF NOT EXISTS idx_audit_events_after_state ON audit_events USING GIN (after_state)');
+  await db.query(`
+    CREATE INDEX IF NOT EXISTS idx_audit_events_actor ON audit_events(actor_id);
+  `);
+
+  await db.query(`
+    CREATE INDEX IF NOT EXISTS idx_audit_events_action ON audit_events(action);
+  `);
+
+  await db.query(`
+    CREATE INDEX IF NOT EXISTS idx_audit_events_timestamp ON audit_events(timestamp DESC);
+  `);
+
+  // Break glass sessions (shared table — admin-service now owns it)
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS break_glass_sessions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL,
+      justification TEXT NOT NULL,
+      actions_taken JSONB DEFAULT '[]',
+      started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      expires_at TIMESTAMP NOT NULL,
+      ended_at TIMESTAMP,
+      ip_address VARCHAR(45),
+      user_agent TEXT
+    );
+  `);
+
+  console.log('✅ Admin service schema ready');
 }
 
-export async function checkReady() {
-  await query('SELECT 1 AS ok');
-}
-
-export const users = {
-  async getByEmail(email) {
-    const rows = await query('SELECT * FROM users WHERE email = $1', [email]);
-    return rows[0];
-  },
-
-  async getById(id) {
-    const rows = await query('SELECT * FROM users WHERE id = $1', [id]);
-    return rows[0];
-  },
-
-  async list() {
-    return query(`
-      SELECT id, email, first_name, last_name, phone, profile_picture_url, role, active,
-             admin_totp_enabled, created_at, updated_at
-      FROM users
-      ORDER BY created_at DESC
-    `);
-  },
-
-  async updateRole(id, role) {
-    const rows = await query(
-      `UPDATE users
-       SET role = $2, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1
-       RETURNING id, email, first_name, last_name, role, active, updated_at`,
-      [id, role]
-    );
-    return rows[0];
-  },
-
-  async setTotpSecret(id, secret, enabled = false) {
-    const rows = await query(
-      `UPDATE users
-       SET admin_totp_secret = $2, admin_totp_enabled = $3, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1
-       RETURNING id, email, role, admin_totp_enabled`,
-      [id, secret, enabled]
-    );
-    return rows[0];
-  },
-
-  async enableTotp(id) {
-    const rows = await query(
-      `UPDATE users
-       SET admin_totp_enabled = true, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1
-       RETURNING id, email, role, admin_totp_enabled`,
-      [id]
-    );
-    return rows[0];
-  }
-};
+// ─── admin_sessions ────────────────────────────────────────────────────────
 
 export const adminSessions = {
-  async create({ userId, ipAddress, userAgent, adminScope, refreshToken }) {
-    const refreshTokenHash = hashToken(refreshToken);
-    const rows = await query(
-      `INSERT INTO admin_sessions (user_id, ip_address, user_agent, admin_scope, refresh_token_hash)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
-      [userId, ipAddress, userAgent, adminScope, refreshTokenHash]
+  async create({ userId, ipAddress, userAgent, adminScope, mfaVerified }) {
+    const db = getPool();
+    const res = await db.query(
+      `INSERT INTO admin_sessions (user_id, ip_address, user_agent, admin_scope, mfa_verified)
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [userId, ipAddress, userAgent, adminScope, mfaVerified || false]
     );
-    return rows[0];
+    return res.rows[0];
   },
 
-  async getActive(id) {
-    const rows = await query(
-      `SELECT s.*, u.email, u.role, u.active, u.admin_totp_secret, u.admin_totp_enabled,
-              EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - s.last_active_at))::int AS idle_seconds
+  async getById(sessionId) {
+    const db = getPool();
+    const res = await db.query(
+      `SELECT * FROM admin_sessions WHERE id=$1 AND revoked_at IS NULL`,
+      [sessionId]
+    );
+    return res.rows[0];
+  },
+
+  async getActive() {
+    const db = getPool();
+    const res = await db.query(
+      `SELECT s.*, u.email, u.first_name, u.last_name
        FROM admin_sessions s
-       JOIN users u ON u.id = s.user_id
-       WHERE s.id = $1 AND s.revoked_at IS NULL`,
-      [id]
+       JOIN users u ON s.user_id = u.id
+       WHERE s.revoked_at IS NULL
+       ORDER BY s.logged_in_at DESC`
     );
-    return rows[0];
+    return res.rows;
   },
 
-  async touch(id) {
-    const rows = await query(
-      `UPDATE admin_sessions
-       SET last_active_at = CURRENT_TIMESTAMP
-       WHERE id = $1 AND revoked_at IS NULL
-       RETURNING *`,
-      [id]
+  async touch(sessionId) {
+    const db = getPool();
+    await db.query(
+      `UPDATE admin_sessions SET last_active_at=CURRENT_TIMESTAMP WHERE id=$1`,
+      [sessionId]
     );
-    return rows[0];
   },
 
-  async markMfaVerified(id) {
-    const rows = await query(
-      `UPDATE admin_sessions
-       SET mfa_verified = true, last_active_at = CURRENT_TIMESTAMP
-       WHERE id = $1 AND revoked_at IS NULL
-       RETURNING *`,
-      [id]
+  async revoke(sessionId, revokedBy) {
+    const db = getPool();
+    const res = await db.query(
+      `UPDATE admin_sessions SET revoked_at=CURRENT_TIMESTAMP, revoked_by=$2
+       WHERE id=$1 RETURNING *`,
+      [sessionId, revokedBy]
     );
-    return rows[0];
+    return res.rows[0];
   },
-
-  async revoke(id, revokedBy) {
-    const rows = await query(
-      `UPDATE admin_sessions
-       SET revoked_at = CURRENT_TIMESTAMP, revoked_by = $2
-       WHERE id = $1 AND revoked_at IS NULL
-       RETURNING *`,
-      [id, revokedBy]
-    );
-    return rows[0];
-  },
-
-  async listActive() {
-    return query(`
-      SELECT s.id, s.user_id, u.email, u.role, s.admin_scope, s.mfa_verified,
-             s.ip_address, s.user_agent, s.logged_in_at, s.last_active_at
-      FROM admin_sessions s
-      JOIN users u ON u.id = s.user_id
-      WHERE s.revoked_at IS NULL
-      ORDER BY s.last_active_at DESC
-    `);
-  }
 };
+
+// ─── audit_events ────────────────────────────────────────────────────────────
 
 export const auditEvents = {
-  async create({
-    service = 'admin-service',
-    actorId = null,
-    actorRole = null,
-    action,
-    resourceType = null,
-    resourceId = null,
-    beforeState = null,
-    afterState = null,
-    ipAddress = null,
-    userAgent = null,
-    status = 'success'
-  }) {
-    const rows = await query(
-      `INSERT INTO audit_events (
-         service, actor_id, actor_role, action, resource_type, resource_id,
-         before_state, after_state, ip_address, user_agent, status
-       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9, $10, $11)
-       RETURNING *`,
+  async create({ service, actorId, actorRole, action, resourceType, resourceId, beforeState, afterState, ipAddress, userAgent }) {
+    const db = getPool();
+    const res = await db.query(
+      `INSERT INTO audit_events
+         (service, actor_id, actor_role, action, resource_type, resource_id, before_state, after_state, ip_address, user_agent)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
       [
-        service,
-        actorId,
-        actorRole,
+        service || 'admin-service',
+        actorId || null,
+        actorRole || null,
         action,
-        resourceType,
-        resourceId,
+        resourceType || null,
+        resourceId || null,
         beforeState ? JSON.stringify(beforeState) : null,
         afterState ? JSON.stringify(afterState) : null,
-        ipAddress,
-        userAgent,
-        status
+        ipAddress || null,
+        userAgent || null,
       ]
     );
-    return rows[0];
+    return res.rows[0];
   },
 
-  async search(filters = {}) {
-    const page = Math.max(Number.parseInt(filters.page || '1', 10), 1);
-    const limit = Math.min(Math.max(Number.parseInt(filters.limit || '50', 10), 1), 500);
+  async query({ page = 1, limit = 50, actorId, action, resourceType, from, to } = {}) {
+    const db = getPool();
     const offset = (page - 1) * limit;
-    const clauses = [];
+    const conditions = [];
     const params = [];
+    let idx = 1;
 
-    addFilter(clauses, params, 'actor_id', filters.actor_id);
-    addFilter(clauses, params, 'action', filters.action);
-    addFilter(clauses, params, 'resource_type', filters.resource_type);
+    if (actorId) { conditions.push(`actor_id=$${idx++}`); params.push(actorId); }
+    if (action) { conditions.push(`action ILIKE $${idx++}`); params.push(`%${action}%`); }
+    if (resourceType) { conditions.push(`resource_type=$${idx++}`); params.push(resourceType); }
+    if (from) { conditions.push(`timestamp>=$${idx++}`); params.push(from); }
+    if (to) { conditions.push(`timestamp<=$${idx++}`); params.push(to); }
 
-    if (filters.from) {
-      params.push(filters.from);
-      clauses.push(`timestamp >= $${params.length}`);
-    }
-    if (filters.to) {
-      params.push(filters.to);
-      clauses.push(`timestamp <= $${params.length}`);
-    }
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
-    const countRows = await query(`SELECT COUNT(*)::int AS total FROM audit_events ${where}`, params);
-    const rows = await query(
-      `SELECT * FROM audit_events ${where}
-       ORDER BY timestamp DESC
-       LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
-      [...params, limit, offset]
+    const countRes = await db.query(`SELECT COUNT(*) FROM audit_events ${where}`, params);
+    const total = parseInt(countRes.rows[0].count);
+
+    params.push(limit, offset);
+    const rows = await db.query(
+      `SELECT * FROM audit_events ${where} ORDER BY timestamp DESC LIMIT $${idx++} OFFSET $${idx++}`,
+      params
     );
 
-    return { rows, page, limit, total: countRows[0]?.total || 0 };
-  }
+    return { total, page, limit, data: rows.rows };
+  },
 };
 
-export const breakGlassSessions = {
-  async create({ userId, justification, expiresAt, ipAddress, userAgent, signature }) {
-    const rows = await query(
-      `INSERT INTO break_glass_sessions (user_id, justification, expires_at, ip_address, user_agent, review_notes)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [userId, justification, expiresAt, ipAddress, userAgent, signature ? `signature:${signature}` : null]
+// ─── break_glass_sessions ────────────────────────────────────────────────────
+
+export const breakGlass = {
+  async create({ userId, justification, expiresAt, ipAddress, userAgent }) {
+    const db = getPool();
+    const res = await db.query(
+      `INSERT INTO break_glass_sessions (user_id, justification, expires_at, ip_address, user_agent)
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [userId, justification, expiresAt, ipAddress, userAgent]
     );
-    return rows[0];
+    return res.rows[0];
   },
 
   async getActiveByUserId(userId) {
-    const rows = await query(
+    const db = getPool();
+    const res = await db.query(
       `SELECT * FROM break_glass_sessions
-       WHERE user_id = $1 AND status = 'active' AND expires_at > CURRENT_TIMESTAMP
-       ORDER BY started_at DESC LIMIT 1`,
+       WHERE user_id=$1 AND ended_at IS NULL AND expires_at>CURRENT_TIMESTAMP`,
       [userId]
     );
-    return rows[0];
+    return res.rows[0];
   },
 
-  async getActive(id) {
-    const rows = await query(
-      `SELECT * FROM break_glass_sessions
-       WHERE id = $1 AND status = 'active' AND expires_at > CURRENT_TIMESTAMP`,
-      [id]
+  async getAll() {
+    const db = getPool();
+    const res = await db.query(
+      `SELECT b.*, u.email FROM break_glass_sessions b
+       JOIN users u ON b.user_id=u.id
+       ORDER BY b.started_at DESC`
     );
-    return rows[0];
+    return res.rows;
   },
 
-  async recordAction(id, action) {
-    const rows = await query(
+  async recordAction(sessionId, record) {
+    const db = getPool();
+    const res = await db.query(
       `UPDATE break_glass_sessions
        SET actions_taken = actions_taken || $2::jsonb
-       WHERE id = $1 AND status = 'active' AND expires_at > CURRENT_TIMESTAMP
+       WHERE id=$1 AND ended_at IS NULL AND expires_at>CURRENT_TIMESTAMP
        RETURNING *`,
-      [id, JSON.stringify([action])]
+      [sessionId, JSON.stringify(record)]
     );
-    return rows[0];
+    return res.rows[0];
   },
 
-  async end(id) {
-    const rows = await query(
-      `UPDATE break_glass_sessions
-       SET status = 'ended', ended_at = CURRENT_TIMESTAMP
-       WHERE id = $1
-       RETURNING *`,
-      [id]
+  async end(sessionId) {
+    const db = getPool();
+    const res = await db.query(
+      `UPDATE break_glass_sessions SET ended_at=CURRENT_TIMESTAMP WHERE id=$1 RETURNING *`,
+      [sessionId]
     );
-    return rows[0];
+    return res.rows[0];
   },
-
-  async list(limit = 100) {
-    return query(
-      `SELECT * FROM break_glass_sessions
-       ORDER BY started_at DESC
-       LIMIT $1`,
-      [limit]
-    );
-  }
 };
 
-function addFilter(clauses, params, column, value) {
-  if (!value) return;
-  params.push(value);
-  clauses.push(`${column} = $${params.length}`);
-}
+// ─── users (read-only in admin context) ─────────────────────────────────────
 
-export function hashToken(token) {
-  return crypto.createHash('sha256').update(token).digest('hex');
-}
+export const adminUsers = {
+  async getAll() {
+    const db = getPool();
+    const res = await db.query(
+      `SELECT id, email, first_name, last_name, role, active, created_at, updated_at
+       FROM users ORDER BY created_at DESC`
+    );
+    return res.rows;
+  },
+
+  async getByEmail(email) {
+    const db = getPool();
+    const res = await db.query(
+      `SELECT id, email, first_name, last_name, role, active, password_hash
+       FROM users WHERE email=$1`,
+      [email]
+    );
+    return res.rows[0];
+  },
+
+  async getById(id) {
+    const db = getPool();
+    const res = await db.query(
+      `SELECT id, email, first_name, last_name, role, active, created_at, password_hash
+       FROM users WHERE id=$1`,
+      [id]
+    );
+    return res.rows[0];
+  },
+
+  async updateRole(userId, role) {
+    const db = getPool();
+    const res = await db.query(
+      `UPDATE users SET role=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$1 RETURNING id, email, role`,
+      [userId, role]
+    );
+    return res.rows[0];
+  },
+
+  async getTotpSecret(userId) {
+    const db = getPool();
+    // Store TOTP secret in a dedicated column if it exists, else return null
+    try {
+      const res = await db.query(
+        `SELECT totp_secret FROM users WHERE id=$1`,
+        [userId]
+      );
+      return res.rows[0]?.totp_secret || null;
+    } catch {
+      return null;
+    }
+  },
+
+  async setTotpSecret(userId, secret) {
+    const db = getPool();
+    try {
+      await db.query(
+        `ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret VARCHAR(200)`,
+      );
+      await db.query(
+        `UPDATE users SET totp_secret=$2 WHERE id=$1`,
+        [userId, secret]
+      );
+    } catch (e) {
+      console.warn('Could not store TOTP secret:', e.message);
+    }
+  },
+};

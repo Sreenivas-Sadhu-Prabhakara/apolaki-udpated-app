@@ -1,46 +1,76 @@
+/**
+ * Admin Service — MFA Setup Routes
+ * POST /api/admin/mfa/setup    — generate TOTP secret + QR code
+ * POST /api/admin/mfa/verify   — verify and activate TOTP
+ */
+
 import express from 'express';
-import jwt from 'jsonwebtoken';
-import { users, auditEvents } from '../db.js';
+import * as OTPAuth from 'otpauth';
+import QRCode from 'qrcode';
+import { adminUsers } from '../db.js';
 import { authenticateAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
-const ADMIN_SECRET = process.env.ADMIN_JWT_SECRET || 'dev-admin-jwt-secret-change-in-production';
 
-// Simplified MFA setup for testing
+/**
+ * POST /api/admin/mfa/setup
+ * Generates a new TOTP secret and returns a QR code data URL.
+ */
 router.post('/setup', authenticateAdmin, async (req, res) => {
   try {
-    const secret = 'JBSWY3DPEHPK3PXP'; // Seeded static secret for tests
-    await users.setTotpSecret(req.admin.id, secret, true);
-    res.json({ success: true, secret });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      issuer: 'Apolaki Admin',
+      label: req.adminUser.email,
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+
+    const otpUri = totp.toString();
+    const qrDataUrl = await QRCode.toDataURL(otpUri);
+
+    // Temporarily store (not activated until verify)
+    await adminUsers.setTotpSecret(req.adminUser.sub, secret.base32);
+
+    res.json({
+      success: true,
+      qrCode: qrDataUrl,
+      manualKey: secret.base32,
+      message: 'Scan QR code with your authenticator app, then POST /api/admin/mfa/verify to activate.',
+    });
+  } catch (e) {
+    console.error('MFA setup error:', e);
+    res.status(500).json({ success: false, error: e.message });
   }
 });
 
+/**
+ * POST /api/admin/mfa/verify
+ * Verifies a TOTP code to confirm enrollment.
+ */
 router.post('/verify', authenticateAdmin, async (req, res) => {
-  const { code } = req.body;
-  // In a real app, verify 'code' with 'admin_totp_secret'
-  // For the test suite, we'll accept any 6-digit code if setup is done
-  
-  if (!code || code.length !== 6) {
-    return res.status(400).json({ success: false, error: 'Invalid MFA code' });
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ success: false, error: 'token is required' });
+
+    const secret = await adminUsers.getTotpSecret(req.adminUser.sub);
+    if (!secret) {
+      return res.status(400).json({ success: false, error: 'No MFA setup found. Call /mfa/setup first.' });
+    }
+
+    const totp = new OTPAuth.TOTP({ secret: OTPAuth.Secret.fromBase32(secret) });
+    const delta = totp.validate({ token, window: 1 });
+
+    if (delta === null) {
+      return res.status(403).json({ success: false, error: 'Invalid token', code: 'MFA_INVALID' });
+    }
+
+    res.json({ success: true, message: 'MFA verified and activated. Role changes now require MFA.' });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
   }
-
-  const mfaToken = jwt.sign({
-    sub: req.admin.id,
-    sessionId: req.admin.sessionId,
-    tokenType: 'mfa_verified'
-  }, ADMIN_SECRET, { expiresIn: '5m' });
-
-  await auditEvents.create({
-    actorId: req.admin.id,
-    actorRole: req.admin.role,
-    action: 'MFA_VERIFY_SUCCESS',
-    ipAddress: req.ip,
-    userAgent: req.headers['user-agent']
-  });
-
-  res.json({ success: true, mfaToken });
 });
 
 export default router;

@@ -1,76 +1,109 @@
+/**
+ * Admin Service — Auth Middleware
+ * Validates admin-scoped JWTs and enforces rate limits.
+ */
+
+import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import { adminSessions } from '../db.js';
 
-const ADMIN_SECRET = process.env.ADMIN_JWT_SECRET || 'dev-admin-jwt-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 
-export const authenticateAdmin = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, error: 'Authorization header required', code: 'AUTH_REQUIRED' });
-  }
+// ─── Rate Limiters ────────────────────────────────────────────────────────────
 
-  const token = authHeader.split(' ')[1];
-  try {
-    const decoded = jwt.verify(token, ADMIN_SECRET);
-    
-    // Check if token is for admin access
-    if (decoded.tokenType !== 'admin_access' || !decoded.adminScope) {
-       return res.status(403).json({ success: false, error: 'Admin scope required', code: 'ADMIN_SCOPE_REQUIRED' });
-    }
+export const standardLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: { success: false, error: 'Too many requests, please slow down.', code: 'RATE_LIMITED' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
-    // Check session in database
-    const session = await adminSessions.getActive(decoded.sessionId);
-    if (!session) {
-      return res.status(401).json({ success: false, error: 'Session expired or revoked', code: 'SESSION_EXPIRED' });
-    }
+export const strictLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 3,
+  message: { success: false, error: 'Too many sensitive requests.', code: 'RATE_LIMITED_STRICT' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
-    // Attach to request
-    req.admin = {
-      id: session.user_id,
-      email: session.email,
-      role: session.role,
-      scope: session.admin_scope,
-      mfaVerified: session.mfa_verified,
-      sessionId: session.id
-    };
+// ─── IP Allowlist ─────────────────────────────────────────────────────────────
 
-    // Update last active
-    await adminSessions.touch(session.id);
-    
-    next();
-  } catch (error) {
-    return res.status(401).json({ success: false, error: 'Invalid or expired token', code: 'INVALID_TOKEN' });
-  }
-};
+export function ipAllowlist(req, res, next) {
+  const allowedCidrs = process.env.ADMIN_ALLOWED_CIDRS;
+  if (!allowedCidrs) return next(); // Not configured — allow all
 
-export const requireSuperAdmin = (req, res, next) => {
-  if (req.admin.scope !== 'superadmin') {
-    return res.status(403).json({ success: false, error: 'Superadmin privileges required', code: 'SUPERADMIN_REQUIRED' });
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || '';
+  const allowed = allowedCidrs.split(',').some(cidr => {
+    const base = cidr.trim().split('/')[0];
+    return clientIp === base || clientIp.startsWith(base.split('.').slice(0, 3).join('.'));
+  });
+
+  if (!allowed) {
+    return res.status(403).json({ success: false, error: 'Access denied from this IP', code: 'IP_BLOCKED' });
   }
   next();
-};
+}
 
-export const requireMfa = (req, res, next) => {
-  const mfaToken = req.headers['x-mfa-token'];
-  
-  // If session is already MFA verified, allow
-  if (req.admin.mfaVerified) return next();
-  
-  // If temporary MFA token is provided, verify it
-  if (mfaToken) {
-     try {
-       const decoded = jwt.verify(mfaToken, ADMIN_SECRET);
-       if (decoded.tokenType === 'mfa_verified' && decoded.sessionId === req.admin.sessionId) {
-         return next();
-       }
-     } catch (e) {
-       // Fall through to error
-     }
+// ─── Authenticate Admin JWT ───────────────────────────────────────────────────
+
+export async function authenticateAdmin(req, res, next) {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, error: 'Admin token required', code: 'NO_TOKEN' });
+    }
+
+    const token = authHeader.slice(7);
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      return res.status(401).json({ success: false, error: 'Invalid or expired token', code: 'INVALID_TOKEN' });
+    }
+
+    if (!decoded.adminScope || !['admin', 'superadmin'].includes(decoded.adminScope)) {
+      return res.status(403).json({ success: false, error: 'Admin scope required', code: 'INSUFFICIENT_SCOPE' });
+    }
+
+    // Touch the session's last_active_at if sessionId present
+    if (decoded.sessionId) {
+      const session = await adminSessions.getById(decoded.sessionId);
+      if (!session) {
+        return res.status(401).json({ success: false, error: 'Admin session revoked or expired', code: 'SESSION_REVOKED' });
+      }
+      await adminSessions.touch(decoded.sessionId);
+    }
+
+    req.adminUser = decoded;
+    next();
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Auth error', code: 'AUTH_ERROR' });
   }
+}
 
-  res.status(403).json({
-    success: false,
-    error: 'Multi-factor authentication required for this action',
-    code: 'MFA_REQUIRED'
-  });
-};
+// ─── Require superadmin scope ─────────────────────────────────────────────────
+
+export function requireSuperAdmin(req, res, next) {
+  if (req.adminUser?.adminScope !== 'superadmin') {
+    return res.status(403).json({ success: false, error: 'Superadmin scope required', code: 'SUPERADMIN_REQUIRED' });
+  }
+  next();
+}
+
+// ─── Internal service-to-service auth ────────────────────────────────────────
+
+export function authenticateInternal(req, res, next) {
+  const token = req.headers['x-internal-token'];
+  const expected = process.env.INTERNAL_SERVICE_TOKEN;
+  if (!expected || token !== expected) {
+    return res.status(403).json({ success: false, error: 'Invalid internal token', code: 'INVALID_INTERNAL_TOKEN' });
+  }
+  next();
+}
+
+// ─── Helper ──────────────────────────────────────────────────────────────────
+
+export function getClientIp(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'unknown';
+}
