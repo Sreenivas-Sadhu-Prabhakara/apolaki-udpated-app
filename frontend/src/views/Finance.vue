@@ -441,37 +441,37 @@
           <!-- Comparison table, perfectly aligned and wider -->
           <div class="overflow-x-auto rounded-b-2xl border border-t-0 shadow-sm max-w-5xl mx-auto"
             :class="isDark ? 'border-slate-700 bg-slate-900/60' : 'border-gray-200 bg-white'">
-            <table class="w-full text-sm table-fixed">
+            <table class="w-full text-sm table-fixed align-middle">
               <colgroup>
                 <col style="width: 28%" />
                 <col v-for="opt in financingOptions" :key="opt.key" style="width: 24%" />
               </colgroup>
               <thead>
                 <tr :class="isDark ? 'bg-slate-800/60 text-slate-400' : 'bg-gray-50 text-gray-500'">
-                  <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide">Detail</th>
+                  <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide align-middle">Detail</th>
                   <th v-for="opt in financingOptions" :key="opt.key"
-                    class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide transition-colors"
+                    class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide transition-colors align-middle"
                     :class="selectedFinancing === opt.key
                       ? (isDark ? 'text-blue-300 bg-blue-900/20' : 'text-blue-700 bg-blue-50')
                       : ''">
-                    {{ opt.name }}
+                    <span class="inline-block align-middle leading-tight">{{ opt.name }}</span>
                   </th>
                 </tr>
               </thead>
               <tbody :class="isDark ? 'divide-y divide-slate-700/60' : 'divide-y divide-gray-100'">
                 <tr v-for="row in comparisonRows" :key="row.label"
                   :class="isDark ? 'hover:bg-slate-800/30' : 'hover:bg-gray-50/60'">
-                  <td class="px-5 py-3 text-xs font-medium"
+                  <td class="px-5 py-3 text-xs font-medium align-middle"
                     :class="isDark ? 'text-slate-400' : 'text-gray-500'">{{ row.label }}</td>
                   <td v-for="opt in financingOptions" :key="opt.key"
-                    class="px-4 py-3 text-center text-sm font-semibold transition-colors"
+                    class="px-4 py-3 text-center text-sm font-semibold transition-colors align-middle"
                     :class="[
                       selectedFinancing === opt.key
                         ? (isDark ? 'bg-blue-900/10 text-blue-300 ring-1 ring-blue-700/30 z-10 relative' : 'bg-blue-50 text-blue-700 ring-1 ring-blue-200/40 z-10 relative')
                         : (isDark ? 'text-slate-200' : 'text-gray-800'),
                       row.highlight?.[opt.key] || ''
                     ]">
-                    {{ row.values[opt.key] }}
+                    <span class="inline-block align-middle leading-tight">{{ row.values[opt.key] }}</span>
                   </td>
                 </tr>
               </tbody>
