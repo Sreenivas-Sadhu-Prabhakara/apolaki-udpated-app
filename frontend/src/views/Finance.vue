@@ -462,7 +462,11 @@
               <tr v-for="row in comparisonRows" :key="row.label"
                 :class="isDark ? 'hover:bg-slate-800/30' : 'hover:bg-gray-50/60'">
                 <td class="px-5 py-2 text-xs font-medium align-middle"
-                  :class="isDark ? 'text-slate-400' : 'text-gray-500'">{{ row.label }}</td>
+                  :class="[
+                    'whitespace-nowrap',
+                    (row.label === '10-yr net profit' || row.label === 'Maintenance') ? 'max-w-30' : '',
+                    isDark ? 'text-slate-400' : 'text-gray-500'
+                  ]">{{ row.label }}</td>
                 <td v-for="opt in financingOptions" :key="opt.key"
                   class="px-4 py-2 text-center text-sm font-semibold transition-colors align-middle"
                   :class="[
@@ -1148,7 +1152,7 @@ const financingOptions = computed(() => [
   },
   {
     key: 'loan', name: 'Apolaki PowerLoan', badge: 'Popular',
-    desc: '6.25% APR — own your system, payments replace your bill.',
+       desc: '6.25% APR — own your system, payments replace your bill.',
     line1Label: 'Down payment', line1Value: php(calculatedDownPayment.value),
     line2Label: 'Monthly EMI', line2Value: `${php(calculatedEMI.value)}/mo`,
     line2Color: 'text-blue-600'
