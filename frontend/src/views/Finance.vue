@@ -425,44 +425,46 @@
           </div>
 
           <div class="p-5 space-y-5">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
-              <button v-for="opt in financingOptions" :key="opt.key"
-                type="button"
-                :aria-pressed="selectedFinancing === opt.key"
-                @click="selectFinancingOption(opt.key)"
-                class="h-full text-left rounded-xl border p-4 transition focus:outline-none focus:ring-2 focus:ring-blue-500/30 flex flex-col"
-                :class="selectedFinancing === opt.key
-                  ? (isDark ? 'bg-blue-950/40 border-blue-600 shadow-lg shadow-blue-950/20' : 'bg-blue-50 border-blue-300 shadow-sm')
-                  : (isDark ? 'bg-slate-900/40 border-slate-700 hover:border-slate-500' : 'bg-white border-gray-200 hover:border-blue-200 hover:bg-blue-50/40')">
-                <div class="min-h-12 flex items-start justify-between gap-3">
-                  <div>
-                    <p class="text-sm font-bold" :class="selectedFinancing === opt.key ? 'text-blue-600' : (isDark ? 'text-slate-100' : 'text-gray-900')">
-                      {{ opt.name }}
-                    </p>
-                    <p class="text-[11px] mt-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ opt.badge }}</p>
+            <div class="overflow-x-auto">
+              <div class="grid gap-3 items-stretch min-w-[860px]" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
+                <button v-for="opt in financingOptions" :key="opt.key"
+                  type="button"
+                  :aria-pressed="selectedFinancing === opt.key"
+                  @click="selectFinancingOption(opt.key)"
+                  class="h-full text-left rounded-xl border p-4 transition focus:outline-none focus:ring-2 focus:ring-blue-500/30 flex flex-col"
+                  :class="selectedFinancing === opt.key
+                    ? (isDark ? 'bg-blue-950/40 border-blue-600 shadow-lg shadow-blue-950/20' : 'bg-blue-50 border-blue-300 shadow-sm')
+                    : (isDark ? 'bg-slate-900/40 border-slate-700 hover:border-slate-500' : 'bg-white border-gray-200 hover:border-blue-200 hover:bg-blue-50/40')">
+                  <div class="min-h-12 flex items-start justify-between gap-3">
+                    <div>
+                      <p class="text-sm font-bold" :class="selectedFinancing === opt.key ? 'text-blue-600' : (isDark ? 'text-slate-100' : 'text-gray-900')">
+                        {{ opt.name }}
+                      </p>
+                      <p class="text-[11px] mt-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ opt.badge }}</p>
+                    </div>
+                    <span class="w-5 h-5 rounded-full border flex items-center justify-center text-[11px] font-bold"
+                      :class="selectedFinancing === opt.key
+                        ? 'bg-blue-600 border-blue-600 text-white'
+                        : (isDark ? 'border-slate-600 text-slate-600' : 'border-gray-300 text-gray-300')">
+                      {{ selectedFinancing === opt.key ? '✓' : '' }}
+                    </span>
                   </div>
-                  <span class="w-5 h-5 rounded-full border flex items-center justify-center text-[11px] font-bold"
-                    :class="selectedFinancing === opt.key
-                      ? 'bg-blue-600 border-blue-600 text-white'
-                      : (isDark ? 'border-slate-600 text-slate-600' : 'border-gray-300 text-gray-300')">
-                    {{ selectedFinancing === opt.key ? '✓' : '' }}
-                  </span>
-                </div>
-                <p class="mt-3 text-xs leading-relaxed flex-1" :class="isDark ? 'text-slate-400' : 'text-gray-500'">
-                  {{ opt.desc }}
-                </p>
-                <div class="mt-4 grid grid-cols-2 gap-3 pt-4 border-t"
-                  :class="isDark ? 'border-slate-700/70' : 'border-gray-100'">
-                  <div>
-                    <p class="text-[10px] uppercase tracking-wide" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ opt.line1Label }}</p>
-                    <p class="text-sm font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">{{ opt.line1Value }}</p>
+                  <p class="mt-3 text-xs leading-relaxed flex-1" :class="isDark ? 'text-slate-400' : 'text-gray-500'">
+                    {{ opt.desc }}
+                  </p>
+                  <div class="mt-4 grid grid-cols-2 gap-3 pt-4 border-t"
+                    :class="isDark ? 'border-slate-700/70' : 'border-gray-100'">
+                    <div>
+                      <p class="text-[10px] uppercase tracking-wide" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ opt.line1Label }}</p>
+                      <p class="text-sm font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">{{ opt.line1Value }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[10px] uppercase tracking-wide" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ opt.line2Label }}</p>
+                      <p class="text-sm font-bold" :class="opt.line2Color">{{ opt.line2Value }}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p class="text-[10px] uppercase tracking-wide" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ opt.line2Label }}</p>
-                    <p class="text-sm font-bold" :class="opt.line2Color">{{ opt.line2Value }}</p>
-                  </div>
-                </div>
-              </button>
+                </button>
+              </div>
             </div>
 
             <div class="rounded-xl border p-4"
