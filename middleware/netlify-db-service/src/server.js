@@ -46,11 +46,17 @@ import cors from 'cors';
 import express from 'express';
 import passportModule from 'passport';
 import { initializePassport } from './auth/passport.js';
+import { adminIpAllowlist, adminStandardLimiter } from './auth/adminAuth.js';
 import { enforceApiPolicy } from './auth/policy.js';
 import routesModule from './routes.js';
 import authRoutesModule from './routes/auth.js';
 import messageRoutesModule from './routes/messages.js';
 import personaRoutesModule from './routes/personas.js';
+import adminAuthRoutesModule from './routes/admin/auth.js';
+import adminUserRoutesModule from './routes/admin/users.js';
+import adminAuditLogRoutesModule from './routes/admin/auditLogs.js';
+import adminBreakGlassRoutesModule from './routes/admin/breakGlass.js';
+import adminMfaRoutesModule from './routes/admin/mfa.js';
 
 // Handle CJS/ESM interop — esbuild bundling on Netlify can wrap default exports
 const passport = passportModule.default || passportModule;
@@ -58,6 +64,11 @@ const routes = routesModule.default || routesModule;
 const authRoutes = authRoutesModule.default || authRoutesModule;
 const messageRoutes = messageRoutesModule.default || messageRoutesModule;
 const personaRoutes = personaRoutesModule.default || personaRoutesModule;
+const adminAuthRoutes = adminAuthRoutesModule.default || adminAuthRoutesModule;
+const adminUserRoutes = adminUserRoutesModule.default || adminUserRoutesModule;
+const adminAuditLogRoutes = adminAuditLogRoutesModule.default || adminAuditLogRoutesModule;
+const adminBreakGlassRoutes = adminBreakGlassRoutesModule.default || adminBreakGlassRoutesModule;
+const adminMfaRoutes = adminMfaRoutesModule.default || adminMfaRoutesModule;
 
 const app = express();
 app.disable('x-powered-by');
@@ -120,6 +131,15 @@ app.use('/api/personas', personaRoutes);
 
 // API routes
 app.use('/api', routes);
+
+// ─── Admin Control Plane routes (merged from admin-service) ───────────────────
+app.use('/api/admin', adminIpAllowlist);
+app.use('/api/admin', adminStandardLimiter);
+app.use('/api/admin/auth', adminAuthRoutes);
+app.use('/api/admin/users', adminUserRoutes);
+app.use('/api/admin/audit-logs', adminAuditLogRoutes);
+app.use('/api/admin/break-glass', adminBreakGlassRoutes);
+app.use('/api/admin/mfa', adminMfaRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

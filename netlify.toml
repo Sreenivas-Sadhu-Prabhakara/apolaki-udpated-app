@@ -18,7 +18,7 @@
   base = "."
   
   # Build command - installs both frontend and backend deps, then builds
-  command = "npm ci --legacy-peer-deps && npm ci --include=dev --prefix frontend --legacy-peer-deps && npm ci --prefix middleware/netlify-db-service --legacy-peer-deps && npm ci --prefix middleware/admin-service --legacy-peer-deps && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
+  command = "npm ci --legacy-peer-deps && npm ci --include=dev --prefix frontend --legacy-peer-deps && npm ci --prefix middleware/netlify-db-service --legacy-peer-deps && npm run build --prefix frontend && npm run build --prefix middleware/netlify-db-service"
   
   # Frontend static files directory
   publish = "frontend/dist"
@@ -45,24 +45,14 @@
   included_files = [
     "config/**",
     "middleware/netlify-db-service/src/**",
-    "middleware/admin-service/src/**",
-    "middleware/netlify-db-service/package.json",
-    "middleware/admin-service/package.json"
+    "middleware/netlify-db-service/package.json"
   ]
 
 # ============================================================================
 # Redirects and Rewrites
 # ============================================================================
 [[redirects]]
-  # Admin Control Plane requests go to the dedicated admin-service handler.
-  # In production this path should only be reachable through the approved API gateway.
-  from = "/api/admin/*"
-  to = "/.netlify/functions/admin/:splat"
-  status = 200
-  force = true
-
-[[redirects]]
-  # Proxy API requests to backend functions
+  # All API requests (including /api/admin/*) go to the single handler function
   from = "/api/*"
   to = "/.netlify/functions/handler/:splat"
   status = 200
