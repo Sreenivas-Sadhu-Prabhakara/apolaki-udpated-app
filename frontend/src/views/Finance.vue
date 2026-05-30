@@ -1,262 +1,228 @@
 <template>
-  <div class="min-h-screen transition-colors duration-300" :class="isDark ? 'bg-[#0d1117]' : 'bg-slate-50'">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <div class="min-h-screen py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-200"
+    :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
+    <div class="max-w-5xl mx-auto">
 
       <!-- Loading -->
-      <div v-if="consentLoading" class="flex flex-col items-center justify-center py-32 gap-3">
-        <div class="w-8 h-8 border-2 border-[#0F6CBD] border-t-transparent rounded-full animate-spin"></div>
-        <p class="text-sm" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Loading your finance settings…</p>
+      <div v-if="consentLoading" class="flex flex-col items-center justify-center py-40 gap-4">
+        <div class="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-sm" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Loading…</p>
       </div>
 
       <!-- Consent Gate -->
-      <div v-else-if="!hasFinanceConsent" class="max-w-md mx-auto mt-20 text-center">
-        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 text-3xl"
-          :class="isDark ? 'bg-slate-800' : 'bg-amber-50'">💰</div>
-        <h2 class="text-2xl font-bold mb-2" :class="isDark ? 'text-white' : 'text-gray-900'">Finance Access Required</h2>
-        <p class="text-sm leading-relaxed mb-8" :class="isDark ? 'text-slate-400' : 'text-gray-500'">
-          Enable Finance Data access to view your ROI projections, transaction history, and financing options.
+      <div v-else-if="!hasFinanceConsent" class="max-w-sm mx-auto text-center py-32">
+        <div class="w-12 h-12 rounded-2xl mx-auto mb-5 flex items-center justify-center text-2xl"
+          :class="isDark ? 'bg-slate-800' : 'bg-orange-50'">💰</div>
+        <h2 class="text-xl font-semibold mb-2" :class="isDark ? 'text-slate-100' : 'text-gray-900'">Finance Access Required</h2>
+        <p class="text-sm mb-7 leading-relaxed" :class="isDark ? 'text-slate-400' : 'text-gray-500'">
+          Enable Finance Data access to view ROI projections, transactions, and financing options.
         </p>
         <button @click="grantFinanceConsent" :disabled="grantingConsent"
-          class="inline-flex items-center gap-2 bg-[#0F6CBD] text-white px-8 py-3 rounded-xl font-semibold text-sm hover:bg-[#0a5aa0] transition disabled:opacity-60 disabled:cursor-not-allowed">
-          <span v-if="grantingConsent" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-          {{ grantingConsent ? 'Enabling…' : 'Enable Finance Access' }}
+          class="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition disabled:opacity-50">
+          <span v-if="grantingConsent" class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          {{ grantingConsent ? 'Enabling…' : 'Enable Access' }}
         </button>
         <p v-if="consentError" class="mt-4 text-xs text-red-500">{{ consentError }}</p>
-        <p class="mt-4 text-xs" :class="isDark ? 'text-slate-600' : 'text-gray-400'">Revoke anytime from Profile → Privacy Settings</p>
+        <p class="mt-5 text-xs" :class="isDark ? 'text-slate-600' : 'text-gray-400'">
+          Revoke anytime from Profile → Privacy Settings
+        </p>
       </div>
 
       <!-- Main Content -->
       <template v-if="hasFinanceConsent">
 
-        <!-- Page Header -->
-        <div class="mb-8">
-          <p class="text-xs font-semibold tracking-widest uppercase mb-1" :class="isDark ? 'text-amber-500' : 'text-amber-600'">Solar Financing & ROI</p>
-          <h1 class="text-3xl font-bold tracking-tight" :class="isDark ? 'text-white' : 'text-gray-900'">Financial Advisor</h1>
-          <p class="mt-1 text-sm" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Simulate, evaluate, and manage your solar investment.</p>
+        <!-- Header -->
+        <div class="mb-7">
+          <p class="text-xs font-semibold uppercase tracking-widest mb-1 text-orange-500">Solar Financing</p>
+          <h1 class="text-2xl font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">Financial Advisor</h1>
         </div>
 
         <!-- Tab Bar -->
-        <div class="flex items-center gap-1 p-1 rounded-xl w-fit mb-8" :class="isDark ? 'bg-slate-800' : 'bg-gray-100'">
+        <div class="flex gap-0 border-b mb-8" :class="isDark ? 'border-slate-700' : 'border-gray-200'">
           <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
-            class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all relative"
+            class="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors relative"
             :class="activeTab === tab.key
-              ? (isDark ? 'bg-slate-700 text-white shadow-sm' : 'bg-white text-gray-900 shadow-sm')
-              : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-700')">
-            {{ tab.icon }} {{ tab.label }}
+              ? 'border-orange-500 text-orange-500'
+              : (isDark ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-gray-500 hover:text-gray-700')">
+            {{ tab.label }}
             <span v-if="tab.key === 'saved' && assessmentStore.assessments.length"
-              class="ml-1 bg-[#0F6CBD] text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+              class="bg-orange-500 text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
               {{ assessmentStore.assessments.length }}
             </span>
           </button>
         </div>
 
-        <!-- ─── TAB: CALCULATOR ─── -->
+        <!-- ── CALCULATOR ── -->
         <div v-if="activeTab === 'advisor'" class="space-y-6">
 
-          <!-- Sliders + Key Metrics row -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Sliders + Stats -->
+          <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
             <!-- Sliders -->
-            <div class="rounded-2xl border p-6 space-y-6" :class="cardClass">
-              <h2 class="font-semibold text-base" :class="isDark ? 'text-white' : 'text-gray-900'">Bill Swap Calculator</h2>
+            <div class="lg:col-span-3 rounded-xl border p-6 space-y-6"
+              :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'">
+              <h2 class="text-sm font-semibold" :class="isDark ? 'text-slate-200' : 'text-gray-700'">Bill Swap Calculator</h2>
 
-              <div class="space-y-5">
-                <div>
-                  <div class="flex justify-between text-sm font-medium mb-2" :class="isDark ? 'text-slate-300' : 'text-gray-700'">
-                    <span>Monthly Electricity Bill</span>
-                    <span class="text-[#0F6CBD] font-bold">{{ formatCurrency(inputBill) }}/mo</span>
-                  </div>
-                  <input type="range" min="2000" max="40000" step="500" v-model.number="inputBill"
-                    class="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-[#0F6CBD]"
-                    :class="isDark ? 'bg-slate-700' : 'bg-gray-200'" />
-                  <div class="flex justify-between text-xs mt-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
-                    <span>₱2k</span><span>₱40k+</span>
-                  </div>
+              <div>
+                <div class="flex justify-between text-sm mb-2">
+                  <span :class="isDark ? 'text-slate-400' : 'text-gray-500'">Monthly electricity bill</span>
+                  <span class="font-semibold text-orange-500">{{ formatCurrency(inputBill) }}/mo</span>
                 </div>
-
-                <div>
-                  <div class="flex justify-between text-sm font-medium mb-2" :class="isDark ? 'text-slate-300' : 'text-gray-700'">
-                    <span>Solar System Size</span>
-                    <span class="text-[#0F6CBD] font-bold">{{ systemSizeKW }} kWp</span>
-                  </div>
-                  <input type="range" min="1.5" max="20" step="0.5" v-model.number="systemSizeKW"
-                    class="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-[#0F6CBD]"
-                    :class="isDark ? 'bg-slate-700' : 'bg-gray-200'" />
-                  <div class="flex justify-between text-xs mt-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
-                    <span>1.5 kWp</span><span>20 kWp</span>
-                  </div>
+                <input type="range" min="2000" max="40000" step="500" v-model.number="inputBill"
+                  class="w-full h-1 rounded-full appearance-none cursor-pointer accent-orange-500"
+                  :class="isDark ? 'bg-slate-700' : 'bg-gray-200'" />
+                <div class="flex justify-between text-xs mt-1.5" :class="isDark ? 'text-slate-600' : 'text-gray-400'">
+                  <span>₱2,000</span><span>₱40,000</span>
                 </div>
+              </div>
 
-                <div class="grid grid-cols-3 gap-3 pt-2 border-t" :class="isDark ? 'border-slate-700' : 'border-gray-100'">
-                  <div>
-                    <label class="block text-xs text-gray-400 mb-1">Inflation</label>
-                    <select v-model.number="inflationRate" class="w-full text-xs rounded-lg border px-2 py-1.5"
-                      :class="isDark ? 'bg-slate-900 border-slate-600 text-slate-200' : 'bg-white border-gray-200 text-gray-800'">
-                      <option :value="3">3%</option>
-                      <option :value="4.5">4.5%</option>
-                      <option :value="6">6%</option>
-                      <option :value="7.5">7.5%</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-xs text-gray-400 mb-1">Down %</label>
-                    <input type="number" min="0" max="90" v-model.number="loanDownPaymentPct"
-                      class="w-full text-xs rounded-lg border px-2 py-1.5"
-                      :class="isDark ? 'bg-slate-900 border-slate-600 text-slate-200' : 'bg-white border-gray-200 text-gray-800'" />
-                  </div>
-                  <div>
-                    <label class="block text-xs text-gray-400 mb-1">Term</label>
-                    <select v-model.number="loanTenureYears" class="w-full text-xs rounded-lg border px-2 py-1.5"
-                      :class="isDark ? 'bg-slate-900 border-slate-600 text-slate-200' : 'bg-white border-gray-200 text-gray-800'">
-                      <option :value="3">3 yrs</option>
-                      <option :value="5">5 yrs</option>
-                      <option :value="7">7 yrs</option>
-                      <option :value="10">10 yrs</option>
-                    </select>
-                  </div>
+              <div>
+                <div class="flex justify-between text-sm mb-2">
+                  <span :class="isDark ? 'text-slate-400' : 'text-gray-500'">Solar system size</span>
+                  <span class="font-semibold text-orange-500">{{ systemSizeKW }} kWp</span>
+                </div>
+                <input type="range" min="1.5" max="20" step="0.5" v-model.number="systemSizeKW"
+                  class="w-full h-1 rounded-full appearance-none cursor-pointer accent-orange-500"
+                  :class="isDark ? 'bg-slate-700' : 'bg-gray-200'" />
+                <div class="flex justify-between text-xs mt-1.5" :class="isDark ? 'text-slate-600' : 'text-gray-400'">
+                  <span>1.5 kWp</span><span>20 kWp</span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-3 pt-4 border-t" :class="isDark ? 'border-slate-700' : 'border-gray-100'">
+                <div>
+                  <label class="block text-xs text-gray-400 mb-1.5">Inflation</label>
+                  <select v-model.number="inflationRate"
+                    class="w-full text-xs rounded-lg border px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                    :class="isDark ? 'bg-slate-900 border-slate-600 text-slate-200' : 'bg-white border-gray-200 text-gray-700'">
+                    <option :value="3">3%</option>
+                    <option :value="4.5">4.5%</option>
+                    <option :value="6">6%</option>
+                    <option :value="7.5">7.5%</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-400 mb-1.5">Down %</label>
+                  <input type="number" min="0" max="90" v-model.number="loanDownPaymentPct"
+                    class="w-full text-xs rounded-lg border px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                    :class="isDark ? 'bg-slate-900 border-slate-600 text-slate-200' : 'bg-white border-gray-200 text-gray-700'" />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-400 mb-1.5">Term</label>
+                  <select v-model.number="loanTenureYears"
+                    class="w-full text-xs rounded-lg border px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                    :class="isDark ? 'bg-slate-900 border-slate-600 text-slate-200' : 'bg-white border-gray-200 text-gray-700'">
+                    <option :value="3">3 yrs</option>
+                    <option :value="5">5 yrs</option>
+                    <option :value="7">7 yrs</option>
+                    <option :value="10">10 yrs</option>
+                  </select>
                 </div>
               </div>
             </div>
 
-            <!-- Key Metrics -->
-            <div class="grid grid-cols-2 gap-4">
-              <div class="rounded-2xl border p-5 flex flex-col justify-between" :class="cardClass">
-                <p class="text-xs font-medium uppercase tracking-wide text-emerald-500">Monthly Savings</p>
-                <div>
-                  <p class="text-2xl font-bold text-emerald-500 mt-1">{{ php(estimatedMonthlySavings) }}</p>
-                  <p class="text-xs mt-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ Math.round((estimatedMonthlySavings / inputBill) * 100) }}% off current bill</p>
-                </div>
+            <!-- Stats column -->
+            <div class="lg:col-span-2 flex flex-col gap-3">
+              <div class="rounded-xl border p-5 flex-1"
+                :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'">
+                <p class="text-xs text-gray-400 mb-1">Monthly savings</p>
+                <p class="text-2xl font-bold text-emerald-500">{{ php(estimatedMonthlySavings) }}</p>
+                <p class="text-xs mt-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
+                  {{ Math.round((estimatedMonthlySavings / inputBill) * 100) }}% off your current bill
+                </p>
               </div>
-              <div class="rounded-2xl border p-5 flex flex-col justify-between" :class="cardClass">
-                <p class="text-xs font-medium uppercase tracking-wide" :class="isDark ? 'text-amber-400' : 'text-amber-600'">Payback Period</p>
-                <div>
-                  <p class="text-2xl font-bold mt-1" :class="isDark ? 'text-amber-400' : 'text-amber-600'">{{ computedPaybackYears }} yrs</p>
-                  <p class="text-xs mt-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Until free energy</p>
-                </div>
+              <div class="rounded-xl border p-5 flex-1"
+                :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'">
+                <p class="text-xs text-gray-400 mb-1">Payback period</p>
+                <p class="text-2xl font-bold text-orange-500">{{ computedPaybackYears }} yrs</p>
+                <p class="text-xs mt-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Until free energy</p>
               </div>
-              <div class="rounded-2xl border p-5 flex flex-col justify-between" :class="cardClass">
-                <p class="text-xs font-medium uppercase tracking-wide" :class="isDark ? 'text-blue-400' : 'text-blue-600'">System Cost</p>
-                <div>
-                  <p class="text-2xl font-bold mt-1" :class="isDark ? 'text-blue-400' : 'text-blue-600'">{{ php(systemCost) }}</p>
-                  <p class="text-xs mt-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ systemSizeKW }} kWp estimated</p>
-                </div>
+              <div class="rounded-xl border p-5 flex-1"
+                :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'">
+                <p class="text-xs text-gray-400 mb-1">25-year profit</p>
+                <p class="text-2xl font-bold text-emerald-500">{{ php(lifetimeProfit) }}</p>
+                <p class="text-xs mt-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Est. lifetime gain</p>
               </div>
-              <div class="rounded-2xl border p-5 flex flex-col justify-between" :class="cardClass">
-                <p class="text-xs font-medium uppercase tracking-wide text-emerald-500">25-Yr Profit</p>
-                <div>
-                  <p class="text-2xl font-bold text-emerald-500 mt-1">{{ php(lifetimeProfit) }}</p>
-                  <p class="text-xs mt-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Net lifetime gain</p>
-                </div>
-              </div>
-
-              <!-- Save simulation -->
-              <div class="col-span-2">
-                <button @click="saveCurrentSimulation" :disabled="assessmentStore.saving"
-                  class="w-full py-3 rounded-xl font-semibold text-sm transition-all"
-                  :class="saveSuccess
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-amber-500 hover:bg-amber-400 text-slate-900 disabled:opacity-60'">
-                  {{ assessmentStore.saving ? 'Saving…' : saveSuccess ? '✓ Saved!' : 'Save This Simulation' }}
-                </button>
-              </div>
+              <button @click="saveCurrentSimulation" :disabled="assessmentStore.saving"
+                class="w-full py-2.5 rounded-lg text-sm font-medium transition border"
+                :class="saveSuccess
+                  ? 'bg-emerald-500 border-emerald-500 text-white'
+                  : (isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50')">
+                {{ assessmentStore.saving ? 'Saving…' : saveSuccess ? '✓ Saved' : 'Save Simulation' }}
+              </button>
             </div>
           </div>
 
           <!-- ROI Chart -->
-          <div class="rounded-2xl border p-6" :class="cardClass">
-            <div class="flex items-center justify-between mb-4">
+          <div class="rounded-xl border overflow-hidden"
+            :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'">
+            <div class="flex items-center justify-between px-6 py-4 border-b"
+              :class="isDark ? 'border-slate-700' : 'border-gray-100'">
               <div>
-                <h2 class="font-semibold text-base" :class="isDark ? 'text-white' : 'text-gray-900'">25-Year ROI Projection</h2>
-                <p class="text-xs mt-0.5" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Break-even point marked in gold</p>
+                <p class="text-sm font-semibold" :class="isDark ? 'text-slate-200' : 'text-gray-800'">25-Year ROI Projection</p>
+                <p class="text-xs mt-0.5" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Gold dot marks your payback year</p>
               </div>
-              <span class="text-xs px-3 py-1 rounded-full font-medium" :class="isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-600'">
-                ROI {{ estimatedRoi }}%
+              <span class="text-xs font-medium px-2.5 py-1 rounded-full"
+                :class="isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-600'">
+                {{ estimatedRoi }}% ROI
               </span>
             </div>
-            <div class="rounded-xl overflow-hidden" :class="isDark ? 'bg-slate-900' : 'bg-slate-950'">
-              <svg viewBox="0 0 500 180" class="w-full" preserveAspectRatio="none" style="height:180px">
+            <div :class="isDark ? 'bg-slate-900' : 'bg-slate-950'" class="px-4 pt-4 pb-2">
+              <svg viewBox="0 0 500 160" class="w-full" preserveAspectRatio="none" style="height:160px">
                 <defs>
-                  <linearGradient id="chart-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="#0F6CBD" stop-opacity="0.3"/>
-                    <stop offset="100%" stop-color="#0F6CBD" stop-opacity="0"/>
+                  <linearGradient id="fg" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#ea580c" stop-opacity="0.25"/>
+                    <stop offset="100%" stop-color="#ea580c" stop-opacity="0"/>
                   </linearGradient>
                 </defs>
-                <line x1="40" y1="20" x2="480" y2="20" stroke="#1e293b" stroke-dasharray="3,3"/>
-                <line x1="40" y1="70" x2="480" y2="70" stroke="#1e293b" stroke-dasharray="3,3"/>
-                <line x1="40" y1="120" x2="480" y2="120" stroke="#1e293b" stroke-dasharray="3,3"/>
-                <line x1="40" y1="160" x2="480" y2="160" stroke="#334155" stroke-width="1"/>
-                <path :d="paybackPathFill" fill="url(#chart-grad)"/>
-                <path :d="paybackPath" fill="none" stroke="#0F6CBD" stroke-width="2.5" stroke-linecap="round"/>
-                <line :x1="paybackIntersectX" y1="20" :x2="paybackIntersectX" y2="160" stroke="#F4C94C" stroke-width="1" stroke-dasharray="3,3"/>
-                <circle :cx="paybackIntersectX" :cy="paybackIntersectY" r="5" fill="#F4C94C" stroke="#0d1117" stroke-width="2"/>
-                <text :x="Math.min(paybackIntersectX + 8, 430)" :y="paybackIntersectY - 8" fill="#F4C94C" font-size="9" font-weight="bold">Yr {{ computedPaybackYears }}</text>
+                <line x1="40" y1="40" x2="480" y2="40" stroke="#1e293b" stroke-dasharray="3,4"/>
+                <line x1="40" y1="90" x2="480" y2="90" stroke="#1e293b" stroke-dasharray="3,4"/>
+                <line x1="40" y1="140" x2="480" y2="140" stroke="#334155" stroke-width="1"/>
+                <path :d="paybackPathFill" fill="url(#fg)"/>
+                <path :d="paybackPath" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <line :x1="paybackIntersectX" y1="10" :x2="paybackIntersectX" y2="140" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3,3"/>
+                <circle :cx="paybackIntersectX" :cy="paybackIntersectY" r="4" fill="#f59e0b" stroke="#0f172a" stroke-width="2"/>
+                <text :x="Math.min(paybackIntersectX + 6, 420)" :y="paybackIntersectY - 7" fill="#f59e0b" font-size="8.5" font-weight="600">Yr {{ computedPaybackYears }}</text>
               </svg>
-              <div class="flex justify-between text-[10px] px-10 py-2 text-slate-500">
-                <span>Yr 0</span><span>Yr 5</span><span>Yr 10</span><span>Yr 15</span><span>Yr 20</span><span>Yr 25</span>
+              <div class="flex justify-between text-[10px] px-6 pb-1 text-slate-600 font-medium">
+                <span>0</span><span>5</span><span>10</span><span>15</span><span>20</span><span>25</span>
               </div>
             </div>
           </div>
 
           <!-- Financing Options -->
           <div>
-            <h2 class="font-semibold text-base mb-4" :class="isDark ? 'text-white' : 'text-gray-900'">Financing Options</h2>
+            <p class="text-xs font-semibold uppercase tracking-wider mb-3" :class="isDark ? 'text-slate-400' : 'text-gray-400'">Financing Options</p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <!-- Cash -->
-              <div class="rounded-2xl border p-5 flex flex-col gap-4 transition hover:shadow-md"
-                :class="isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-gray-200 shadow-sm'">
-                <div class="flex items-center justify-between">
-                  <span class="text-xl">⚡</span>
-                  <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500">Best ROI</span>
-                </div>
-                <div>
-                  <h3 class="font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">Cash Purchase</h3>
-                  <p class="text-xs mt-1" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Maximum lifetime savings with no interest.</p>
-                </div>
-                <div class="space-y-1.5 text-sm">
-                  <div class="flex justify-between"><span :class="isDark ? 'text-slate-400' : 'text-gray-400'">Upfront</span><span class="font-semibold">{{ formatCurrency(systemCost) }}</span></div>
-                  <div class="flex justify-between"><span :class="isDark ? 'text-slate-400' : 'text-gray-400'">Payback</span><span class="font-semibold text-amber-500">{{ computedPaybackYears }} yrs</span></div>
-                </div>
-                <button @click="selectFinancingOption('cash')" class="mt-auto w-full py-2 rounded-lg text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition">
-                  Select
-                </button>
-              </div>
 
-              <!-- Loan — highlighted -->
-              <div class="rounded-2xl border-2 p-5 flex flex-col gap-4 transition hover:shadow-md relative"
-                :class="isDark ? 'bg-slate-800 border-[#0F6CBD]' : 'bg-white border-[#0F6CBD] shadow-md'">
-                <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#0F6CBD] text-white text-[10px] font-bold uppercase px-3 py-0.5 rounded-full">Most Popular</span>
+              <div v-for="opt in financingOptions" :key="opt.key"
+                class="rounded-xl border p-5 flex flex-col gap-4 transition cursor-pointer"
+                :class="[
+                  opt.featured
+                    ? (isDark ? 'border-orange-500/60 bg-orange-500/5' : 'border-orange-400 bg-orange-50/50')
+                    : (isDark ? 'bg-slate-800 border-slate-700 hover:border-slate-500' : 'bg-white border-gray-200 hover:border-gray-300')
+                ]"
+                @click="selectFinancingOption(opt.key)">
                 <div class="flex items-center justify-between">
-                  <span class="text-xl">🏦</span>
-                  <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500">Bill Swap</span>
+                  <p class="font-semibold text-sm" :class="isDark ? 'text-slate-100' : 'text-gray-900'">{{ opt.name }}</p>
+                  <span v-if="opt.featured" class="text-[10px] font-bold uppercase tracking-wide text-orange-500 border border-orange-500/40 px-1.5 py-0.5 rounded-full">Popular</span>
+                  <span v-else class="text-[10px] font-medium" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ opt.badge }}</span>
                 </div>
-                <div>
-                  <h3 class="font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">Apolaki PowerLoan</h3>
-                  <p class="text-xs mt-1" :class="isDark ? 'text-slate-400' : 'text-gray-500'">6.25% APR — own your system, payments replace your bill.</p>
+                <p class="text-xs leading-relaxed" :class="isDark ? 'text-slate-400' : 'text-gray-500'">{{ opt.desc }}</p>
+                <div class="space-y-1.5">
+                  <div class="flex justify-between text-xs">
+                    <span :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ opt.line1Label }}</span>
+                    <span class="font-medium" :class="isDark ? 'text-slate-200' : 'text-gray-800'">{{ opt.line1Value }}</span>
+                  </div>
+                  <div class="flex justify-between text-xs">
+                    <span :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ opt.line2Label }}</span>
+                    <span class="font-medium" :class="opt.line2Color || (isDark ? 'text-slate-200' : 'text-gray-800')">{{ opt.line2Value }}</span>
+                  </div>
                 </div>
-                <div class="space-y-1.5 text-sm">
-                  <div class="flex justify-between"><span :class="isDark ? 'text-slate-400' : 'text-gray-400'">Down</span><span class="font-semibold">{{ formatCurrency(calculatedDownPayment) }}</span></div>
-                  <div class="flex justify-between"><span :class="isDark ? 'text-slate-400' : 'text-gray-400'">Monthly EMI</span><span class="font-semibold text-orange-400">{{ formatCurrency(calculatedEMI) }}/mo</span></div>
-                </div>
-                <button @click="selectFinancingOption('loan')" class="mt-auto w-full py-2 rounded-lg text-sm font-semibold bg-[#0F6CBD] hover:bg-[#0c5ea2] text-white transition">
-                  Configure
-                </button>
-              </div>
-
-              <!-- Lease -->
-              <div class="rounded-2xl border p-5 flex flex-col gap-4 transition hover:shadow-md"
-                :class="isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-gray-200 shadow-sm'">
-                <div class="flex items-center justify-between">
-                  <span class="text-xl">📜</span>
-                  <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-500">₱0 Down</span>
-                </div>
-                <div>
-                  <h3 class="font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">Zero-Down Lease</h3>
-                  <p class="text-xs mt-1" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Pay 30% less than your current bill, no ownership.</p>
-                </div>
-                <div class="space-y-1.5 text-sm">
-                  <div class="flex justify-between"><span :class="isDark ? 'text-slate-400' : 'text-gray-400'">Monthly</span><span class="font-semibold">{{ formatCurrency(inputBill * 0.7) }}/mo</span></div>
-                  <div class="flex justify-between"><span :class="isDark ? 'text-slate-400' : 'text-gray-400'">Maintenance</span><span class="font-semibold text-emerald-500">Included</span></div>
-                </div>
-                <button @click="selectFinancingOption('lease')" class="mt-auto w-full py-2 rounded-lg text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition">
+                <button class="mt-auto w-full py-2 rounded-lg text-xs font-semibold transition"
+                  :class="opt.featured
+                    ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                    : (isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-700')">
                   Select
                 </button>
               </div>
@@ -264,93 +230,92 @@
           </div>
 
           <!-- Prequalifier -->
-          <div class="rounded-2xl border p-6" :class="cardClass">
-            <h2 class="font-semibold text-base mb-5" :class="isDark ? 'text-white' : 'text-gray-900'">Instant Prequalification</h2>
+          <div class="rounded-xl border p-6"
+            :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'">
+            <p class="text-xs font-semibold uppercase tracking-wider mb-5" :class="isDark ? 'text-slate-400' : 'text-gray-400'">Instant Prequalification</p>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div class="space-y-5">
                 <div>
-                  <label class="block text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Property Ownership</label>
+                  <label class="block text-xs text-gray-400 mb-2">Property ownership</label>
                   <div class="flex gap-2">
                     <button type="button" @click="propertyOwned = true"
-                      class="flex-1 py-2 rounded-lg text-xs font-semibold border transition"
-                      :class="propertyOwned ? 'bg-[#0F6CBD] text-white border-[#0F6CBD]' : (isDark ? 'bg-slate-800 text-slate-400 border-slate-600' : 'bg-white text-gray-500 border-gray-200')">
-                      Own Property
+                      class="flex-1 py-2 rounded-lg text-xs font-medium border transition"
+                      :class="propertyOwned
+                        ? 'bg-orange-600 border-orange-600 text-white'
+                        : (isDark ? 'border-slate-600 text-slate-400 hover:border-slate-500' : 'border-gray-200 text-gray-500 hover:border-gray-300')">
+                      Own property
                     </button>
                     <button type="button" @click="propertyOwned = false"
-                      class="flex-1 py-2 rounded-lg text-xs font-semibold border transition"
-                      :class="!propertyOwned ? 'bg-[#0F6CBD] text-white border-[#0F6CBD]' : (isDark ? 'bg-slate-800 text-slate-400 border-slate-600' : 'bg-white text-gray-500 border-gray-200')">
+                      class="flex-1 py-2 rounded-lg text-xs font-medium border transition"
+                      :class="!propertyOwned
+                        ? 'bg-orange-600 border-orange-600 text-white'
+                        : (isDark ? 'border-slate-600 text-slate-400 hover:border-slate-500' : 'border-gray-200 text-gray-500 hover:border-gray-300')">
                       Renting
                     </button>
                   </div>
                 </div>
                 <div>
-                  <div class="flex justify-between text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
-                    <span>Credit Grade</span>
-                    <span class="text-[#F4C94C] normal-case">{{ creditScoreRange }}</span>
+                  <div class="flex justify-between text-xs mb-2">
+                    <span class="text-gray-400">Credit grade</span>
+                    <span class="font-medium text-orange-500">{{ creditScoreRange }}</span>
                   </div>
                   <input type="range" min="550" max="850" step="10" v-model.number="creditScore"
-                    class="w-full accent-[#0F6CBD]" />
+                    class="w-full h-1 rounded-full appearance-none cursor-pointer accent-orange-500"
+                    :class="isDark ? 'bg-slate-700' : 'bg-gray-200'" />
                 </div>
                 <div>
-                  <label class="block text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Annual Household Income</label>
+                  <label class="block text-xs text-gray-400 mb-2">Annual household income</label>
                   <input type="text" placeholder="₱1,200,000" v-model="annualIncome"
-                    class="w-full rounded-lg border px-3 py-2 text-sm"
-                    :class="isDark ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-600' : 'bg-white border-gray-200 text-gray-800'" />
+                    class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500"
+                    :class="isDark ? 'bg-slate-900 border-slate-600 text-slate-200 placeholder-slate-600' : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400'" />
                 </div>
               </div>
 
               <div class="flex flex-col gap-4">
-                <div class="flex-1 rounded-xl border p-5" :class="prequalRating.colorClass">
-                  <div class="flex justify-between items-start mb-2">
-                    <span class="text-xs font-bold uppercase tracking-wide">Approval Status</span>
-                    <span class="text-xl">{{ prequalRating.icon }}</span>
+                <div class="flex-1 rounded-xl border p-4" :class="prequalRating.colorClass">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wide">Approval status</span>
+                    <span>{{ prequalRating.icon }}</span>
                   </div>
-                  <p class="text-lg font-black mb-2">{{ prequalRating.status }}</p>
-                  <p class="text-xs leading-relaxed">{{ prequalRating.desc }}</p>
+                  <p class="font-bold text-base mb-1.5">{{ prequalRating.status }}</p>
+                  <p class="text-xs leading-relaxed opacity-80">{{ prequalRating.desc }}</p>
                 </div>
                 <router-link to="/messaging?financierId=f1"
-                  class="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border transition"
-                  :class="isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'">
-                  💬 Message Financing Advisor
+                  class="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium border transition"
+                  :class="isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'">
+                  Message Financing Advisor
                 </router-link>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- ─── TAB: LEDGER ─── -->
-        <div v-else-if="activeTab === 'ledger'" class="space-y-6">
+        <!-- ── LEDGER ── -->
+        <div v-else-if="activeTab === 'ledger'" class="space-y-5">
 
-          <!-- Summary Row -->
+          <!-- Stats row -->
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="rounded-2xl border p-5" :class="cardClass">
-              <p class="text-xs font-medium text-gray-400 mb-1">Income & Savings</p>
-              <p class="text-xl font-bold text-emerald-500">{{ php(financeStore.totalIncome) }}</p>
-            </div>
-            <div class="rounded-2xl border p-5" :class="cardClass">
-              <p class="text-xs font-medium text-gray-400 mb-1">Total Expenses</p>
-              <p class="text-xl font-bold text-red-500">{{ php(financeStore.totalExpenses) }}</p>
-            </div>
-            <div class="rounded-2xl border p-5" :class="cardClass">
-              <p class="text-xs font-medium text-gray-400 mb-1">Net Balance</p>
-              <p class="text-xl font-bold" :class="financeStore.netBalance >= 0 ? 'text-emerald-500' : 'text-red-500'">{{ php(financeStore.netBalance) }}</p>
-            </div>
-            <div class="rounded-2xl border p-5" :class="cardClass">
-              <p class="text-xs font-medium text-gray-400 mb-1">Transactions</p>
-              <p class="text-xl font-bold" :class="isDark ? 'text-blue-400' : 'text-blue-600'">{{ financeStore.transactions.length }}</p>
+            <div v-for="stat in ledgerStats" :key="stat.label"
+              class="rounded-xl border p-4"
+              :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'">
+              <p class="text-xs text-gray-400 mb-1.5">{{ stat.label }}</p>
+              <p class="text-xl font-bold" :class="stat.color">{{ stat.value }}</p>
             </div>
           </div>
 
-          <!-- Add Transaction Form -->
-          <div v-if="showAddForm" class="rounded-2xl border p-6" :class="cardClass">
-            <div class="flex justify-between items-center mb-5">
-              <h2 class="font-semibold" :class="isDark ? 'text-white' : 'text-gray-900'">Record Transaction</h2>
-              <button @click="showAddForm = false" class="text-xl leading-none" :class="isDark ? 'text-slate-500 hover:text-slate-300' : 'text-gray-400 hover:text-gray-600'">&times;</button>
+          <!-- Add form -->
+          <div v-if="showAddForm" class="rounded-xl border p-5"
+            :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'">
+            <div class="flex items-center justify-between mb-5">
+              <p class="text-sm font-semibold" :class="isDark ? 'text-slate-200' : 'text-gray-800'">Record Transaction</p>
+              <button @click="showAddForm = false" class="text-lg leading-none"
+                :class="isDark ? 'text-slate-500 hover:text-slate-300' : 'text-gray-400 hover:text-gray-600'">&times;</button>
             </div>
             <form @submit.prevent="handleCreateTransaction" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-medium text-gray-400 mb-1.5 uppercase">Type</label>
-                <select v-model="form.type" required class="w-full rounded-lg border px-3 py-2 text-sm" :class="isDark ? 'bg-slate-900 border-slate-600 text-slate-200' : 'bg-white border-gray-200 text-gray-800'">
+                <label class="block text-xs text-gray-400 mb-1.5">Type</label>
+                <select v-model="form.type" required class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  :class="isDark ? 'bg-slate-900 border-slate-600 text-slate-200' : 'bg-white border-gray-200 text-gray-800'">
                   <option value="">Select…</option>
                   <option value="income">Income / Savings</option>
                   <option value="expense">Expense</option>
@@ -359,8 +324,9 @@
                 </select>
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-400 mb-1.5 uppercase">Category</label>
-                <select v-model="form.category" required class="w-full rounded-lg border px-3 py-2 text-sm" :class="isDark ? 'bg-slate-900 border-slate-600 text-slate-200' : 'bg-white border-gray-200 text-gray-800'">
+                <label class="block text-xs text-gray-400 mb-1.5">Category</label>
+                <select v-model="form.category" required class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  :class="isDark ? 'bg-slate-900 border-slate-600 text-slate-200' : 'bg-white border-gray-200 text-gray-800'">
                   <option value="">Select…</option>
                   <option value="energy_savings">Energy Savings</option>
                   <option value="equipment_purchase">Equipment Purchase</option>
@@ -374,91 +340,110 @@
                 </select>
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-400 mb-1.5 uppercase">Amount (₱)</label>
+                <label class="block text-xs text-gray-400 mb-1.5">Amount (₱)</label>
                 <input v-model.number="form.amount" type="number" step="0.01" placeholder="0.00" required
-                  class="w-full rounded-lg border px-3 py-2 text-sm" :class="isDark ? 'bg-slate-900 border-slate-600 text-slate-200' : 'bg-white border-gray-200 text-gray-800'" />
+                  class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  :class="isDark ? 'bg-slate-900 border-slate-600 text-slate-200' : 'bg-white border-gray-200 text-gray-800'" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-400 mb-1.5 uppercase">Date</label>
+                <label class="block text-xs text-gray-400 mb-1.5">Date</label>
                 <input v-model="form.transactionDate" type="date" required
-                  class="w-full rounded-lg border px-3 py-2 text-sm" :class="isDark ? 'bg-slate-900 border-slate-600 text-slate-200' : 'bg-white border-gray-200 text-gray-800'" />
+                  class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  :class="isDark ? 'bg-slate-900 border-slate-600 text-slate-200' : 'bg-white border-gray-200 text-gray-800'" />
               </div>
               <div class="sm:col-span-2">
-                <label class="block text-xs font-medium text-gray-400 mb-1.5 uppercase">Description</label>
-                <input v-model="form.description" type="text" placeholder="Monthly electricity savings from solar"
-                  class="w-full rounded-lg border px-3 py-2 text-sm" :class="isDark ? 'bg-slate-900 border-slate-600 text-slate-200' : 'bg-white border-gray-200 text-gray-800'" />
+                <label class="block text-xs text-gray-400 mb-1.5">Description</label>
+                <input v-model="form.description" type="text" placeholder="e.g. Monthly electricity savings"
+                  class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  :class="isDark ? 'bg-slate-900 border-slate-600 text-slate-200 placeholder-slate-600' : 'bg-white border-gray-200 text-gray-800'" />
               </div>
-              <div class="sm:col-span-2 flex gap-3">
+              <div class="sm:col-span-2 flex gap-3 items-center">
                 <button type="submit" :disabled="financeStore.loading"
-                  class="px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-semibold transition disabled:opacity-50">
-                  {{ financeStore.loading ? 'Saving…' : 'Save Transaction' }}
+                  class="px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50">
+                  {{ financeStore.loading ? 'Saving…' : 'Save' }}
                 </button>
                 <button type="button" @click="showAddForm = false"
-                  class="px-5 py-2 rounded-lg text-sm font-semibold border transition"
-                  :class="isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'">
+                  class="px-5 py-2 rounded-lg text-sm font-medium border transition"
+                  :class="isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'">
                   Cancel
                 </button>
+                <p v-if="createSuccess" class="text-emerald-500 text-xs font-medium ml-1">✓ Saved</p>
+                <p v-if="financeStore.error" class="text-red-500 text-xs ml-1">{{ financeStore.error }}</p>
               </div>
-              <p v-if="financeStore.error" class="sm:col-span-2 text-red-500 text-sm">{{ financeStore.error }}</p>
-              <p v-if="createSuccess" class="sm:col-span-2 text-emerald-500 text-sm font-medium">✓ Transaction recorded</p>
             </form>
           </div>
 
-          <!-- Transactions Table -->
-          <div class="rounded-2xl border overflow-hidden" :class="cardClass">
-            <div class="flex items-center justify-between px-5 py-4 border-b" :class="isDark ? 'border-slate-700' : 'border-gray-100'">
-              <h2 class="font-semibold text-sm" :class="isDark ? 'text-white' : 'text-gray-900'">Transaction History</h2>
+          <!-- Table -->
+          <div class="rounded-xl border overflow-hidden"
+            :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'">
+            <div class="flex items-center justify-between px-5 py-3.5 border-b"
+              :class="isDark ? 'border-slate-700' : 'border-gray-100'">
+              <p class="text-sm font-semibold" :class="isDark ? 'text-slate-200' : 'text-gray-800'">Transaction History</p>
               <div class="flex gap-2">
-                <button @click="showAddForm = true"
-                  class="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-semibold transition">
+                <button @click="showAddForm = !showAddForm"
+                  class="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-medium transition">
                   + Add
                 </button>
-                <button @click="loadData" class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition"
-                  :class="isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'">
+                <button @click="loadData"
+                  class="px-3 py-1.5 rounded-lg text-xs font-medium border transition"
+                  :class="isDark ? 'border-slate-600 text-slate-400 hover:bg-slate-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'">
                   Refresh
                 </button>
               </div>
             </div>
 
-            <div v-if="financeStore.loading && !financeStore.transactions.length" class="flex items-center justify-center py-16 gap-2" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
+            <div v-if="financeStore.loading && !financeStore.transactions.length"
+              class="flex items-center justify-center gap-2 py-14"
+              :class="isDark ? 'text-slate-500' : 'text-gray-400'">
               <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
               <span class="text-sm">Loading…</span>
             </div>
 
-            <div v-else-if="!financeStore.transactions.length" class="text-center py-16">
-              <p class="text-3xl mb-3">💸</p>
-              <p class="font-medium text-sm" :class="isDark ? 'text-slate-300' : 'text-gray-700'">No transactions yet</p>
-              <p class="text-xs mt-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Add your first solar-related transaction</p>
+            <div v-else-if="!financeStore.transactions.length" class="text-center py-14">
+              <p class="text-sm font-medium mb-1" :class="isDark ? 'text-slate-300' : 'text-gray-700'">No transactions yet</p>
+              <p class="text-xs" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Add your first solar-related transaction above</p>
             </div>
 
             <div v-else class="overflow-x-auto">
               <table class="w-full text-sm">
                 <thead>
-                  <tr class="text-xs uppercase font-semibold border-b"
-                    :class="isDark ? 'text-slate-500 border-slate-700 bg-slate-800/50' : 'text-gray-400 border-gray-100 bg-gray-50'">
+                  <tr class="text-xs font-semibold uppercase tracking-wide border-b"
+                    :class="isDark ? 'text-slate-500 border-slate-700 bg-slate-900/40' : 'text-gray-400 border-gray-100 bg-gray-50'">
                     <th class="px-5 py-3 text-left">Date</th>
                     <th class="px-5 py-3 text-left">Type</th>
                     <th class="px-5 py-3 text-left">Category</th>
-                    <th class="px-5 py-3 text-left hidden md:table-cell">Description</th>
+                    <th class="px-5 py-3 text-left hidden md:table-cell">Note</th>
                     <th class="px-5 py-3 text-right">Amount</th>
                     <th class="px-5 py-3 text-left">Status</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody :class="isDark ? 'divide-y divide-slate-700/60' : 'divide-y divide-gray-50'">
                   <tr v-for="txn in financeStore.transactions" :key="txn.id"
-                    class="border-b transition"
-                    :class="isDark ? 'border-slate-700/60 hover:bg-slate-800/40' : 'border-gray-50 hover:bg-gray-50'">
-                    <td class="px-5 py-3.5 whitespace-nowrap" :class="isDark ? 'text-slate-300' : 'text-gray-700'">{{ formatDate(txn.transaction_date) }}</td>
-                    <td class="px-5 py-3.5">
-                      <span class="px-2 py-0.5 rounded-full text-xs font-semibold capitalize" :class="typeBadgeClass(txn.type)">{{ txn.type }}</span>
-                    </td>
-                    <td class="px-5 py-3.5 capitalize text-xs" :class="isDark ? 'text-slate-400' : 'text-gray-500'">{{ (txn.category || '').replace(/_/g, ' ') }}</td>
-                    <td class="px-5 py-3.5 max-w-[200px] truncate text-xs hidden md:table-cell" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ txn.description || '—' }}</td>
-                    <td class="px-5 py-3.5 text-right font-semibold" :class="isPositive(txn.type) ? 'text-emerald-500' : 'text-red-500'">
-                      {{ isPositive(txn.type) ? '+' : '-' }}{{ php(txn.amount || 0) }}
+                    class="transition" :class="isDark ? 'hover:bg-slate-700/30' : 'hover:bg-gray-50'">
+                    <td class="px-5 py-3.5 text-xs whitespace-nowrap" :class="isDark ? 'text-slate-400' : 'text-gray-500'">
+                      {{ formatDate(txn.transaction_date) }}
                     </td>
                     <td class="px-5 py-3.5">
-                      <span class="text-xs font-medium capitalize" :class="txn.status === 'completed' ? 'text-emerald-500' : 'text-amber-500'">{{ txn.status || 'pending' }}</span>
+                      <span class="px-2 py-0.5 rounded text-xs font-medium capitalize" :class="typeBadgeClass(txn.type)">
+                        {{ txn.type }}
+                      </span>
+                    </td>
+                    <td class="px-5 py-3.5 text-xs capitalize" :class="isDark ? 'text-slate-400' : 'text-gray-500'">
+                      {{ (txn.category || '').replace(/_/g, ' ') }}
+                    </td>
+                    <td class="px-5 py-3.5 text-xs max-w-45 truncate hidden md:table-cell"
+                      :class="isDark ? 'text-slate-500' : 'text-gray-400'">
+                      {{ txn.description || '—' }}
+                    </td>
+                    <td class="px-5 py-3.5 text-right text-sm font-semibold"
+                      :class="isPositive(txn.type) ? 'text-emerald-500' : 'text-red-500'">
+                      {{ isPositive(txn.type) ? '+' : '−' }}{{ php(txn.amount || 0) }}
+                    </td>
+                    <td class="px-5 py-3.5">
+                      <span class="text-xs font-medium capitalize"
+                        :class="txn.status === 'completed' ? 'text-emerald-500' : 'text-amber-500'">
+                        {{ txn.status || 'pending' }}
+                      </span>
                     </td>
                   </tr>
                 </tbody>
@@ -467,65 +452,65 @@
           </div>
         </div>
 
-        <!-- ─── TAB: SAVED SIMULATIONS ─── -->
-        <div v-else-if="activeTab === 'saved'" class="space-y-6">
+        <!-- ── SAVED ── -->
+        <div v-else-if="activeTab === 'saved'" class="space-y-5">
           <div class="flex items-center justify-between">
-            <div>
-              <h2 class="font-semibold" :class="isDark ? 'text-white' : 'text-gray-900'">Saved Simulations</h2>
-              <p class="text-xs mt-0.5" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Click any scenario to reload it into the calculator.</p>
-            </div>
+            <p class="text-sm font-semibold" :class="isDark ? 'text-slate-200' : 'text-gray-800'">Saved Simulations</p>
             <button @click="assessmentStore.fetchAssessments()"
-              class="text-xs font-semibold px-3 py-1.5 rounded-lg border transition"
-              :class="isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'">
+              class="text-xs font-medium px-3 py-1.5 rounded-lg border transition"
+              :class="isDark ? 'border-slate-600 text-slate-400 hover:bg-slate-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'">
               Refresh
             </button>
           </div>
 
-          <div v-if="assessmentStore.loading" class="flex items-center justify-center py-20 gap-2" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
+          <div v-if="assessmentStore.loading" class="flex items-center justify-center gap-2 py-20"
+            :class="isDark ? 'text-slate-500' : 'text-gray-400'">
             <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
             <span class="text-sm">Loading…</span>
           </div>
 
-          <div v-else-if="!assessmentStore.assessments.length" class="text-center py-20 rounded-2xl border" :class="isDark ? 'border-slate-800' : 'border-gray-100'">
-            <p class="text-3xl mb-3">🗂️</p>
-            <p class="font-medium text-sm" :class="isDark ? 'text-slate-300' : 'text-gray-700'">No simulations saved yet</p>
-            <p class="text-xs mt-1 mb-5" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Use the calculator tab and hit Save</p>
-            <button @click="activeTab = 'advisor'" class="px-5 py-2 bg-[#0F6CBD] text-white rounded-xl text-sm font-semibold hover:bg-blue-600 transition">
+          <div v-else-if="!assessmentStore.assessments.length" class="text-center py-20">
+            <p class="text-sm font-medium mb-1" :class="isDark ? 'text-slate-300' : 'text-gray-700'">No simulations saved yet</p>
+            <p class="text-xs mb-5" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Go to the Calculator tab and click Save Simulation</p>
+            <button @click="activeTab = 'advisor'"
+              class="px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition">
               Open Calculator
             </button>
           </div>
 
           <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div v-for="item in assessmentStore.assessments" :key="item.id"
-              class="rounded-2xl border p-5 cursor-pointer transition hover:shadow-md"
-              :class="isDark ? 'bg-slate-800/60 border-slate-700 hover:border-[#0F6CBD]/50' : 'bg-white border-gray-100 shadow-sm hover:border-[#0F6CBD]/40'"
+              class="rounded-xl border p-5 cursor-pointer transition hover:shadow-md"
+              :class="isDark ? 'bg-slate-800 border-slate-700 hover:border-slate-500' : 'bg-white border-gray-200 hover:border-gray-300 shadow-sm'"
               @click="loadSavedSimulation(item)">
               <div class="flex items-start justify-between mb-4">
                 <div>
-                  <p class="text-xs font-semibold text-amber-500 uppercase tracking-wide">Saved Scenario</p>
-                  <p class="font-semibold text-sm mt-0.5" :class="isDark ? 'text-slate-100' : 'text-slate-800'">{{ item.savings_estimate?.description || 'Solar Simulation' }}</p>
+                  <p class="text-xs text-orange-500 font-medium mb-0.5">Saved scenario</p>
+                  <p class="text-sm font-semibold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">
+                    {{ item.savings_estimate?.description || 'Solar Simulation' }}
+                  </p>
                 </div>
-                <span class="text-xs" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ formatDate(item.created_at) }}</span>
+                <p class="text-xs" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ formatDate(item.created_at) }}</p>
               </div>
               <div class="grid grid-cols-2 gap-2">
-                <div class="rounded-lg p-2.5" :class="isDark ? 'bg-slate-900' : 'bg-slate-50'">
-                  <p class="text-[10px] text-gray-400 uppercase tracking-wide">Size</p>
-                  <p class="font-bold text-sm mt-0.5" :class="isDark ? 'text-slate-200' : 'text-slate-700'">{{ item.recommended_capacity || '—' }} kWp</p>
+                <div class="rounded-lg p-2.5" :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
+                  <p class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Size</p>
+                  <p class="text-sm font-semibold" :class="isDark ? 'text-slate-200' : 'text-gray-700'">{{ item.recommended_capacity || '—' }} kWp</p>
                 </div>
-                <div class="rounded-lg p-2.5" :class="isDark ? 'bg-slate-900' : 'bg-slate-50'">
-                  <p class="text-[10px] text-gray-400 uppercase tracking-wide">Savings</p>
-                  <p class="font-bold text-sm mt-0.5 text-emerald-500">{{ php(item.savings_estimate?.monthlySavings || 0) }}/mo</p>
+                <div class="rounded-lg p-2.5" :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
+                  <p class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Monthly savings</p>
+                  <p class="text-sm font-semibold text-emerald-500">{{ php(item.savings_estimate?.monthlySavings || 0) }}/mo</p>
                 </div>
-                <div class="rounded-lg p-2.5" :class="isDark ? 'bg-slate-900' : 'bg-slate-50'">
-                  <p class="text-[10px] text-gray-400 uppercase tracking-wide">Payback</p>
-                  <p class="font-bold text-sm mt-0.5" :class="isDark ? 'text-amber-400' : 'text-amber-600'">{{ item.savings_estimate?.paybackYears || '—' }} yrs</p>
+                <div class="rounded-lg p-2.5" :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
+                  <p class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Payback</p>
+                  <p class="text-sm font-semibold text-orange-500">{{ item.savings_estimate?.paybackYears || '—' }} yrs</p>
                 </div>
-                <div class="rounded-lg p-2.5" :class="isDark ? 'bg-slate-900' : 'bg-slate-50'">
-                  <p class="text-[10px] text-gray-400 uppercase tracking-wide">Financing</p>
-                  <p class="font-bold text-sm mt-0.5 capitalize" :class="isDark ? 'text-slate-200' : 'text-slate-700'">{{ item.savings_estimate?.financingOption || 'Loan' }}</p>
+                <div class="rounded-lg p-2.5" :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
+                  <p class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Financing</p>
+                  <p class="text-sm font-semibold capitalize" :class="isDark ? 'text-slate-200' : 'text-gray-700'">{{ item.savings_estimate?.financingOption || 'Loan' }}</p>
                 </div>
               </div>
-              <p class="text-xs text-[#0F6CBD] mt-3 font-medium">Load into calculator →</p>
+              <p class="text-xs text-orange-500 mt-3 font-medium">Load into calculator →</p>
             </div>
           </div>
         </div>
