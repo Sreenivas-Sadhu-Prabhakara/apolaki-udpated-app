@@ -89,19 +89,18 @@
 
       <!-- Tab bar — clean underline style, blue accent -->
       <div class="border-b mb-8" :class="isDark ? 'border-slate-700' : 'border-gray-200'">
-        <div class="flex gap-1">
+        <div class="grid grid-cols-3 gap-8 justify-between max-w-2xl mx-auto">
           <button
             v-for="tab in visibleTabs" :key="tab.key"
             @click="activeTab = tab.key"
-            class="relative px-5 py-3 text-sm font-medium transition-colors whitespace-nowrap"
+            class="relative px-5 py-3 text-sm font-medium transition-colors whitespace-nowrap w-full"
             :class="activeTab === tab.key
               ? (isDark ? 'text-white' : 'text-blue-700')
               : (isDark ? 'text-slate-500 hover:text-slate-300' : 'text-gray-500 hover:text-gray-700')">
             {{ tab.label }}
             <!-- Active underline -->
             <span v-if="activeTab === tab.key"
-              class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full">
-            </span>
+              class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full"></span>
             <!-- Count badge -->
             <span v-if="tab.key === 'saved' && assessmentStore.assessments.length"
               class="ml-1.5 inline-flex items-center justify-center min-w-4.5 h-4.5
