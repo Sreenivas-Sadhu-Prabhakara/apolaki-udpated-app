@@ -118,55 +118,84 @@
       <!-- ─────────────────────────────────────────────────────── -->
       <!-- TAB: CALCULATOR                                         -->
       <!-- ─────────────────────────────────────────────────────── -->
-      <div v-if="activeTab === 'advisor'" class="space-y-6">
+      <div v-if="activeTab === 'advisor'" class="space-y-8">
 
-        <!-- Sliders + Stat cards -->
-        <div class="grid grid-cols-1 lg:grid-cols-5 gap-5">
+        <!-- Two-column: Inputs LEFT · Results RIGHT -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          <!-- Sliders card -->
-          <div class="lg:col-span-3 rounded-xl border p-6 space-y-5" :class="cardClass">
-            <p class="text-xs font-semibold uppercase tracking-widest text-blue-600">
-              Bill Swap Calculator
-            </p>
+          <!-- ── LEFT: Sliders ──────────────────────────────── -->
+          <div class="rounded-2xl border p-7 space-y-7" :class="cardClass">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-widest text-blue-600 mb-0.5">
+                Bill Swap Calculator
+              </p>
+              <p class="text-xs" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
+                Drag the sliders — results update in real time
+              </p>
+            </div>
 
             <!-- Bill slider -->
-            <div>
-              <div class="flex justify-between text-sm mb-2.5">
-                <span :class="isDark ? 'text-slate-300' : 'text-gray-700'">Monthly electricity bill</span>
-                <span class="font-semibold text-blue-600">{{ formatCurrency(inputBill) }}/mo</span>
+            <div class="space-y-3">
+              <div class="flex justify-between items-baseline">
+                <span class="text-sm font-medium" :class="isDark ? 'text-slate-200' : 'text-gray-800'">
+                  Monthly Electricity Bill
+                </span>
+                <span class="text-lg font-bold text-blue-600">{{ php(inputBill) }}<span class="text-xs font-normal">/mo</span></span>
               </div>
-              <input type="range" min="500" max="20000" step="200" v-model.number="inputBill"
-                class="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-blue-600"
+              <input type="range" min="1000" max="20000" step="500" v-model.number="inputBill"
+                class="w-full h-2 rounded-full appearance-none cursor-pointer accent-blue-600"
                 :class="isDark ? 'bg-slate-700' : 'bg-blue-100'" />
-              <div class="flex justify-between text-xs mt-1.5"
-                :class="isDark ? 'text-slate-600' : 'text-gray-400'">
-                <span>₱500</span><span>₱20,000</span>
+              <div class="flex justify-between text-xs" :class="isDark ? 'text-slate-600' : 'text-gray-400'">
+                <span>₱1,000</span>
+                <span class="text-amber-500 font-medium text-[10px]">
+                  Recommended size: {{ recommendedKwp }} kWp
+                </span>
+                <span>₱20,000</span>
               </div>
             </div>
 
-            <!-- System size slider -->
-            <div>
-              <div class="flex justify-between text-sm mb-2.5">
-                <span :class="isDark ? 'text-slate-300' : 'text-gray-700'">Solar system size</span>
-                <span class="font-semibold text-blue-600">{{ systemSizeKW }} kWp</span>
+            <!-- System size & cost slider -->
+            <div class="space-y-3">
+              <div class="flex justify-between items-baseline">
+                <span class="text-sm font-medium" :class="isDark ? 'text-slate-200' : 'text-gray-800'">
+                  Solar System Size &amp; Cost
+                </span>
+                <div class="text-right">
+                  <p class="text-lg font-bold text-blue-600">{{ systemSizeKW }} kWp</p>
+                  <p class="text-xs font-semibold text-amber-600">{{ php(systemCost) }}</p>
+                </div>
               </div>
-              <input type="range" min="1.5" max="20" step="0.5" v-model.number="systemSizeKW"
-                class="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-blue-600"
+              <input type="range" min="1" max="20" step="0.5" v-model.number="systemSizeKW"
+                class="w-full h-2 rounded-full appearance-none cursor-pointer accent-blue-600"
                 :class="isDark ? 'bg-slate-700' : 'bg-blue-100'" />
-              <div class="flex justify-between text-xs mt-1.5"
-                :class="isDark ? 'text-slate-600' : 'text-gray-400'">
-                <span>1.5 kWp</span><span>20 kWp</span>
+              <div class="flex justify-between text-xs" :class="isDark ? 'text-slate-600' : 'text-gray-400'">
+                <span>1 kWp · {{ php(45000) }}</span>
+                <span class="text-[10px]">@ ₱45,000/kWp</span>
+                <span>20 kWp · {{ php(900000) }}</span>
+              </div>
+              <!-- Sizing insight banner -->
+              <div class="rounded-lg px-3 py-2 text-xs flex items-start gap-2"
+                :class="isDark ? 'bg-blue-950/40 text-blue-300 border border-blue-800/50' : 'bg-blue-50 text-blue-700 border border-blue-100'">
+                <svg class="w-3.5 h-3.5 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd"/>
+                </svg>
+                <span>
+                  Your ₱{{ inputBill.toLocaleString() }}/mo bill ≈
+                  <strong>{{ Math.round(inputBill / PH_TARIFF) }} kWh/mo</strong>.
+                  A {{ recommendedKwp }} kWp system covers ~100% at
+                  {{ php(recommendedKwp * COST_PER_KWP) }}.
+                </span>
               </div>
             </div>
 
-            <!-- Fine controls -->
-            <div class="grid grid-cols-3 gap-3 pt-4 border-t"
+            <!-- Loan / inflation controls -->
+            <div class="grid grid-cols-3 gap-3 pt-5 border-t"
               :class="isDark ? 'border-slate-700' : 'border-gray-100'">
               <div>
-                <label class="block text-xs mb-1.5"
-                  :class="isDark ? 'text-slate-500' : 'text-gray-500'">Inflation</label>
+                <label class="block text-xs mb-1.5 font-medium"
+                  :class="isDark ? 'text-slate-400' : 'text-gray-600'">Inflation rate</label>
                 <select v-model.number="inflationRate"
-                  class="w-full text-xs rounded-lg border px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  class="w-full text-xs rounded-lg border px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                   :class="inputClass">
                   <option :value="3">3%</option>
                   <option :value="4.5">4.5%</option>
@@ -175,17 +204,17 @@
                 </select>
               </div>
               <div>
-                <label class="block text-xs mb-1.5"
-                  :class="isDark ? 'text-slate-500' : 'text-gray-500'">Down %</label>
+                <label class="block text-xs mb-1.5 font-medium"
+                  :class="isDark ? 'text-slate-400' : 'text-gray-600'">Down payment %</label>
                 <input type="number" min="0" max="90" v-model.number="loanDownPaymentPct"
-                  class="w-full text-xs rounded-lg border px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  class="w-full text-xs rounded-lg border px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                   :class="inputClass" />
               </div>
               <div>
-                <label class="block text-xs mb-1.5"
-                  :class="isDark ? 'text-slate-500' : 'text-gray-500'">Term</label>
+                <label class="block text-xs mb-1.5 font-medium"
+                  :class="isDark ? 'text-slate-400' : 'text-gray-600'">Loan term</label>
                 <select v-model.number="loanTenureYears"
-                  class="w-full text-xs rounded-lg border px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  class="w-full text-xs rounded-lg border px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                   :class="inputClass">
                   <option :value="3">3 yrs</option>
                   <option :value="5">5 yrs</option>
@@ -196,41 +225,96 @@
             </div>
           </div>
 
-          <!-- Stat cards (right column) -->
-          <div class="lg:col-span-2 flex flex-col gap-3">
-            <div class="rounded-xl border p-4 flex-1" :class="cardClass">
-              <p class="text-xs mb-1.5" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
-                Monthly savings
-              </p>
-              <p class="text-2xl font-bold text-emerald-600">{{ php(estimatedMonthlySavings) }}</p>
-              <p class="text-xs mt-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
-                {{ Math.round((estimatedMonthlySavings / inputBill) * 100) }}% off current bill
-              </p>
+          <!-- ── RIGHT: Result metrics ──────────────────────── -->
+          <div class="flex flex-col gap-4">
+
+            <!-- Key metrics grid -->
+            <div class="grid grid-cols-2 gap-4">
+              <div class="rounded-2xl border p-5" :class="cardClass">
+                <p class="text-xs font-medium mb-2" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Monthly savings</p>
+                <p class="text-2xl font-bold text-emerald-600">{{ php(estimatedMonthlySavings) }}</p>
+                <div class="mt-2 flex items-center gap-1.5">
+                  <div class="flex-1 h-1.5 rounded-full overflow-hidden"
+                    :class="isDark ? 'bg-slate-700' : 'bg-gray-100'">
+                    <div class="h-full rounded-full bg-emerald-500 transition-all"
+                      :style="`width:${Math.min(100, Math.round((estimatedMonthlySavings / inputBill) * 100))}%`">
+                    </div>
+                  </div>
+                  <span class="text-xs font-semibold text-emerald-600">
+                    {{ Math.round((estimatedMonthlySavings / inputBill) * 100) }}%
+                  </span>
+                </div>
+                <p class="text-[10px] mt-1" :class="isDark ? 'text-slate-600' : 'text-gray-400'">of current bill offset</p>
+              </div>
+
+              <div class="rounded-2xl border p-5" :class="cardClass">
+                <p class="text-xs font-medium mb-2" :class="isDark ? 'text-slate-500' : 'text-gray-400'">System cost</p>
+                <p class="text-2xl font-bold text-amber-600">{{ php(systemCost) }}</p>
+                <p class="text-[10px] mt-1.5" :class="isDark ? 'text-slate-600' : 'text-gray-400'">
+                  {{ systemSizeKW }} kWp × ₱45,000/kWp
+                </p>
+                <p class="text-xs mt-1 font-medium" :class="isDark ? 'text-slate-400' : 'text-gray-500'">
+                  Down: {{ php(calculatedDownPayment) }}
+                </p>
+              </div>
+
+              <div class="rounded-2xl border p-5" :class="cardClass">
+                <p class="text-xs font-medium mb-2" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Payback period</p>
+                <p class="text-2xl font-bold text-blue-600">{{ computedPaybackYears }} <span class="text-sm font-medium">yrs</span></p>
+                <p class="text-[10px] mt-1.5" :class="isDark ? 'text-slate-600' : 'text-gray-400'">Until free energy</p>
+                <p class="text-xs mt-1 font-medium" :class="isDark ? 'text-slate-400' : 'text-gray-500'">
+                  EMI: {{ php(calculatedEMI) }}/mo
+                </p>
+              </div>
+
+              <div class="rounded-2xl border p-5" :class="cardClass">
+                <p class="text-xs font-medium mb-2" :class="isDark ? 'text-slate-500' : 'text-gray-400'">10-year net profit</p>
+                <p class="text-2xl font-bold"
+                  :class="lifetimeProfit >= 0 ? 'text-emerald-600' : 'text-red-500'">
+                  {{ php(lifetimeProfit) }}
+                </p>
+                <p class="text-[10px] mt-1.5" :class="isDark ? 'text-slate-600' : 'text-gray-400'">Est. decade gain incl. inflation</p>
+                <p class="text-xs mt-1 font-medium"
+                  :class="estimatedRoi >= 0 ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : 'text-red-500'">
+                  {{ estimatedRoi }}% ROI over 10 yrs
+                </p>
+              </div>
             </div>
-            <div class="rounded-xl border p-4 flex-1" :class="cardClass">
-              <p class="text-xs mb-1.5" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
-                Payback period
-              </p>
-              <p class="text-2xl font-bold text-blue-600">{{ computedPaybackYears }} yrs</p>
-              <p class="text-xs mt-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
-                Until free energy
-              </p>
+
+            <!-- Solar generation summary -->
+            <div class="rounded-2xl border p-5" :class="cardClass">
+              <p class="text-xs font-semibold uppercase tracking-widest mb-4 text-blue-600">Generation Breakdown</p>
+              <div class="grid grid-cols-3 gap-3 text-center">
+                <div>
+                  <p class="text-xs mb-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Daily output</p>
+                  <p class="text-base font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">
+                    {{ (systemSizeKW * 4.5).toFixed(1) }} kWh
+                  </p>
+                </div>
+                <div class="border-x" :class="isDark ? 'border-slate-700' : 'border-gray-200'">
+                  <p class="text-xs mb-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Monthly output</p>
+                  <p class="text-base font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">
+                    {{ Math.round(systemSizeKW * 4.5 * 30) }} kWh
+                  </p>
+                </div>
+                <div>
+                  <p class="text-xs mb-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Annual output</p>
+                  <p class="text-base font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">
+                    {{ Math.round(systemSizeKW * 4.5 * 365 / 1000) }} MWh
+                  </p>
+                </div>
+              </div>
+              <div class="mt-4 pt-4 border-t text-xs" :class="isDark ? 'border-slate-700 text-slate-500' : 'border-gray-100 text-gray-400'">
+                Based on 4.5 peak sun hrs/day · ₱{{ PH_TARIFF }}/kWh grid tariff · ₱45,000/kWp installed cost
+              </div>
             </div>
-            <div class="rounded-xl border p-4 flex-1" :class="cardClass">
-              <p class="text-xs mb-1.5" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
-                10-year profit
-              </p>
-              <p class="text-2xl font-bold text-emerald-600">{{ php(lifetimeProfit) }}</p>
-              <p class="text-xs mt-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
-                Est. decade gain
-              </p>
-            </div>
+
             <button @click="saveCurrentSimulation" :disabled="assessmentStore.saving"
-              class="w-full py-2.5 rounded-lg text-sm font-medium transition border"
+              class="w-full py-3 rounded-xl text-sm font-semibold transition border"
               :class="saveSuccess
                 ? 'bg-emerald-600 border-emerald-600 text-white'
-                : (isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-800' : 'border-gray-300 text-gray-600 hover:bg-gray-50')">
-              {{ assessmentStore.saving ? 'Saving…' : saveSuccess ? '✓ Saved' : 'Save Simulation' }}
+                : (isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-800' : 'border-gray-300 text-gray-700 hover:bg-gray-50')">
+              {{ assessmentStore.saving ? 'Saving…' : saveSuccess ? '✓ Saved to Simulations' : 'Save This Simulation' }}
             </button>
           </div>
         </div>
@@ -623,23 +707,21 @@
       </div>
 
       <!-- ─────────────────────────────────────────────────────── -->
-      <!-- TAB: SAVED SIMULATIONS                                  -->
+      <!-- TAB: SAVED SIMULATIONS — collapsible accordion         -->
       <!-- ─────────────────────────────────────────────────────── -->
-      <div v-else-if="activeTab === 'saved'" class="space-y-5">
-        <div class="flex items-start justify-between">
+      <div v-else-if="activeTab === 'saved'" class="space-y-4">
+        <div class="flex items-start justify-between mb-2">
           <div>
-            <p class="text-sm font-semibold"
-              :class="isDark ? 'text-slate-200' : 'text-gray-900'">Saved Simulations</p>
-            <p class="text-xs mt-0.5"
-              :class="isDark ? 'text-slate-500' : 'text-gray-400'">
-              Click any card to load it back into the calculator
+            <p class="text-sm font-semibold" :class="isDark ? 'text-slate-200' : 'text-gray-900'">
+              Saved Simulations
+            </p>
+            <p class="text-xs mt-0.5" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
+              Expand any row to see details · click Load to restore it in the Calculator
             </p>
           </div>
           <button @click="assessmentStore.fetchAssessments()"
             class="text-xs font-medium px-3 py-1.5 rounded-lg border transition"
-            :class="isDark
-              ? 'border-slate-600 text-slate-400 hover:bg-slate-800'
-              : 'border-gray-200 text-gray-600 hover:bg-gray-50'">
+            :class="isDark ? 'border-slate-600 text-slate-400 hover:bg-slate-800' : 'border-gray-200 text-gray-600 hover:bg-gray-50'">
             Refresh
           </button>
         </div>
@@ -652,81 +734,119 @@
         </div>
 
         <div v-else-if="!assessmentStore.assessments.length"
-          class="rounded-xl border p-12 text-center"
+          class="rounded-2xl border p-12 text-center"
           :class="isDark ? 'border-slate-800' : 'border-gray-100'">
-          <p class="text-sm font-medium mb-1"
-            :class="isDark ? 'text-slate-300' : 'text-gray-700'">No simulations saved yet</p>
-          <p class="text-xs mb-5"
-            :class="isDark ? 'text-slate-500' : 'text-gray-400'">
-            Go to the Calculator tab and click Save Simulation
+          <p class="text-sm font-medium mb-1" :class="isDark ? 'text-slate-300' : 'text-gray-700'">No simulations saved yet</p>
+          <p class="text-xs mb-5" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
+            Go to the Calculator tab and click Save This Simulation
           </p>
           <button @click="activeTab = 'advisor'"
-            class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg
-                   text-sm font-medium transition">
+            class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition">
             Open Calculator
           </button>
         </div>
 
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Accordion list -->
+        <div v-else class="space-y-3">
           <div v-for="item in assessmentStore.assessments" :key="item.id"
-            class="rounded-xl border p-5 cursor-pointer transition group"
-            :class="isDark
-              ? 'bg-slate-800/70 border-slate-700 hover:border-blue-600/50'
-              : 'bg-white border-gray-200 hover:border-blue-400/60 shadow-sm'"
-            @click="loadSavedSimulation(item)">
-            <div class="flex items-start justify-between mb-4">
-              <div>
-                <p class="text-xs font-semibold text-blue-600 mb-0.5">Saved scenario</p>
-                <p class="text-sm font-semibold"
+            class="rounded-2xl border overflow-hidden transition-all"
+            :class="isDark ? 'bg-slate-800/70 border-slate-700' : 'bg-white border-gray-200 shadow-sm'">
+
+            <!-- Collapsed header — always visible -->
+            <button
+              class="w-full flex items-center gap-4 px-5 py-4 text-left transition"
+              :class="isDark ? 'hover:bg-slate-700/40' : 'hover:bg-blue-50/40'"
+              @click="toggleAccordion(item.id)">
+              <!-- chevron -->
+              <svg class="w-4 h-4 shrink-0 transition-transform"
+                :class="[expandedSimId === item.id ? 'rotate-90' : '', isDark ? 'text-slate-500' : 'text-gray-400']"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+              </svg>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold truncate"
                   :class="isDark ? 'text-slate-100' : 'text-gray-900'">
-                  {{ item.savings_estimate?.description || 'Solar Simulation' }}
+                  {{ item.savings_estimate?.description || `${item.recommended_capacity} kWp Solar System` }}
+                </p>
+                <p class="text-xs mt-0.5" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
+                  {{ formatDate(item.created_at) }}
                 </p>
               </div>
-              <p class="text-xs shrink-0 ml-2"
-                :class="isDark ? 'text-slate-500' : 'text-gray-400'">
-                {{ formatDate(item.created_at) }}
-              </p>
+              <div class="hidden sm:flex items-center gap-5 text-right shrink-0">
+                <div>
+                  <p class="text-[10px] uppercase tracking-wide" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Size</p>
+                  <p class="text-sm font-semibold text-blue-600">{{ item.recommended_capacity || '—' }} kWp</p>
+                </div>
+                <div>
+                  <p class="text-[10px] uppercase tracking-wide" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Monthly saving</p>
+                  <p class="text-sm font-semibold text-emerald-600">{{ php(item.savings_estimate?.monthlySavings || 0) }}/mo</p>
+                </div>
+                <div>
+                  <p class="text-[10px] uppercase tracking-wide" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Payback</p>
+                  <p class="text-sm font-semibold" :class="isDark ? 'text-slate-200' : 'text-gray-800'">
+                    {{ item.savings_estimate?.paybackYears || '—' }} yrs
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            <!-- Expanded detail — shown when open -->
+            <div v-if="expandedSimId === item.id"
+              class="border-t px-5 pt-4 pb-5 space-y-4"
+              :class="isDark ? 'border-slate-700' : 'border-gray-100'">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="rounded-xl p-3" :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
+                  <p class="text-[10px] uppercase tracking-wide mb-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">System size</p>
+                  <p class="text-sm font-bold" :class="isDark ? 'text-slate-100' : 'text-gray-900'">
+                    {{ item.recommended_capacity || '—' }} kWp
+                  </p>
+                </div>
+                <div class="rounded-xl p-3" :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
+                  <p class="text-[10px] uppercase tracking-wide mb-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Estimated cost</p>
+                  <p class="text-sm font-bold text-amber-600">{{ php(item.estimated_cost || (item.recommended_capacity * 45000)) }}</p>
+                </div>
+                <div class="rounded-xl p-3" :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
+                  <p class="text-[10px] uppercase tracking-wide mb-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Monthly savings</p>
+                  <p class="text-sm font-bold text-emerald-600">{{ php(item.savings_estimate?.monthlySavings || 0) }}/mo</p>
+                </div>
+                <div class="rounded-xl p-3" :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
+                  <p class="text-[10px] uppercase tracking-wide mb-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">ROI</p>
+                  <p class="text-sm font-bold text-blue-600">{{ item.savings_estimate?.roi || '—' }}%</p>
+                </div>
+                <div class="rounded-xl p-3" :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
+                  <p class="text-[10px] uppercase tracking-wide mb-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Payback period</p>
+                  <p class="text-sm font-bold text-blue-600">{{ item.savings_estimate?.paybackYears || '—' }} yrs</p>
+                </div>
+                <div class="rounded-xl p-3" :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
+                  <p class="text-[10px] uppercase tracking-wide mb-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Financing</p>
+                  <p class="text-sm font-bold capitalize" :class="isDark ? 'text-slate-200' : 'text-gray-800'">
+                    {{ item.savings_estimate?.financingOption || 'Loan' }}
+                  </p>
+                </div>
+                <div class="rounded-xl p-3" :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
+                  <p class="text-[10px] uppercase tracking-wide mb-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">Roof area</p>
+                  <p class="text-sm font-bold" :class="isDark ? 'text-slate-200' : 'text-gray-800'">
+                    {{ item.roof_area ? `${item.roof_area} m²` : '—' }}
+                  </p>
+                </div>
+                <div class="rounded-xl p-3" :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
+                  <p class="text-[10px] uppercase tracking-wide mb-1" :class="isDark ? 'text-slate-500' : 'text-gray-400'">10-yr net profit</p>
+                  <p class="text-sm font-bold text-emerald-600">{{ php(item.savings_estimate?.decadeProfit || 0) }}</p>
+                </div>
+              </div>
+              <div class="flex gap-3 pt-1">
+                <button @click="loadSavedSimulation(item); activeTab = 'advisor'"
+                  class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition">
+                  Load into Calculator
+                </button>
+                <button
+                  class="px-5 py-2.5 rounded-xl text-sm font-medium border transition"
+                  :class="isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
+                  @click="expandedSimId = null">
+                  Collapse
+                </button>
+              </div>
             </div>
-            <div class="grid grid-cols-2 gap-2">
-              <div class="rounded-lg p-2.5"
-                :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
-                <p class="text-[10px] uppercase tracking-wide mb-0.5"
-                  :class="isDark ? 'text-slate-500' : 'text-gray-400'">Size</p>
-                <p class="text-sm font-semibold"
-                  :class="isDark ? 'text-slate-200' : 'text-gray-800'">
-                  {{ item.recommended_capacity || '—' }} kWp
-                </p>
-              </div>
-              <div class="rounded-lg p-2.5"
-                :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
-                <p class="text-[10px] uppercase tracking-wide mb-0.5"
-                  :class="isDark ? 'text-slate-500' : 'text-gray-400'">Monthly savings</p>
-                <p class="text-sm font-semibold text-emerald-600">
-                  {{ php(item.savings_estimate?.monthlySavings || 0) }}/mo
-                </p>
-              </div>
-              <div class="rounded-lg p-2.5"
-                :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
-                <p class="text-[10px] uppercase tracking-wide mb-0.5"
-                  :class="isDark ? 'text-slate-500' : 'text-gray-400'">Payback</p>
-                <p class="text-sm font-semibold text-blue-600">
-                  {{ item.savings_estimate?.paybackYears || '—' }} yrs
-                </p>
-              </div>
-              <div class="rounded-lg p-2.5"
-                :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
-                <p class="text-[10px] uppercase tracking-wide mb-0.5"
-                  :class="isDark ? 'text-slate-500' : 'text-gray-400'">Financing</p>
-                <p class="text-sm font-semibold capitalize"
-                  :class="isDark ? 'text-slate-200' : 'text-gray-800'">
-                  {{ item.savings_estimate?.financingOption || 'Loan' }}
-                </p>
-              </div>
-            </div>
-            <p class="text-xs text-blue-600 mt-3 font-medium
-                      group-hover:underline transition-all">
-              Load into calculator →
-            </p>
           </div>
         </div>
       </div>
@@ -753,6 +873,11 @@ const showAddForm    = ref(false)
 const createSuccess  = ref(false)
 const saveSuccess    = ref(false)
 const activeTab      = ref('advisor')
+const expandedSimId  = ref(null)
+
+function toggleAccordion(id) {
+  expandedSimId.value = expandedSimId.value === id ? null : id
+}
 
 // ── Theme ────────────────────────────────────────────────────────
 const isDark = computed(() => themeStore.isDarkMode)
@@ -816,14 +941,29 @@ function php(amount) {
 }
 
 // ── Computed financials ───────────────────────────────────────────
-// ₱45,000 per kWp — aligned with Apolaki assessment pricing
-const systemCost = computed(() => (systemSizeKW.value || 5) * 45000)
+// Apolaki standard pricing constants (aligned with Assessment module)
+const COST_PER_KWP  = 45000   // ₱/kWp installed (panels + inverter + install)
+const PH_TARIFF     = 12      // ₱/kWh average Meralco/distribution tariff
+const PEAK_SUN_HRS  = 4.5     // PH avg peak sun hours per day
 
+// System cost — ₱45,000 per kWp
+const systemCost = computed(() => (systemSizeKW.value || 5) * COST_PER_KWP)
+
+// Recommended system size from the user's bill
+// Formula: monthly kWh = bill ÷ tariff ; kWp needed = monthly kWh ÷ (peak_hrs × 30 days)
+const recommendedKwp = computed(() => {
+  const monthlyKwh = (inputBill.value || 5000) / PH_TARIFF
+  return parseFloat((monthlyKwh / (PEAK_SUN_HRS * 30)).toFixed(1))
+})
+
+// Monthly solar generation (kWh) for the chosen system size
+const monthlyGenKwh = computed(() => systemSizeKW.value * PEAK_SUN_HRS * 30)
+
+// Monthly savings = min(solar gen × tariff, 85% of bill)
+// 85% cap: some grid draw remains for night/cloudy days
 const estimatedMonthlySavings = computed(() => {
-  // Avg PH solar yield: ~4.5 peak sun hours/day, tariff ~₱12/kWh
-  const monthlyKwh = (systemSizeKW.value || 5) * 4.5 * 30
-  const savingsFromSolar = monthlyKwh * 12
-  return Math.min((inputBill.value || 5000) * 0.85, savingsFromSolar)
+  const solarValue = monthlyGenKwh.value * PH_TARIFF
+  return Math.min(solarValue, (inputBill.value || 5000) * 0.85)
 })
 
 const estimatedRoi = computed(() =>
@@ -835,9 +975,9 @@ const calculatedDownPayment = computed(() =>
 )
 
 const calculatedEMI = computed(() => {
-  const principal  = systemCost.value - calculatedDownPayment.value
-  const mRate      = 0.0625 / 12
-  const months     = (loanTenureYears.value || 5) * 12
+  const principal = systemCost.value - calculatedDownPayment.value
+  const mRate     = 0.0625 / 12
+  const months    = (loanTenureYears.value || 5) * 12
   if (principal <= 0) return 0
   const factor = Math.pow(1 + mRate, months)
   return (principal * mRate * factor) / (factor - 1)
@@ -848,7 +988,7 @@ const computedPaybackYears = computed(() => {
   return ann ? parseFloat((systemCost.value / ann).toFixed(1)) : 0
 })
 
-// 10-year cumulative net savings (replaces 25-year)
+// 10-year cumulative net savings with inflation
 const lifetimeProfit = computed(() => {
   const ann = estimatedMonthlySavings.value * 12
   let total = 0, m = 1
@@ -1090,7 +1230,7 @@ async function saveCurrentSimulation() {
   await assessmentStore.saveAssessment({
     address: 'Philippines', city: 'Manila', state: 'NCR', zipCode: '1000',
     roofCondition: 'good', roofArea: systemSizeKW.value * 6,
-    annualUsage: Math.round(systemSizeKW.value * 125 * 12),
+    annualUsage: Math.round(monthlyGenKwh.value * 12),
     sunExposure: 'high', obstructionLevel: 'low',
     recommendedCapacity: systemSizeKW.value, estimatedCost: systemCost.value,      savingsEstimate: {
       monthlySavings: Math.round(estimatedMonthlySavings.value),
