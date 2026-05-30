@@ -147,7 +147,7 @@
                 :class="isDark ? 'bg-slate-700' : 'bg-blue-100'" />
               <div class="flex justify-between text-xs" :class="isDark ? 'text-slate-600' : 'text-gray-400'">
                 <span>₱1,000</span>
-                <span class="text-amber-500 font-medium text-[10px]">
+                <span class="text-amber-500 font-bold text-base md:text-lg tracking-tight drop-shadow-sm" style="letter-spacing:-0.01em;">
                   Recommended size: {{ recommendedKwp }} kWp
                 </span>
                 <span>₱20,000</span>
@@ -1175,7 +1175,7 @@ const comparisonRows = computed(() => {
     {
       label: 'vs. current bill',
       values: {
-        cash:  '−' + Math.round((estimatedMonthlySavings.value / inputBill.value) * 100) + '%',
+        cash:  '−' + Math.round((estimatedMonthlySavings.value / inputBill.value) + '%'),
         loan:  loanEmi < inputBill.value ? '−' + Math.round(((inputBill.value - loanEmi) / inputBill.value) * 100) + '%' : '+' + Math.round(((loanEmi - inputBill.value) / inputBill.value) * 100) + '%',
         lease: '−30%'
       },
