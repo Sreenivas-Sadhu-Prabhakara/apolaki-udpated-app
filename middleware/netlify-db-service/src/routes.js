@@ -1565,14 +1565,145 @@ router.get('/users/:userId/assessments', authenticateToken, async (req, res) => 
 });
 
 // ============================================
-// MARKETPLACE ROUTES - MIGRATED TO MARKETPLACE-SERVICE
+// MARKETPLACE ROUTES
 // ============================================
-router.use('/marketplace', (_req, res) => {
-  res.status(410).json({
-    success: false,
-    error: 'Marketplace routes have been migrated to the marketplace-service.',
-    service: 'marketplace-service'
-  });
+
+/**
+ * GET /api/marketplace/products
+ */
+router.get('/marketplace/products', authenticateToken, async (req, res) => {
+  try {
+    const { category, search } = req.query;
+    let products;
+    if (search) {
+      products = await marketplace.search(search, category || null);
+    } else if (category && category !== 'all') {
+      products = await marketplace.getByCategory(category);
+    } else {
+      products = await marketplace.getAll();
+    }
+    res.json({ success: true, count: products.length, data: products });
+  } catch (err) {
+    console.error('marketplace/products error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/marketplace/products/:id
+ */
+router.get('/marketplace/products/:id', authenticateToken, async (req, res) => {
+  try {
+    const product = await marketplace.getById(req.params.id);
+    if (!product) return res.status(404).json({ success: false, error: 'Product not found' });
+    res.json({ success: true, data: product });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/marketplace/products/:id/reviews
+ */
+router.get('/marketplace/products/:id/reviews', authenticateToken, async (req, res) => {
+  try {
+    const reviews = await marketplace.getReviews(req.params.id);
+    res.json({ success: true, count: reviews.length, data: reviews });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/marketplace/products/:id/reviews
+ */
+router.post('/marketplace/products/:id/reviews', authenticateToken, async (req, res) => {
+  try {
+    const { rating, title, comment } = req.body;
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ success: false, error: 'Rating must be between 1 and 5' });
+    }
+    const review = await marketplace.createReview({
+      productId: req.params.id,
+      userId: req.user.id,
+      rating,
+      title,
+      comment,
+    });
+    res.status(201).json({ success: true, data: review });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/marketplace/wishlist
+ */
+router.get('/marketplace/wishlist', authenticateToken, async (req, res) => {
+  try {
+    const items = await marketplace.getWishlist(req.user.id);
+    res.json({ success: true, count: items.length, data: items });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/marketplace/wishlist/:productId
+ */
+router.post('/marketplace/wishlist/:productId', authenticateToken, async (req, res) => {
+  try {
+    await marketplace.addToWishlist(req.user.id, req.params.productId);
+    res.status(201).json({ success: true, message: 'Added to wishlist' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * DELETE /api/marketplace/wishlist/:productId
+ */
+router.delete('/marketplace/wishlist/:productId', authenticateToken, async (req, res) => {
+  try {
+    await marketplace.removeFromWishlist(req.user.id, req.params.productId);
+    res.json({ success: true, message: 'Removed from wishlist' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/marketplace/dealers
+ */
+router.get('/marketplace/dealers', authenticateToken, async (req, res) => {
+  try {
+    const dealers = await marketplaceDealers.getAll();
+    res.json({ success: true, count: dealers.length, data: dealers });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/marketplace/bookings
+ */
+router.post('/marketplace/bookings', authenticateToken, async (req, res) => {
+  try {
+    const { dealerId, bookingType, scheduledAt, notes } = req.body;
+    if (!dealerId || !bookingType) {
+      return res.status(400).json({ success: false, error: 'dealerId and bookingType are required' });
+    }
+    const booking = await marketplaceBookings.create({
+      userId: req.user.id,
+      dealerId,
+      bookingType,
+      scheduledAt,
+      notes,
+    });
+    res.status(201).json({ success: true, data: booking });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // ============================================
