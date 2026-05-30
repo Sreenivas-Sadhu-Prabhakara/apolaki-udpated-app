@@ -15,12 +15,14 @@
         <div class="text-4xl mb-3">💰</div>
         <h2 class="text-xl font-bold mb-2" :class="isDark ? 'text-slate-100' : 'text-gray-900'">Enable Finance Features</h2>
         <p class="mb-5 text-sm" :class="isDark ? 'text-slate-400' : 'text-gray-600'">
-          To view your transactions, ROI calculations, and financing options, you need to enable <strong>Finance Data</strong> access in your privacy settings.
+          To view your transactions, ROI calculations, and financing options, you need to enable <strong>Finance Data</strong> access.
         </p>
-        <button @click="grantFinanceConsent"
-          class="inline-flex items-center gap-2 bg-[#0F6CBD] text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-[#0a5aa0] transition shadow-md">
-          🔓 Enable Finance Access
+        <button @click="grantFinanceConsent" :disabled="grantingConsent"
+          class="inline-flex items-center gap-2 bg-[#0F6CBD] text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-[#0a5aa0] transition shadow-md disabled:opacity-60 disabled:cursor-not-allowed">
+          <span v-if="grantingConsent">⏳ Enabling...</span>
+          <span v-else>🔓 Enable Finance Access</span>
         </button>
+        <p v-if="consentError" class="mt-3 text-xs text-red-500">{{ consentError }}</p>
         <p class="mt-3 text-xs" :class="isDark ? 'text-slate-500' : 'text-gray-400'">You can revoke this any time from Profile → Privacy Settings</p>
       </div>
 
@@ -562,7 +564,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import api from '../services/api'
 import { useFinanceStore } from '../stores/financeStore'
 import { useFinancingAssessmentStore } from '../stores/financingAssessmentStore'
 import { useThemeStore } from '../stores/themeStore'
@@ -573,7 +575,6 @@ const financeStore = useFinanceStore()
 const assessmentStore = useFinancingAssessmentStore()
 const themeStore = useThemeStore()
 const userStore = useUserStore()
-const router = useRouter()
 const showAddForm = ref(false)
 const createSuccess = ref(false)
 const saveSuccess = ref(false)
@@ -598,8 +599,28 @@ const hasFinanceConsent = computed(() =>
   isElevatedRole.value || userStore.hasConsent('finance_data')
 )
 
-function grantFinanceConsent() {
-  router.push({ name: 'ConsentOnboarding', query: { required: 'finance_data', next: '/finance' } })
+const grantingConsent = ref(false)
+const consentError = ref(null)
+
+async function grantFinanceConsent() {
+  grantingConsent.value = true
+  consentError.value = null
+  try {
+    // Directly grant finance_data consent via PATCH — no redirect needed
+    await api.patch('/auth/consents/finance_data', { decision: 'granted' })
+    // Refresh consent status in the store so hasFinanceConsent becomes true
+    await userStore.getConsentStatus()
+    // Now load the finance data
+    await Promise.all([
+      financeStore.fetchTransactions(),
+      financeStore.fetchSummary(),
+      assessmentStore.fetchAssessments()
+    ])
+  } catch (err) {
+    consentError.value = err.response?.data?.error || 'Failed to enable finance access. Please try again.'
+  } finally {
+    grantingConsent.value = false
+  }
 }
 
 function php(amount) {
