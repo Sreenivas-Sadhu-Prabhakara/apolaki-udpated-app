@@ -53,3 +53,8 @@ npm-debug.log*
 middleware/netlify-db-service/uploads/
 tests/reports/
 tests/mochawesome-report/
+
+# Local secret/scratch files
+security_config.yaml
+users.json
+cors_env.txt
