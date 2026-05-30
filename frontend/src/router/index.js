@@ -90,6 +90,10 @@ const routes = [
     meta: { requiresAuth: true, requiredConsents: ['profile_account', 'location_assessment'] }
   },
   {
+    path: '/financing',
+    redirect: '/finance'
+  },
+  {
     path: '/finance',
     name: 'Finance',
     component: () => import('../views/Finance.vue'),

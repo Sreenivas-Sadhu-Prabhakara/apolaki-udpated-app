@@ -2,8 +2,15 @@
   <div class="min-h-screen py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-300" :class="isDark ? 'bg-[#111418]' : 'bg-gray-50'">
     <div class="max-w-7xl mx-auto">
 
+      <!-- Loading consent state -->
+      <div v-if="consentLoading" class="mb-8 rounded-2xl border p-8 text-center shadow-lg"
+        :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'">
+        <div class="animate-spin text-4xl mb-3">⏳</div>
+        <p class="text-sm" :class="isDark ? 'text-slate-400' : 'text-gray-500'">Loading your finance settings...</p>
+      </div>
+
       <!-- Consent banner for users with finance_data declined/pending -->
-      <div v-if="!hasFinanceConsent" class="mb-8 rounded-2xl border p-8 text-center shadow-lg"
+      <div v-else-if="!hasFinanceConsent" class="mb-8 rounded-2xl border p-8 text-center shadow-lg"
         :class="isDark ? 'bg-slate-800 border-amber-700/50' : 'bg-amber-50 border-amber-200'">
         <div class="text-4xl mb-3">💰</div>
         <h2 class="text-xl font-bold mb-2" :class="isDark ? 'text-slate-100' : 'text-gray-900'">Enable Finance Features</h2>
@@ -554,7 +561,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFinanceStore } from '../stores/financeStore'
 import { useFinancingAssessmentStore } from '../stores/financingAssessmentStore'
@@ -586,6 +593,7 @@ const isDark = computed(() => themeStore.isDarkMode)
 
 // Finance consent gate
 const isElevatedRole = computed(() => ['admin', 'superadmin'].includes(userStore.userRole))
+const consentLoading = ref(false)
 const hasFinanceConsent = computed(() =>
   isElevatedRole.value || userStore.hasConsent('finance_data')
 )
@@ -805,6 +813,21 @@ async function handleCreateTransaction() {
 }
 
 async function loadData() {
+  // Ensure consent status is loaded before checking gate
+  if (!userStore.consentStatus && userStore.isAuthenticated) {
+    consentLoading.value = true
+    try {
+      await userStore.getConsentStatus()
+    } catch (e) {
+      console.warn('Failed to load consent status in Finance view', e)
+    } finally {
+      consentLoading.value = false
+    }
+  }
+
+  // Only fetch finance data if consent is granted (or elevated role)
+  if (!hasFinanceConsent.value) return
+
   // Restore assessment context if available
   const saved = localStorage.getItem('financingAssessmentState')
   if (saved) {
@@ -864,4 +887,13 @@ function loadSavedSimulation(item) {
 }
 
 onMounted(loadData)
+
+// Re-fetch data if consent becomes granted after mount (e.g. returning from consent flow)
+watch(hasFinanceConsent, (granted) => {
+  if (granted && !financeStore.transactions.length && !financeStore.loading) {
+    financeStore.fetchTransactions()
+    financeStore.fetchSummary()
+    assessmentStore.fetchAssessments()
+  }
+})
 </script>
