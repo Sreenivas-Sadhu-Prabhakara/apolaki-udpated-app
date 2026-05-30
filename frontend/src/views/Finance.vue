@@ -89,7 +89,7 @@
 
       <!-- Tab bar — clean underline style, blue accent -->
       <div class="border-b mb-8" :class="isDark ? 'border-slate-700' : 'border-gray-200'">
-        <div class="grid grid-cols-3 gap-8 justify-between max-w-2xl mx-auto">
+        <div class="grid grid-cols-3 gap-20 justify-between max-w-4xl mx-auto">
           <button
             v-for="tab in visibleTabs" :key="tab.key"
             @click="activeTab = tab.key"
