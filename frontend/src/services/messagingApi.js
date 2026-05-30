@@ -1,7 +1,7 @@
 import api from './api'
 
 export const messagingApi = {
-  getSecurityBanner: () => api.get('/messages/security-banner'),
+  getSecurityBanner: () => api.get('/messages/security-banner', { skipAuthRedirect: true }),
   getConversations: () => api.get('/messages/conversations'),
   createConversation: (payload) => api.post('/messages/conversations', payload),
   getRecommendations: () => api.get('/messages/recommendations'),
