@@ -14,11 +14,23 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && !error.config?.skipAuthRedirect) {
+    const status = error.response?.status
+    const code = error.response?.data?.code
+
+    if (status === 401 && !error.config?.skipAuthRedirect) {
       const userStore = useUserStore()
       userStore.clearSession()
       window.location.href = '/login'
+      return Promise.reject(error)
     }
+
+    if (status === 403 && code === 'CONSENT_REQUIRED' && !error.config?.skipConsentRedirect) {
+      const requiredConsents = error.response?.data?.requiredConsents || []
+      const currentPath = window.location.pathname + window.location.search
+      window.location.href = `/consent?required=${requiredConsents.join(',')}&next=${encodeURIComponent(currentPath)}`
+      return Promise.reject(error)
+    }
+
     return Promise.reject(error)
   }
 )
