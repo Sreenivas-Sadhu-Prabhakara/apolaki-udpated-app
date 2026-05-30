@@ -319,19 +319,19 @@
           </div>
         </div>
 
-        <!-- ROI Chart — 10-year, fixed aspect ratio, Y-axis labels -->
-        <div class="rounded-xl border overflow-hidden" :class="cardClass">
-          <div class="flex items-center justify-between px-6 py-4 border-b"
+        <!-- ROI Chart — 10-year, Y starts at 0, X in 6-month steps -->
+        <div class="rounded-2xl border overflow-hidden" :class="cardClass">
+          <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b"
             :class="isDark ? 'border-slate-700' : 'border-gray-100'">
             <div>
-              <p class="text-sm font-semibold"
-                :class="isDark ? 'text-slate-200' : 'text-gray-900'">10-Year ROI Projection</p>
-              <p class="text-xs mt-0.5"
-                :class="isDark ? 'text-slate-500' : 'text-gray-400'">
-                Gold marker = break-even · Blue = cumulative net savings
+              <p class="text-sm font-semibold" :class="isDark ? 'text-slate-200' : 'text-gray-900'">
+                10-Year Cumulative Savings
+              </p>
+              <p class="text-xs mt-0.5" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
+                How your savings stack up month by month · gold line = break-even point
               </p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
                 <span class="w-2 h-2 rounded-full bg-blue-600 inline-block"></span>{{ estimatedRoi }}% ROI
               </span>
@@ -340,100 +340,143 @@
               </span>
             </div>
           </div>
-          <!-- Fixed-size SVG viewport so it never stretches horizontally -->
-          <div class="px-5 pt-5 pb-3" :class="isDark ? 'bg-slate-900/60' : 'bg-slate-50'">
-            <svg viewBox="0 0 520 200" class="w-full" style="max-height:220px" preserveAspectRatio="xMidYMid meet">
+          <div class="px-6 pt-6 pb-4" :class="isDark ? 'bg-slate-900/40' : 'bg-white'">
+            <!--
+              Canvas: x 56→510 (454px), y 15→165 (150px)
+              Y: 0 (bottom=165) → maxSavings (top=15)
+              X: 0 → 10 years in 0.5-yr (6-month) steps = 20 intervals
+            -->
+            <svg viewBox="0 0 560 185" class="w-full" style="max-height:210px" preserveAspectRatio="xMidYMid meet">
               <defs>
-                <linearGradient id="roiGrad10" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#0066CC" stop-opacity="0.18"/>
-                  <stop offset="100%" stop-color="#0066CC" stop-opacity="0"/>
-                </linearGradient>
-                <linearGradient id="lossGrad10" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#ef4444" stop-opacity="0"/>
-                  <stop offset="100%" stop-color="#ef4444" stop-opacity="0.12"/>
+                <linearGradient id="savGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#0066CC" stop-opacity="0.20"/>
+                  <stop offset="100%" stop-color="#0066CC" stop-opacity="0.02"/>
                 </linearGradient>
               </defs>
-              <!-- Y-axis labels -->
-              <text x="0" y="25"  fill="#64748b" font-size="8" text-anchor="start">{{ yAxisTop }}</text>
-              <text x="0" y="108" fill="#64748b" font-size="8" text-anchor="start">0</text>
-              <text x="0" y="185" fill="#64748b" font-size="8" text-anchor="start">{{ yAxisBot }}</text>
+
+              <!-- Y-axis labels (4 grid lines: 0, 33%, 66%, 100%) -->
+              <g :fill="isDark ? '#475569' : '#94a3b8'" font-size="8.5" text-anchor="end">
+                <text x="50" y="168">₱0</text>
+                <text x="50" y="118">{{ yAxisThird }}</text>
+                <text x="50" y="68">{{ yAxisTwoThird }}</text>
+                <text x="50" y="18">{{ yAxisMax }}</text>
+              </g>
               <!-- Grid lines -->
-              <line x1="52" y1="22"  x2="512" y2="22"  stroke="#334155" stroke-dasharray="3,4" stroke-width="0.8"/>
-              <line x1="52" y1="105" x2="512" y2="105" stroke="#475569" stroke-width="1"/>
-              <line x1="52" y1="185" x2="512" y2="185" stroke="#334155" stroke-dasharray="3,4" stroke-width="0.8"/>
+              <line x1="56" y1="165" x2="510" y2="165" :stroke="isDark ? '#334155' : '#e2e8f0'" stroke-width="1"/>
+              <line x1="56" y1="115" x2="510" y2="115" :stroke="isDark ? '#1e293b' : '#f1f5f9'" stroke-dasharray="4,4" stroke-width="1"/>
+              <line x1="56" y1="65"  x2="510" y2="65"  :stroke="isDark ? '#1e293b' : '#f1f5f9'" stroke-dasharray="4,4" stroke-width="1"/>
+              <line x1="56" y1="15"  x2="510" y2="15"  :stroke="isDark ? '#1e293b' : '#f1f5f9'" stroke-dasharray="4,4" stroke-width="1"/>
               <!-- Y axis -->
-              <line x1="52" y1="10" x2="52" y2="190" stroke="#334155" stroke-width="1"/>
-              <!-- Filled areas -->
-              <path :d="roiPathFillGain" fill="url(#roiGrad10)" opacity="0.8"/>
-              <path :d="roiPathFillLoss" fill="url(#lossGrad10)" opacity="0.8"/>
-              <!-- Main line -->
-              <path :d="roiPath10" fill="none" stroke="#0066CC" stroke-width="2.5"
+              <line x1="56" y1="10" x2="56" y2="168" :stroke="isDark ? '#334155' : '#e2e8f0'" stroke-width="1"/>
+
+              <!-- System cost reference line (horizontal, dashed amber) -->
+              <line x1="56" :y1="costLineY" x2="510" :y2="costLineY"
+                stroke="#FFB81C" stroke-width="1" stroke-dasharray="6,4" opacity="0.7"/>
+              <text x="513" :y="costLineY + 4" fill="#FFB81C" font-size="7.5" font-weight="600">Cost</text>
+
+              <!-- Filled area under savings line -->
+              <path :d="savingsPathFill" fill="url(#savGrad)"/>
+              <!-- Savings line -->
+              <path :d="savingsPath" fill="none" stroke="#0066CC" stroke-width="2.5"
                 stroke-linecap="round" stroke-linejoin="round"/>
-              <!-- Break-even vertical -->
-              <line v-if="computedPaybackYears <= 10"
-                :x1="breakEvenX" y1="15" :x2="breakEvenX" y2="185"
-                stroke="#FFB81C" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+              <!-- Break-even circle where savings crosses cost -->
               <circle v-if="computedPaybackYears <= 10"
-                :cx="breakEvenX" cy="105" r="5.5"
+                :cx="savBreakEvenX" :cy="costLineY" r="5"
                 fill="#FFB81C" stroke="#0f172a" stroke-width="2"/>
               <text v-if="computedPaybackYears <= 10"
-                :x="Math.min(breakEvenX + 6, 480)" y="98"
+                :x="Math.min(savBreakEvenX + 7, 490)" :y="costLineY - 7"
                 fill="#FFB81C" font-size="9" font-weight="700">Yr {{ computedPaybackYears }}</text>
-              <!-- X-axis ticks -->
-              <g fill="#64748b" font-size="8">
-                <text v-for="yr in [0,2,4,6,8,10]" :key="yr"
-                  :x="52 + (yr/10)*460" y="198" text-anchor="middle">{{ yr }}</text>
+
+              <!-- X-axis ticks every 6 months (0.5 yr intervals) -->
+              <g :fill="isDark ? '#475569' : '#94a3b8'" font-size="8">
+                <text v-for="i in 21" :key="i-1"
+                  :x="56 + ((i-1)/20)*454"
+                  y="178"
+                  text-anchor="middle">
+                  {{ (i-1) % 2 === 0 ? ((i-1)/2) + 'y' : '' }}
+                </text>
               </g>
-              <!-- X-axis label -->
-              <text x="282" y="208" fill="#64748b" font-size="8" text-anchor="middle">Years</text>
+              <!-- 6-month tick marks -->
+              <g :stroke="isDark ? '#334155' : '#e2e8f0'" stroke-width="1">
+                <line v-for="i in 21" :key="i-1"
+                  :x1="56 + ((i-1)/20)*454" y1="165"
+                  :x2="56 + ((i-1)/20)*454" :y2="(i-1) % 2 === 0 ? 170 : 167"/>
+              </g>
             </svg>
           </div>
         </div>
 
-        <!-- Financing options -->
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-widest mb-4 text-blue-600">
-            Financing Options
-          </p>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div v-for="opt in financingOptions" :key="opt.key"
-              class="rounded-xl border p-5 flex flex-col gap-3 cursor-pointer transition-colors"
-              :class="opt.featured
-                ? (isDark ? 'border-blue-600/50 bg-blue-600/5 hover:bg-blue-600/10' : 'border-blue-500/60 bg-blue-50/60 hover:bg-blue-50')
-                : (isDark ? 'border-slate-700 bg-slate-800/60 hover:border-slate-600' : 'border-gray-200 bg-white hover:border-gray-300')"
-              @click="selectFinancingOption(opt.key)">
-              <div class="flex items-start justify-between">
-                <p class="text-sm font-semibold"
-                  :class="isDark ? 'text-slate-100' : 'text-gray-900'">{{ opt.name }}</p>
-                <span class="text-[10px] font-semibold uppercase tracking-wide shrink-0 ml-2"
-                  :class="opt.featured ? 'text-blue-600' : (isDark ? 'text-slate-500' : 'text-gray-400')">
-                  {{ opt.badge }}
-                </span>
-              </div>
-              <p class="text-xs leading-relaxed"
-                :class="isDark ? 'text-slate-400' : 'text-gray-500'">{{ opt.desc }}</p>
-              <div class="space-y-1.5 pt-2.5 border-t"
-                :class="isDark ? 'border-slate-700' : 'border-gray-100'">
-                <div class="flex justify-between text-xs">
-                  <span :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ opt.line1Label }}</span>
-                  <span class="font-semibold" :class="isDark ? 'text-slate-200' : 'text-gray-800'">
-                    {{ opt.line1Value }}
-                  </span>
-                </div>
-                <div class="flex justify-between text-xs">
-                  <span :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ opt.line2Label }}</span>
-                  <span class="font-semibold" :class="opt.line2Color || (isDark ? 'text-slate-200' : 'text-gray-800')">
-                    {{ opt.line2Value }}
-                  </span>
-                </div>
-              </div>
-              <button class="w-full py-2 rounded-lg text-xs font-semibold transition mt-auto"
-                :class="opt.featured
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                  : (isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-700')">
-                Select
-              </button>
-            </div>
+        <!-- Financing options — side-by-side selector -->
+        <div class="rounded-2xl border overflow-hidden" :class="cardClass">
+          <div class="px-6 py-4 border-b" :class="isDark ? 'border-slate-700' : 'border-gray-100'">
+            <p class="text-sm font-semibold" :class="isDark ? 'text-slate-200' : 'text-gray-900'">
+              Choose Your Financing
+            </p>
+            <p class="text-xs mt-0.5" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
+              Select a plan — the calculator updates instantly
+            </p>
+          </div>
+          <!-- 3-column selector buttons -->
+          <div class="grid grid-cols-3 divide-x"
+            :class="isDark ? 'divide-slate-700' : 'divide-gray-100'">
+            <button v-for="opt in financingOptions" :key="opt.key"
+              @click="selectFinancingOption(opt.key)"
+              class="flex flex-col items-center gap-1 py-4 px-3 transition-colors focus:outline-none"
+              :class="selectedFinancing === opt.key
+                ? (isDark ? 'bg-blue-600/15 text-blue-400' : 'bg-blue-50 text-blue-700')
+                : (isDark ? 'text-slate-400 hover:bg-slate-700/50' : 'text-gray-500 hover:bg-gray-50')">
+              <span class="text-xs font-bold uppercase tracking-wide">{{ opt.name }}</span>
+              <span class="text-[10px]" :class="isDark ? 'text-slate-500' : 'text-gray-400'">{{ opt.badge }}</span>
+              <!-- selected indicator -->
+              <span v-if="selectedFinancing === opt.key"
+                class="mt-1 w-6 h-0.5 rounded-full bg-blue-600"></span>
+            </button>
+          </div>
+          <!-- Comparison table -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr :class="isDark ? 'bg-slate-800/60 text-slate-400' : 'bg-gray-50 text-gray-500'">
+                  <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide w-36">Detail</th>
+                  <th v-for="opt in financingOptions" :key="opt.key"
+                    class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide transition-colors"
+                    :class="selectedFinancing === opt.key
+                      ? (isDark ? 'text-blue-400 bg-blue-600/10' : 'text-blue-700 bg-blue-50')
+                      : ''">
+                    {{ opt.name }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody :class="isDark ? 'divide-y divide-slate-700/60' : 'divide-y divide-gray-100'">
+                <tr v-for="row in comparisonRows" :key="row.label"
+                  :class="isDark ? 'hover:bg-slate-800/30' : 'hover:bg-gray-50/60'">
+                  <td class="px-5 py-3 text-xs font-medium"
+                    :class="isDark ? 'text-slate-400' : 'text-gray-500'">{{ row.label }}</td>
+                  <td v-for="opt in financingOptions" :key="opt.key"
+                    class="px-4 py-3 text-center text-sm font-semibold transition-colors"
+                    :class="[selectedFinancing === opt.key
+                      ? (isDark ? 'bg-blue-600/10 text-blue-300' : 'bg-blue-50 text-blue-700')
+                      : (isDark ? 'text-slate-200' : 'text-gray-800'),
+                      row.highlight?.[opt.key] || '']">
+                    {{ row.values[opt.key] }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- CTA row -->
+          <div class="px-5 py-4 border-t flex flex-wrap gap-3 items-center justify-between"
+            :class="isDark ? 'border-slate-700' : 'border-gray-100'">
+            <p class="text-xs" :class="isDark ? 'text-slate-500' : 'text-gray-400'">
+              Selected: <span class="font-semibold" :class="isDark ? 'text-slate-200' : 'text-gray-800'">
+                {{ financingOptions.find(o => o.key === selectedFinancing)?.name }}
+              </span>
+            </p>
+            <router-link to="/messaging?financierId=f1"
+              class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition">
+              Talk to a Financing Advisor
+            </router-link>
           </div>
         </div>
 
@@ -999,97 +1042,176 @@ const lifetimeProfit = computed(() => {
   return total - systemCost.value
 })
 
-// ── ROI chart — 10-year, proper aspect-ratio SVG ─────────────────
-// Chart canvas: x 52→512 (460px wide), y 22→185 (163px tall)
-// y=22 → max positive, y=105 → zero line, y=185 → max negative
-const chartPoints10 = computed(() => {
-  const ic  = systemCost.value
-  const ann = estimatedMonthlySavings.value * 12
+// ── ROI chart — cumulative savings from 0, X in 6-month steps ────
+// 20 half-year intervals = 10 years
+// Y: 0 (bottom y=165) → maxCumSavings (top y=15), 150px range
+// X: 56 → 510, 454px for 10 years (20 × 0.5yr steps)
+
+const chartPointsSavings = computed(() => {
+  const annSavings = estimatedMonthlySavings.value * 12
   const infl = (inflationRate.value || 4.5) / 100
   const pts = []
-  let net = -ic
-  for (let i = 0; i <= 10; i++) {
-    if (i > 0) net += ann * Math.pow(1 + infl, i - 1)
-    pts.push({ x: 52 + (i / 10) * 460, net })
+  // 20 half-year steps: i = 0..20 → time = 0..10 years
+  for (let i = 0; i <= 20; i++) {
+    const t = i / 2  // years elapsed
+    let cumSav = 0
+    for (let y = 1; y <= Math.floor(t); y++) {
+      cumSav += annSavings * Math.pow(1 + infl, y - 1)
+    }
+    // partial year
+    const frac = t - Math.floor(t)
+    if (frac > 0) {
+      cumSav += annSavings * Math.pow(1 + infl, Math.floor(t)) * frac
+    }
+    pts.push({ x: 56 + (i / 20) * 454, cumSav })
   }
   return pts
 })
 
-const chartMaxAbs = computed(() => {
-  const vals = chartPoints10.value.map(p => Math.abs(p.net))
-  return Math.max(...vals, 1)
+const maxCumSavings = computed(() => {
+  const vals = chartPointsSavings.value.map(p => p.cumSav)
+  return Math.max(...vals, systemCost.value, 1)
 })
 
-function netToY(net) {
-  // 0 → y=105, +max → y=22, -max → y=185
-  const pct = net / chartMaxAbs.value  // −1 to +1
-  return 105 - pct * 83
+// Map cumulative savings value → SVG y (165=bottom/0, 15=top/max)
+function savToY(v) {
+  return 165 - (v / maxCumSavings.value) * 150
 }
 
-const roiPath10 = computed(() =>
-  chartPoints10.value.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${netToY(p.net).toFixed(1)}`).join(' ')
+const savingsPath = computed(() =>
+  chartPointsSavings.value
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${savToY(p.cumSav).toFixed(1)}`)
+    .join(' ')
 )
 
-const roiPathFillGain = computed(() => {
-  const pts = chartPoints10.value
-  const above = pts.filter(p => netToY(p.net) <= 105)
-  if (!above.length) return ''
-  const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${netToY(p.net).toFixed(1)}`).join(' ')
-  const last = pts[pts.length - 1]
-  return `${line} L ${last.x.toFixed(1)},105 L ${pts[0].x.toFixed(1)},105 Z`
+const savingsPathFill = computed(() => {
+  const last = chartPointsSavings.value[chartPointsSavings.value.length - 1]
+  return `${savingsPath.value} L ${last.x.toFixed(1)},165 L 56,165 Z`
 })
 
-const roiPathFillLoss = computed(() => {
-  const pts = chartPoints10.value
-  const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${netToY(p.net).toFixed(1)}`).join(' ')
-  const last = pts[pts.length - 1]
-  return `${line} L ${last.x.toFixed(1)},105 L ${pts[0].x.toFixed(1)},105 Z`
+// Where savings line crosses the system cost line
+const savBreakEvenX = computed(() => {
+  return 56 + Math.min(1, computedPaybackYears.value / 10) * 454
 })
 
-const breakEvenX = computed(() =>
-  52 + Math.min(1, computedPaybackYears.value / 10) * 460
-)
-
-// Y-axis labels (human-readable ₱)
-const yAxisTop = computed(() => {
-  const v = chartMaxAbs.value
-  return v >= 1000000 ? `+₱${(v / 1000000).toFixed(1)}M` : `+₱${Math.round(v / 1000)}K`
+// Y-axis label helpers (0-based)
+const yAxisMax = computed(() => {
+  const v = maxCumSavings.value
+  return v >= 1000000 ? `₱${(v / 1000000).toFixed(1)}M` : `₱${Math.round(v / 1000)}K`
 })
-const yAxisBot = computed(() => {
-  const v = chartMaxAbs.value
-  return v >= 1000000 ? `-₱${(v / 1000000).toFixed(1)}M` : `-₱${Math.round(v / 1000)}K`
+const yAxisTwoThird = computed(() => {
+  const v = maxCumSavings.value * 0.667
+  return v >= 1000000 ? `₱${(v / 1000000).toFixed(1)}M` : `₱${Math.round(v / 1000)}K`
+})
+const yAxisThird = computed(() => {
+  const v = maxCumSavings.value * 0.333
+  return v >= 1000000 ? `₱${(v / 1000000).toFixed(1)}M` : `₱${Math.round(v / 1000)}K`
 })
 
-// Keep old names referenced in save/load
-const paybackIntersectX = breakEvenX
-const paybackIntersectY = computed(() => 105)
-const paybackPath       = roiPath10
-const paybackPathFill   = roiPathFillGain
+// Y position of system cost horizontal reference line
+const costLineY = computed(() => savToY(systemCost.value))
+
+// Keep aliases for any leftover references
+const breakEvenX = savBreakEvenX
+const roiPath10 = savingsPath
+const roiPathFillGain = savingsPathFill
+const roiPathFillLoss = computed(() => '')
+const paybackIntersectX = savBreakEvenX
+const paybackIntersectY = costLineY
+const paybackPath = savingsPath
+const paybackPathFill = savingsPathFill
+const yAxisTop = yAxisMax
+const yAxisBot = computed(() => '₱0')
 
 // ── Financing options (reactive) ──────────────────────────────────
+const selectedFinancing = ref('loan')
+
 const financingOptions = computed(() => [
   {
-    key: 'cash', name: 'Cash Purchase', badge: 'Best ROI', featured: false,
+    key: 'cash', name: 'Cash Purchase', badge: 'Best ROI',
     desc: 'Full upfront payment. Maximum savings, zero interest cost.',
     line1Label: 'Upfront',  line1Value: php(systemCost.value),
     line2Label: 'Payback',  line2Value: `${computedPaybackYears.value} yrs`,
     line2Color: 'text-blue-600'
   },
   {
-    key: 'loan', name: 'Apolaki PowerLoan', badge: 'Popular', featured: true,
+    key: 'loan', name: 'Apolaki PowerLoan', badge: 'Popular',
     desc: '6.25% APR — own your system, payments replace your bill.',
     line1Label: 'Down payment', line1Value: php(calculatedDownPayment.value),
     line2Label: 'Monthly EMI', line2Value: `${php(calculatedEMI.value)}/mo`,
     line2Color: 'text-blue-600'
   },
   {
-    key: 'lease', name: 'Zero-Down Lease', badge: '₱0 down', featured: false,
+    key: 'lease', name: 'Zero-Down Lease', badge: '₱0 down',
     desc: 'Pay 30% less than your current bill. No ownership required.',
     line1Label: 'Monthly',     line1Value: `${php(inputBill.value * 0.7)}/mo`,
     line2Label: 'Maintenance', line2Value: 'Included',
     line2Color: 'text-emerald-600'
   }
 ])
+
+// Side-by-side comparison rows for the table
+const comparisonRows = computed(() => {
+  const cashEmi  = 0
+  const loanEmi  = calculatedEMI.value
+  const leaseEmi = inputBill.value * 0.7
+  return [
+    {
+      label: 'Upfront cost',
+      values: {
+        cash:  php(systemCost.value),
+        loan:  php(calculatedDownPayment.value),
+        lease: '₱0'
+      }
+    },
+    {
+      label: 'Monthly payment',
+      values: {
+        cash:  '₱0 after',
+        loan:  php(loanEmi) + '/mo',
+        lease: php(leaseEmi) + '/mo'
+      }
+    },
+    {
+      label: 'vs. current bill',
+      values: {
+        cash:  '−' + Math.round((estimatedMonthlySavings.value / inputBill.value) * 100) + '%',
+        loan:  loanEmi < inputBill.value ? '−' + Math.round(((inputBill.value - loanEmi) / inputBill.value) * 100) + '%' : '+' + Math.round(((loanEmi - inputBill.value) / inputBill.value) * 100) + '%',
+        lease: '−30%'
+      },
+      highlight: {
+        cash:  'text-emerald-600',
+        loan:  loanEmi < inputBill.value ? 'text-emerald-600' : 'text-amber-500',
+        lease: 'text-emerald-600'
+      }
+    },
+    {
+      label: 'Payback period',
+      values: {
+        cash:  computedPaybackYears.value + ' yrs',
+        loan:  loanTenureYears.value + ' yrs (loan)',
+        lease: 'N/A — lease'
+      }
+    },
+    {
+      label: 'System ownership',
+      values: { cash: 'Yes', loan: 'Yes (after)', lease: 'No' }
+    },
+    {
+      label: '10-yr net profit',
+      values: {
+        cash:  php(lifetimeProfit.value),
+        loan:  php(lifetimeProfit.value - (loanEmi * loanTenureYears.value * 12 - (systemCost.value - calculatedDownPayment.value))),
+        lease: php((estimatedMonthlySavings.value - (leaseEmi - (inputBill.value - leaseEmi))) * 120)
+      },
+      highlight: { cash: 'text-emerald-600', loan: 'text-emerald-600', lease: 'text-emerald-600' }
+    },
+    {
+      label: 'Maintenance',
+      values: { cash: 'Owner', loan: 'Owner', lease: 'Included' }
+    }
+  ]
+})
 
 // ── Prequalification ──────────────────────────────────────────────
 const creditScoreRange = computed(() => {
@@ -1172,8 +1294,8 @@ const form = reactive({
 })
 
 function selectFinancingOption(option) {
+  selectedFinancing.value = option
   loanDownPaymentPct.value = option === 'cash' ? 100 : option === 'lease' ? 0 : 20
-  activeTab.value = 'advisor'
 }
 
 async function handleCreateTransaction() {
