@@ -5,8 +5,8 @@ const routes = [
   {
     path: '/',
     name: 'Landing',
-    component: () => import('../views/ApolakiPrd.vue'),
-    meta: { requiresAuth: false, publicOnly: true }
+    component: () => import('../views/Assessment.vue'),
+    meta: { requiresAuth: false }
   },
   {
     path: '/dashboard',

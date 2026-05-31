@@ -16,7 +16,7 @@
       <div class="nav-container max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
         <!-- Brand -->
         <BrandLogo
-          to="/dashboard"
+          to="/"
           size="sm"
           text="Apolaki"
           class="nav-brand shrink-0"
