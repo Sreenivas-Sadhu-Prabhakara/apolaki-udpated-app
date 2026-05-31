@@ -1,10 +1,93 @@
 <template>
   <div class="messaging-view flex flex-col h-[calc(100vh-64px)] overflow-hidden" :class="isDark ? 'bg-slate-900' : 'bg-gray-50'">
-    <div class="flex flex-1 overflow-hidden">
+    <section v-if="!userStore.isAuthenticated" class="anonymous-message-page flex-1 overflow-y-auto px-4 py-8">
+      <div class="anonymous-shell mx-auto grid max-w-6xl gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+        <aside class="anonymous-copy rounded-2xl border p-6 shadow-sm" :class="isDark ? 'border-slate-700 bg-slate-800 text-slate-100' : 'border-blue-100 bg-white text-gray-900'">
+          <span class="eyebrow">Public lead intake</span>
+          <h1 class="mt-3 text-3xl font-black leading-tight">Leave a message for Apolaki</h1>
+          <p class="mt-3 text-sm leading-relaxed" :class="isDark ? 'text-slate-300' : 'text-gray-600'">
+            No login is needed to ask for help, request an installer, or send project context. Your message lands in the shared allocation inbox for the operations team.
+          </p>
+          <div class="mt-6 grid gap-3 text-sm">
+            <div class="rounded-xl bg-blue-50 p-4 text-blue-900" :class="isDark ? 'bg-blue-500/10 text-blue-200' : ''">
+              <strong>Common inbox</strong>
+              <p class="mt-1 opacity-80">New anonymous messages are queued for assignment to support, installers, or finance advisors.</p>
+            </div>
+            <div class="rounded-xl bg-emerald-50 p-4 text-emerald-900" :class="isDark ? 'bg-emerald-500/10 text-emerald-200' : ''">
+              <strong>Assessment friendly</strong>
+              <p class="mt-1 opacity-80">If you came from assessment, include your bill and location so the team can allocate the lead faster.</p>
+            </div>
+          </div>
+        </aside>
+
+        <form class="anonymous-form rounded-2xl border p-6 shadow-sm" :class="isDark ? 'border-slate-700 bg-slate-800 text-slate-100' : 'border-gray-200 bg-white text-gray-900'" @submit.prevent="submitAnonymousMessage">
+          <div class="mb-5">
+            <span class="eyebrow">Message details</span>
+            <h2 class="mt-2 text-2xl font-black">How can we help?</h2>
+            <p v-if="anonymousSubmitted" class="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm font-bold text-green-700">
+              Message received. It is now in the allocation inbox.
+            </p>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label>Full name<input v-model="anonymousLead.name" required placeholder="Juan Dela Cruz" /></label>
+            <label>Phone number<input v-model="anonymousLead.phone" required type="tel" placeholder="09XX XXX XXXX" /></label>
+            <label>Email<input v-model="anonymousLead.email" required type="email" placeholder="juan@example.com" /></label>
+            <label>Topic
+              <select v-model="anonymousLead.contextType">
+                <option value="support">General support</option>
+                <option value="marketplace">Installer request</option>
+                <option value="finance">Financing question</option>
+              </select>
+            </label>
+            <label>Monthly bill<input v-model.number="anonymousLead.monthlyBill" type="number" min="0" placeholder="12000" /></label>
+            <label>City / province<input v-model="anonymousLead.location" placeholder="Metro Manila" /></label>
+          </div>
+
+          <label class="mt-4 block">Message
+            <textarea v-model="anonymousLead.message" required rows="5" placeholder="Tell us what you need help with, your preferred install timeline, or the installer you want to reach."></textarea>
+          </label>
+
+          <button type="submit" class="mt-5 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white transition hover:bg-blue-700 disabled:opacity-60" :disabled="submittingAnonymousLead">
+            {{ submittingAnonymousLead ? 'Sending message' : 'Send to allocation inbox' }}
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <div v-else class="flex flex-1 overflow-hidden">
       <!-- Sidebar: Conversation List -->
       <aside class="w-full md:w-80 lg:w-96 flex flex-col border-r shrink-0" :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'">
         <div class="p-4 border-b" :class="isDark ? 'border-slate-700' : 'border-gray-200'">
           <h2 class="text-xl font-bold mb-4" :class="isDark ? 'text-white' : 'text-gray-900'">Messages</h2>
+
+          <div v-if="canManageLeadInbox" class="mb-4 rounded-xl border p-3" :class="isDark ? 'border-slate-700 bg-slate-900/60' : 'border-blue-100 bg-blue-50'">
+            <div class="mb-2 flex items-center justify-between gap-2">
+              <div>
+                <p class="text-[10px] font-black uppercase tracking-widest" :class="isDark ? 'text-blue-300' : 'text-blue-700'">Common inbox</p>
+                <p class="text-xs font-bold" :class="isDark ? 'text-slate-200' : 'text-slate-700'">{{ messagingStore.leadInbox.length }} anonymous leads</p>
+              </div>
+              <button class="rounded-lg bg-white px-2 py-1 text-[11px] font-bold text-blue-700 shadow-sm" type="button" @click="messagingStore.fetchLeadInbox()">
+                Refresh
+              </button>
+            </div>
+            <div v-if="messagingStore.leadInboxLoading" class="py-3 text-center text-xs text-gray-500">Loading leads...</div>
+            <div v-else-if="!messagingStore.leadInbox.length" class="py-3 text-center text-xs text-gray-500">No anonymous messages yet.</div>
+            <template v-else>
+              <button
+                v-for="lead in messagingStore.leadInbox.slice(0, 4)"
+                :key="lead.id"
+                type="button"
+                class="mb-2 w-full rounded-lg bg-white p-2 text-left text-xs shadow-sm transition hover:shadow"
+                :class="selectedLead?.id === lead.id ? 'ring-2 ring-blue-500' : ''"
+                @click="selectLead(lead)"
+              >
+                <span class="block font-black text-slate-800">{{ lead.contact.name || 'Anonymous visitor' }}</span>
+                <span class="block truncate text-slate-500">{{ lead.message }}</span>
+                <span class="mt-1 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase text-amber-700">{{ lead.status }}</span>
+              </button>
+            </template>
+          </div>
           
           <!-- Consent Banner -->
           <div v-if="!userStore.hasConsent('installer_messaging')" class="mb-4 p-3 rounded-lg bg-orange-50 border border-orange-100 text-[11px] leading-tight text-orange-800">
@@ -69,7 +152,57 @@
 
       <!-- Main Chat Area -->
       <main class="flex-1 flex flex-col min-w-0 relative h-full">
-        <div v-if="!messagingStore.currentConversation" class="flex-1 flex items-center justify-center p-8 text-center text-gray-400 h-full">
+        <section v-if="selectedLead" class="flex-1 overflow-y-auto p-6" :class="isDark ? 'bg-slate-900 text-slate-100' : 'bg-gray-50 text-gray-900'">
+          <div class="mx-auto max-w-4xl rounded-2xl border p-6 shadow-sm" :class="isDark ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p class="text-xs font-black uppercase tracking-widest text-blue-600">Anonymous lead</p>
+                <h2 class="mt-2 text-2xl font-black">{{ selectedLead.contact.name || 'Anonymous visitor' }}</h2>
+                <p class="mt-1 text-sm" :class="isDark ? 'text-slate-300' : 'text-gray-600'">{{ selectedLead.contact.email }} · {{ selectedLead.contact.phone }}</p>
+              </div>
+              <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-black uppercase text-amber-700">{{ selectedLead.status }}</span>
+            </div>
+
+            <div class="mt-6 grid gap-4 md:grid-cols-3">
+              <div class="rounded-xl p-4" :class="isDark ? 'bg-slate-900' : 'bg-blue-50'">
+                <p class="text-xs font-bold uppercase text-gray-500">Topic</p>
+                <p class="mt-1 font-black capitalize">{{ selectedLead.contextType }}</p>
+              </div>
+              <div class="rounded-xl p-4" :class="isDark ? 'bg-slate-900' : 'bg-blue-50'">
+                <p class="text-xs font-bold uppercase text-gray-500">Location</p>
+                <p class="mt-1 font-black">{{ selectedLead.location || 'Not provided' }}</p>
+              </div>
+              <div class="rounded-xl p-4" :class="isDark ? 'bg-slate-900' : 'bg-blue-50'">
+                <p class="text-xs font-bold uppercase text-gray-500">Monthly bill</p>
+                <p class="mt-1 font-black">{{ selectedLead.monthlyBill ? `₱${Number(selectedLead.monthlyBill).toLocaleString()}` : 'Not provided' }}</p>
+              </div>
+            </div>
+
+            <div class="mt-6 rounded-xl border p-4" :class="isDark ? 'border-slate-700' : 'border-gray-200'">
+              <p class="text-xs font-bold uppercase text-gray-500">Message</p>
+              <p class="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{{ selectedLead.message }}</p>
+            </div>
+
+            <form class="mt-6 grid gap-4 md:grid-cols-[1fr_1fr_auto]" @submit.prevent="saveLeadAssignment">
+              <label>Status
+                <select v-model="leadAssignment.status">
+                  <option value="new">New</option>
+                  <option value="assigned">Assigned</option>
+                  <option value="contacted">Contacted</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </label>
+              <label>Assign to
+                <input v-model="leadAssignment.assignedTo" placeholder="Ops owner or installer" />
+              </label>
+              <button type="submit" class="self-end rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white hover:bg-blue-700" :disabled="savingLeadAssignment">
+                {{ savingLeadAssignment ? 'Saving' : 'Save allocation' }}
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <div v-else-if="!messagingStore.currentConversation" class="flex-1 flex items-center justify-center p-8 text-center text-gray-400 h-full">
           <div>
             <div class="text-6xl mb-4">💬</div>
             <h2 class="text-xl font-medium mb-2">Select a conversation</h2>
@@ -183,7 +316,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, reactive, watch, nextTick } from 'vue'
 import { useMessagingStore } from '../stores/messagingStore'
 import { useUserStore } from '../stores/userStore'
 import { useRoute } from 'vue-router'
@@ -198,6 +331,27 @@ const newMessage = ref('')
 const attachment = ref(null)
 const typing = ref(false)
 const messageList = ref(null)
+const selectedLead = ref(null)
+const submittingAnonymousLead = ref(false)
+const anonymousSubmitted = ref(false)
+const savingLeadAssignment = ref(false)
+const anonymousLead = reactive({
+  name: '',
+  phone: '',
+  email: '',
+  contextType: route.query.installerId ? 'marketplace' : (route.query.financierId ? 'finance' : 'support'),
+  monthlyBill: null,
+  location: '',
+  message: route.query.installerId
+    ? 'I would like to speak with this installer about a solar project.'
+    : 'I need help from the Apolaki team.'
+})
+const leadAssignment = reactive({
+  status: 'new',
+  assignedTo: ''
+})
+
+const canManageLeadInbox = computed(() => userStore.hasRole('operations', 'admin', 'superadmin'))
 
 const filteredConversations = computed(() => {
   if (!searchQuery.value) return messagingStore.conversations
@@ -267,7 +421,66 @@ const grantConsent = async () => {
   }
 }
 
+const submitAnonymousMessage = async () => {
+  if (submittingAnonymousLead.value) return
+  submittingAnonymousLead.value = true
+  try {
+    await messagingStore.submitAnonymousLead({
+      source: 'public_messaging',
+      contact: {
+        name: anonymousLead.name,
+        phone: anonymousLead.phone,
+        email: anonymousLead.email
+      },
+      contextType: anonymousLead.contextType,
+      installerId: route.query.installerId || null,
+      financierId: route.query.financierId || null,
+      monthlyBill: anonymousLead.monthlyBill,
+      location: anonymousLead.location,
+      message: anonymousLead.message
+    })
+    anonymousSubmitted.value = true
+    Object.assign(anonymousLead, {
+      name: '',
+      phone: '',
+      email: '',
+      contextType: route.query.installerId ? 'marketplace' : (route.query.financierId ? 'finance' : 'support'),
+      monthlyBill: null,
+      location: '',
+      message: ''
+    })
+  } finally {
+    submittingAnonymousLead.value = false
+  }
+}
+
+const selectLead = (lead) => {
+  selectedLead.value = lead
+  messagingStore.currentConversation = null
+  leadAssignment.status = lead.status || 'new'
+  leadAssignment.assignedTo = lead.assignedTo || ''
+}
+
+const saveLeadAssignment = async () => {
+  if (!selectedLead.value || savingLeadAssignment.value) return
+  savingLeadAssignment.value = true
+  try {
+    const updated = await messagingStore.updateLeadAssignment(selectedLead.value.id, {
+      status: leadAssignment.status,
+      assignedTo: leadAssignment.assignedTo
+    })
+    selectedLead.value = updated || {
+      ...selectedLead.value,
+      status: leadAssignment.status,
+      assignedTo: leadAssignment.assignedTo
+    }
+  } finally {
+    savingLeadAssignment.value = false
+  }
+}
+
 const selectConversation = async (conv) => {
+  selectedLead.value = null
   messagingStore.currentConversation = conv
   if (conv.id !== 'new') {
     await messagingStore.fetchMessages(conv.id)
@@ -328,8 +541,13 @@ watch(() => messagingStore.messages, () => {
 }, { deep: true })
 
 onMounted(async () => {
+  if (!userStore.isAuthenticated) return
+
   await messagingStore.fetchConversations()
   await messagingStore.fetchSecurityBanner()
+  if (canManageLeadInbox.value) {
+    await messagingStore.fetchLeadInbox()
+  }
   
   // Handle direct navigation via query params
   const { installerId, financierId, support } = route.query
@@ -366,6 +584,69 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.anonymous-message-page {
+  min-height: calc(100vh - 64px);
+}
+
+.eyebrow {
+  color: #0f6cbd;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.anonymous-form label,
+form label {
+  display: grid;
+  gap: 0.45rem;
+  color: inherit;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.anonymous-form input,
+.anonymous-form select,
+.anonymous-form textarea,
+main input,
+main select,
+main textarea {
+  width: 100%;
+  border: 1px solid #d8e1ea;
+  border-radius: 0.85rem;
+  background: #f8fbff;
+  color: #142033;
+  font: inherit;
+  padding: 0.75rem 0.9rem;
+  outline: 2px solid transparent;
+}
+
+.anonymous-form textarea,
+main textarea {
+  resize: vertical;
+}
+
+.anonymous-form input:focus,
+.anonymous-form select:focus,
+.anonymous-form textarea:focus,
+main input:focus,
+main select:focus,
+main textarea:focus {
+  border-color: #0f6cbd;
+  outline-color: rgba(15, 108, 189, 0.18);
+}
+
+:global(.dark-theme) .anonymous-form input,
+:global(.dark-theme) .anonymous-form select,
+:global(.dark-theme) .anonymous-form textarea,
+:global(.dark-theme) main input,
+:global(.dark-theme) main select,
+:global(.dark-theme) main textarea {
+  border-color: #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
 .spinner {
   width: 20px;
   height: 20px;

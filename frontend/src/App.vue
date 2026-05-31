@@ -37,7 +37,7 @@
           <li><router-link to="/marketplace" class="nav-link transition">4. Marketplace</router-link></li>
           <li><router-link to="/installations" class="nav-link transition">5. Installations</router-link></li>
           <li>
-            <button @click="messagingStore.toggleWidget()" class="nav-link transition flex items-center gap-1.5 focus:outline-none">
+            <button @click="openMessages" class="nav-link transition flex items-center gap-1.5 focus:outline-none">
               Messages <span v-if="unreadCount" class="unread-dot"></span>
             </button>
           </li>
@@ -127,6 +127,9 @@
             </li>
             <li v-if="userStore.user">
               <button @click="messagingStore.toggleWidget(); mobileMenuOpen = false" class="mobile-link w-full text-left">💬 Messages</button>
+            </li>
+            <li v-else>
+              <router-link to="/messaging?support=true" class="mobile-link" @click="mobileMenuOpen = false">💬 Leave a Message</router-link>
             </li>
             <li v-if="userStore.user" class="mt-2 pt-2 border-t border-white/20">
               <button @click="logout(); mobileMenuOpen = false" class="mobile-link w-full text-left">Logout</button>
@@ -243,6 +246,14 @@ onMounted(async () => {
 
 const toggleTheme = () => {
   themeStore.toggle()
+}
+
+const openMessages = () => {
+  if (userStore.isAuthenticated) {
+    messagingStore.toggleWidget()
+    return
+  }
+  router.push('/messaging?support=true')
 }
 
 const showChrome = computed(() => {

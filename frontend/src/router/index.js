@@ -81,7 +81,7 @@ const routes = [
     path: '/messaging',
     name: 'Messaging',
     component: () => import('../views/Messaging.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: false }
   },
   {
     path: '/assessment',

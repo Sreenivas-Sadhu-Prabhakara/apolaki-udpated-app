@@ -391,6 +391,7 @@
           <label>Full name<input v-model="lead.name" required placeholder="Juan Dela Cruz" /></label>
           <label>Phone number<input v-model="lead.phone" required type="tel" placeholder="09XX XXX XXXX" /></label>
           <label>Email<input v-model="lead.email" required type="email" placeholder="juan@example.com" /></label>
+          <label>Message<textarea v-model="lead.message" rows="3" placeholder="Share your preferred install timeline or any project notes."></textarea></label>
           <button class="primary-button" type="submit" :disabled="submittingLead">{{ submittingLead ? 'Submitting' : 'Send installer request' }}</button>
         </form>
       </section>
@@ -400,7 +401,7 @@
       <section class="lead-modal lead-modal--success">
         <span class="success-mark">OK</span>
         <h2>Request received</h2>
-        <p>Installer context has been saved locally and the marketplace can now use your province and system range.</p>
+        <p>Your request is in the common allocation inbox for installer assignment.</p>
         <button class="primary-button" type="button" @click="leadSubmitted = false">Done</button>
       </section>
     </div>
@@ -412,6 +413,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/themeStore'
 import { useMarketplaceStore } from '../stores/marketplaceStore'
+import { useMessagingStore } from '../stores/messagingStore'
 import { useUserStore } from '../stores/userStore'
 import {
   calculateAssessmentPlan,
@@ -432,6 +434,7 @@ const route = useRoute()
 const router = useRouter()
 const themeStore = useThemeStore()
 const marketplaceStore = useMarketplaceStore()
+const messagingStore = useMessagingStore()
 const userStore = useUserStore()
 const isDark = computed(() => themeStore.isDarkMode)
 
@@ -468,7 +471,8 @@ const form = reactive({
 const lead = reactive({
   name: '',
   phone: '',
-  email: ''
+  email: '',
+  message: ''
 })
 
 const visibleSteps = [
@@ -712,26 +716,29 @@ async function waitForLiveData(timeoutMs) {
 }
 
 function submitLead() {
-  if (!userStore.isAuthenticated) {
-    continueToInstallerJourney()
-    return
-  }
   submittingLead.value = true
-  const stored = JSON.parse(localStorage.getItem('assessmentLeadRequests') || '[]')
-  stored.unshift({
-    ...lead,
-    assessment: results.value,
-    form: { ...form },
-    createdAt: new Date().toISOString()
-  })
-  localStorage.setItem('assessmentLeadRequests', JSON.stringify(stored.slice(0, 10)))
-
-  window.setTimeout(() => {
+  messagingStore.submitAnonymousLead({
+    source: userStore.isAuthenticated ? 'authenticated_assessment' : 'anonymous_assessment',
+    contact: {
+      name: lead.name,
+      phone: lead.phone,
+      email: lead.email
+    },
+    contextType: 'marketplace',
+    monthlyBill: form.monthlyBill,
+    location: form.location,
+    message: lead.message || 'I would like to connect with verified solar installers for this assessment.',
+    assessment: {
+      form: { ...form },
+      results: results.value,
+      liveSolarData: liveSolarData.value
+    }
+  }).finally(() => {
     submittingLead.value = false
     showLeadForm.value = false
     leadSubmitted.value = true
-    Object.assign(lead, { name: '', phone: '', email: '' })
-  }, 500)
+    Object.assign(lead, { name: '', phone: '', email: '', message: '' })
+  })
 }
 
 function startOver() {
@@ -784,11 +791,7 @@ function redirectToLogin(nextPath) {
 }
 
 function continueToInstallerJourney() {
-  if (userStore.isAuthenticated) {
-    showLeadForm.value = true
-    return
-  }
-  redirectToLogin('/assessment?continue=installer')
+  showLeadForm.value = true
 }
 
 function continueToProtectedRoute(path) {
@@ -1185,7 +1188,8 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   min-height: 48px;
   border: 1px solid #dbe5ee;
   border-radius: 12px;
@@ -1197,15 +1201,23 @@ select {
 }
 
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   outline-color: rgba(15, 108, 189, 0.2);
   background: #ffffff;
 }
 
 .assessment-flow--dark input,
-.assessment-flow--dark select {
+.assessment-flow--dark select,
+.assessment-flow--dark textarea {
   border-color: rgba(255, 255, 255, 0.08);
   background: #101418;
+}
+
+textarea {
+  min-height: 92px;
+  padding: 12px 14px;
+  resize: vertical;
 }
 
 .money-input {

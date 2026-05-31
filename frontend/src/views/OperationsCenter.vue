@@ -23,6 +23,64 @@
         </div>
       </div>
 
+      <!-- Common Lead Inbox -->
+      <div class="bg-white rounded-xl shadow p-6 mb-8">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-xl font-bold">Common Lead Inbox</h2>
+            <p class="text-sm text-gray-500">Anonymous messages and assessment requests awaiting allocation</p>
+          </div>
+          <button @click="messagingStore.fetchLeadInbox()" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">
+            Refresh leads
+          </button>
+        </div>
+        <div v-if="messagingStore.leadInboxLoading" class="text-gray-500">Loading leads...</div>
+        <table v-else-if="messagingStore.leadInbox.length" class="w-full text-sm">
+          <thead>
+            <tr class="border-b text-left text-gray-500">
+              <th class="pb-3">Visitor</th>
+              <th class="pb-3">Message</th>
+              <th class="pb-3">Context</th>
+              <th class="pb-3">Status</th>
+              <th class="pb-3">Assign</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="lead in messagingStore.leadInbox" :key="lead.id" class="border-b hover:bg-gray-50">
+              <td class="py-3">
+                <p class="font-semibold">{{ lead.contact.name || 'Anonymous visitor' }}</p>
+                <p class="text-xs text-gray-500">{{ lead.contact.phone }} · {{ lead.contact.email }}</p>
+              </td>
+              <td class="py-3 max-w-sm">
+                <p class="line-clamp-2">{{ lead.message }}</p>
+                <p class="text-xs text-gray-400">{{ new Date(lead.createdAt).toLocaleString() }}</p>
+              </td>
+              <td class="py-3 capitalize">
+                {{ lead.contextType }}
+                <span v-if="lead.location" class="block text-xs text-gray-500">{{ lead.location }}</span>
+              </td>
+              <td class="py-3">
+                <select v-model="lead.status" class="border rounded px-2 py-1 text-sm">
+                  <option value="new">New</option>
+                  <option value="assigned">Assigned</option>
+                  <option value="contacted">Contacted</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </td>
+              <td class="py-3">
+                <div class="flex gap-2">
+                  <input v-model="lead.assignedTo" class="min-w-0 rounded border px-2 py-1 text-sm" placeholder="Owner / installer" />
+                  <button @click="saveLead(lead)" class="rounded bg-blue-600 px-3 py-1 text-xs font-bold text-white hover:bg-blue-700">
+                    Save
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-else class="text-gray-400 text-center py-8">No anonymous leads waiting for allocation.</p>
+      </div>
+
       <!-- Alerts Table -->
       <div class="bg-white rounded-xl shadow p-6">
         <h2 class="text-xl font-bold mb-4">Maintenance Alerts Queue</h2>
@@ -70,10 +128,12 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import api from '../services/api'
+import { useMessagingStore } from '../stores/messagingStore'
 
 const alerts = ref([])
 const loading = ref(true)
 const resolving = ref(null)
+const messagingStore = useMessagingStore()
 
 function alertStatusClass(status) {
   return {
@@ -103,7 +163,18 @@ async function resolveAlert(id) {
   resolving.value = null
 }
 
-onMounted(fetchAlerts)
+async function saveLead(lead) {
+  await messagingStore.updateLeadAssignment(lead.id, {
+    status: lead.status,
+    assignedTo: lead.assignedTo
+  })
+  await messagingStore.fetchLeadInbox()
+}
+
+onMounted(() => {
+  fetchAlerts()
+  messagingStore.fetchLeadInbox()
+})
 </script>
 
 <style scoped>
