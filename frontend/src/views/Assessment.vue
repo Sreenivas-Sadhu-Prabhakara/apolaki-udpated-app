@@ -316,16 +316,19 @@
               <strong>{{ formatPeso(results.solarPayment) }}/mo</strong>
             </div>
             <p>Replace your current <strong>{{ formatPeso(form.monthlyBill) }}</strong> bill with a lower solar payment. You could start saving <strong>{{ formatPeso(results.monthlySavings) }}</strong> immediately.</p>
-            <router-link to="/finance" class="card-link">View detailed ROI and loan options →</router-link>
+            <button type="button" class="card-link button-link" @click="continueToProtectedRoute('/finance')">View detailed ROI and loan options</button>
           </article>
         </div>
 
         <div class="results-actions">
-          <button class="primary-button" type="button" @click="showLeadForm = true">Get my lower monthly plan installed</button>
-          <router-link class="secondary-button link-button" to="/finance">Explore Financing Options</router-link>
-          <router-link class="ghost-button link-button" to="/marketplace">View matching installers</router-link>
+          <button class="primary-button" type="button" @click="continueToInstallerJourney">Get my lower monthly plan installed</button>
+          <button class="secondary-button link-button" type="button" @click="continueToProtectedRoute('/finance')">Explore Financing Options</button>
+          <button class="ghost-button link-button" type="button" @click="continueToProtectedRoute('/marketplace')">View matching installers</button>
           <button class="ghost-button" type="button" @click="startOver">Start a new assessment</button>
         </div>
+        <p v-if="!userStore.isAuthenticated" class="auth-gate-note">
+          No login was needed for this assessment. Sign in to continue with installers, financing, and saved project details.
+        </p>
 
         <div v-if="results" class="recommended-installers-preview mt-8">
           <div class="flex justify-between items-center mb-4">
@@ -406,9 +409,10 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/themeStore'
 import { useMarketplaceStore } from '../stores/marketplaceStore'
+import { useUserStore } from '../stores/userStore'
 import {
   calculateAssessmentPlan,
   fetchSavedAssessmentPlans,
@@ -424,10 +428,15 @@ import {
   usageProfiles
 } from '../domains/assessment/assessmentDomain'
 
+const route = useRoute()
 const router = useRouter()
 const themeStore = useThemeStore()
 const marketplaceStore = useMarketplaceStore()
+const userStore = useUserStore()
 const isDark = computed(() => themeStore.isDarkMode)
+
+const ANONYMOUS_ASSESSMENT_KEY = 'apolakiAnonymousAssessment'
+const POST_LOGIN_REDIRECT_KEY = 'apolakiPostLoginRedirect'
 
 const currentStep = ref(0)
 const liveLoading = ref(false)
@@ -607,11 +616,12 @@ async function processAssessment() {
   try {
     if (!liveSolarData.value) await waitForLiveData(3500)
     results.value = await calculateAssessmentPlan(form, liveSolarData.value)
-    backendSavedAssessmentId.value = results.value.backendAssessmentId || ''
+    backendSavedAssessmentId.value = userStore.isAuthenticated ? results.value.backendAssessmentId || '' : ''
     savedAssessmentId.value = ''
     saveError.value = ''
     persistAssessmentState(form, results.value, liveSolarData.value)
-    loadSavedAssessments()
+    persistAnonymousAssessment()
+    if (userStore.isAuthenticated) loadSavedAssessments()
     currentStep.value = 5
   } finally {
     window.clearInterval(interval)
@@ -621,6 +631,10 @@ async function processAssessment() {
 
 async function saveAssessment() {
   if (!results.value || savingAssessment.value || savedAssessmentId.value) return
+  if (!userStore.isAuthenticated) {
+    redirectToLogin('/assessment?continue=save')
+    return
+  }
   savingAssessment.value = true
   saveError.value = ''
   try {
@@ -641,6 +655,10 @@ async function saveAssessment() {
 }
 
 async function loadSavedAssessments() {
+  if (!userStore.isAuthenticated) {
+    savedAssessments.value = []
+    return
+  }
   loadingSavedAssessments.value = true
   try {
     savedAssessments.value = await fetchSavedAssessmentPlans()
@@ -694,6 +712,10 @@ async function waitForLiveData(timeoutMs) {
 }
 
 function submitLead() {
+  if (!userStore.isAuthenticated) {
+    continueToInstallerJourney()
+    return
+  }
   submittingLead.value = true
   const stored = JSON.parse(localStorage.getItem('assessmentLeadRequests') || '[]')
   stored.unshift({
@@ -713,6 +735,7 @@ function submitLead() {
 }
 
 function startOver() {
+  localStorage.removeItem(ANONYMOUS_ASSESSMENT_KEY)
   currentStep.value = 0
   Object.assign(form, {
     monthlyBill: null,
@@ -728,6 +751,52 @@ function startOver() {
   liveSolarData.value = null
   liveError.value = ''
   billError.value = ''
+}
+
+function persistAnonymousAssessment() {
+  if (!results.value) return
+  localStorage.setItem(ANONYMOUS_ASSESSMENT_KEY, JSON.stringify({
+    form: { ...form },
+    results: results.value,
+    liveSolarData: liveSolarData.value,
+    savedAt: new Date().toISOString()
+  }))
+}
+
+function restoreAnonymousAssessment() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(ANONYMOUS_ASSESSMENT_KEY) || 'null')
+    if (!saved?.form || !saved?.results) return
+    Object.assign(form, saved.form)
+    results.value = saved.results
+    liveSolarData.value = saved.liveSolarData || liveSolarData.value
+    backendSavedAssessmentId.value = userStore.isAuthenticated ? saved.results.backendAssessmentId || '' : ''
+    currentStep.value = 5
+  } catch {
+    localStorage.removeItem(ANONYMOUS_ASSESSMENT_KEY)
+  }
+}
+
+function redirectToLogin(nextPath) {
+  persistAnonymousAssessment()
+  localStorage.setItem(POST_LOGIN_REDIRECT_KEY, nextPath)
+  router.push({ path: '/login', query: { next: nextPath, reason: 'assessment_complete' } })
+}
+
+function continueToInstallerJourney() {
+  if (userStore.isAuthenticated) {
+    showLeadForm.value = true
+    return
+  }
+  redirectToLogin('/assessment?continue=installer')
+}
+
+function continueToProtectedRoute(path) {
+  if (userStore.isAuthenticated) {
+    router.push(path)
+    return
+  }
+  redirectToLogin(path)
 }
 
 function lonToTileX(lng, zoom) {
@@ -756,6 +825,15 @@ function buildMapTiles(lat, lng, zoom) {
 onMounted(() => {
   loadSavedAssessments()
   marketplaceStore.fetchDealers()
+  restoreAnonymousAssessment()
+
+  if (route.query.continue === 'installer' && userStore.isAuthenticated && results.value) {
+    showLeadForm.value = true
+  }
+
+  if (route.query.continue === 'save' && userStore.isAuthenticated && results.value) {
+    saveAssessment()
+  }
 
   const saved = localStorage.getItem('financingAssessmentState')
   if (!saved) return
@@ -1575,10 +1653,16 @@ select:focus {
 
 .card-link {
   display: inline-block;
+  border: 0;
+  background: transparent;
   margin-top: 10px;
   color: #0f6cbd;
+  cursor: pointer;
+  font: inherit;
   font-weight: 800;
   font-size: 0.85rem;
+  padding: 0;
+  text-align: left;
   text-decoration: underline;
 }
 
@@ -1606,6 +1690,17 @@ select:focus {
 
 .results-actions {
   align-items: center;
+}
+
+.auth-gate-note {
+  margin: 12px 0 0;
+  color: #607080;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.assessment-flow--dark .auth-gate-note {
+  color: #a7b4c3;
 }
 
 .link-button {

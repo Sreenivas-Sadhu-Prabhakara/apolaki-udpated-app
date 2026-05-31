@@ -87,7 +87,7 @@ const routes = [
     path: '/assessment',
     name: 'Assessment',
     component: () => import('../views/Assessment.vue'),
-    meta: { requiresAuth: true, requiredConsents: ['profile_account', 'location_assessment'] }
+    meta: { requiresAuth: false }
   },
   {
     path: '/financing',
@@ -190,17 +190,20 @@ router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
   const isElevated = ['admin', 'superadmin'].includes(userStore.userRole)
   const missingConsents = missingRouteConsents(to, userStore)
+  const requestedNext = typeof to.query.next === 'string' && to.query.next.startsWith('/')
+    ? to.query.next
+    : null
 
   if (to.meta.requiresAuth && !userStore.isAuthenticated) {
-    next('/login')
+    next({ path: '/login', query: { next: to.fullPath } })
   } else if (to.meta.requiresAuth && !to.meta.allowsPendingConsent && !userStore.onboardingComplete && !isElevated) {
-    next('/consent')
+    next({ path: '/consent', query: { next: to.fullPath } })
   } else if (to.name === 'ConsentOnboarding' && userStore.onboardingComplete) {
-    next('/assessment')
+    next(requestedNext || '/assessment')
   } else if (to.meta.publicOnly && userStore.isAuthenticated) {
-    next(userStore.onboardingComplete ? '/assessment' : '/consent')
+    next(userStore.onboardingComplete ? requestedNext || '/assessment' : '/consent')
   } else if ((to.name === 'Login' || to.name === 'Signup') && userStore.isAuthenticated) {
-    next(userStore.onboardingComplete ? '/assessment' : '/consent')
+    next(userStore.onboardingComplete ? requestedNext || '/assessment' : '/consent')
   } else if (to.meta.allowedRoles && !to.meta.allowedRoles.includes(userStore.userRole)) {
     // Role-based guard: redirect to dashboard if user lacks permission
     next('/dashboard')

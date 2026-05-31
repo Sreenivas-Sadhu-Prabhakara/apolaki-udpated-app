@@ -81,6 +81,15 @@ const router = useRouter()
 const userStore = useUserStore()
 const email = ref('')
 const password = ref('')
+const POST_LOGIN_REDIRECT_KEY = 'apolakiPostLoginRedirect'
+const requestedNextPath = typeof route.query.next === 'string' && route.query.next.startsWith('/')
+  ? route.query.next
+  : ''
+
+if (requestedNextPath) {
+  localStorage.setItem(POST_LOGIN_REDIRECT_KEY, requestedNextPath)
+}
+
 const errorMessage = computed(() => {
   if (userStore.error) return userStore.error
   return route.query.error ? String(route.query.error) : null
@@ -89,7 +98,9 @@ const errorMessage = computed(() => {
 async function handleLogin() {
   const profile = await userStore.login(email.value, password.value)
   if (profile) {
-    await router.replace(profile.onboardingComplete ? '/assessment' : '/consent')
+    const nextPath = requestedNextPath || localStorage.getItem(POST_LOGIN_REDIRECT_KEY) || '/assessment'
+    localStorage.removeItem(POST_LOGIN_REDIRECT_KEY)
+    await router.replace(profile.onboardingComplete ? nextPath : { path: '/consent', query: { next: nextPath } })
   }
 }
 </script>
