@@ -572,11 +572,29 @@
               <div>
                 <div class="flex justify-between text-xs mb-2">
                   <span :class="isDark ? 'text-slate-400' : 'text-gray-600'">Credit grade</span>
-                  <span class="font-semibold text-blue-600">{{ creditScoreRange }}</span>
+                  <span class="font-semibold text-blue-600">{{ creditScore }} · {{ creditScoreRange }}</span>
                 </div>
                 <input type="range" min="550" max="850" step="10" v-model.number="creditScore"
                   class="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-blue-600"
                   :class="isDark ? 'bg-slate-700' : 'bg-blue-100'" />
+                <div class="mt-2 flex justify-between text-[10px] font-semibold"
+                  :class="isDark ? 'text-slate-600' : 'text-gray-400'">
+                  <span>550</span>
+                  <span>650</span>
+                  <span>700</span>
+                  <span>780</span>
+                  <span>850</span>
+                </div>
+                <div class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div v-for="step in creditGradeSteps" :key="step.label"
+                    class="rounded-lg border px-2.5 py-2"
+                    :class="isCreditStepActive(step)
+                      ? (isDark ? 'border-blue-600 bg-blue-950/40 text-blue-300' : 'border-blue-200 bg-blue-50 text-blue-700')
+                      : (isDark ? 'border-slate-700 bg-slate-900/40 text-slate-500' : 'border-gray-200 bg-white text-gray-500')">
+                    <p class="text-[11px] font-bold leading-tight">{{ step.label }}</p>
+                    <p class="mt-0.5 text-[10px] opacity-75">{{ step.range }}</p>
+                  </div>
+                </div>
               </div>
               <div>
                 <label class="block text-xs mb-2"
@@ -1313,6 +1331,18 @@ const comparisonRows = computed(() => {
 })
 
 // ── Prequalification ──────────────────────────────────────────────
+const creditGradeSteps = [
+  { label: 'Subprime', range: '550-649', min: 550, max: 649 },
+  { label: 'Good', range: '650-699', min: 650, max: 699 },
+  { label: 'Very Good', range: '700-779', min: 700, max: 779 },
+  { label: 'Excellent', range: '780-850', min: 780, max: 850 }
+]
+
+function isCreditStepActive(step) {
+  const score = creditScore.value
+  return score >= step.min && score <= step.max
+}
+
 const creditScoreRange = computed(() => {
   const s = creditScore.value
   if (s >= 780) return 'Excellent (Grade A)'
