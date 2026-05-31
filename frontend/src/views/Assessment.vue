@@ -1,1289 +1,1721 @@
 <template>
-  <div class="assessment-flow" :class="{ 'dark-mode': isDark }">
-    <!-- Step 0: Intent Capture / Hero Hook -->
-    <section v-if="currentStep === 0" class="intent-capture">
-      <div class="intent-hero">
-        <h1 class="intent-title">Replace your electricity bill with a lower monthly payment</h1>
-        <p class="intent-subtitle">See how your current bill could become a lower solar payment</p>
-        
-        <div class="payment-swap-example">
-          <div class="swap-before">
-            <span class="swap-label">Current Monthly Bill</span>
-            <div class="swap-amount">₱12,000</div>
-          </div>
-          <div class="swap-arrow">→</div>
-          <div class="swap-after">
-            <span class="swap-label">New Solar Payment</span>
-            <div class="swap-amount highlight">₱7,500</div>
-          </div>
-        </div>
-        
-        <div class="savings-badge">
-          <span class="savings-label">You could save</span>
-          <div class="savings-amount">₱4,500/month</div>
-        </div>
-        
-        <button @click="startAssessment" class="cta-button cta-primary">
-          See My New Monthly Cost
-        </button>
-        
-        <p class="trust-note">✓ Takes less than 30 seconds • ✓ No commitment required</p>
+  <main class="assessment-flow" :class="{ 'assessment-flow--dark': isDark }">
+    <section v-if="currentStep === 0" class="assessment-hero">
+      <div class="hero-copy">
+        <span class="eyebrow">Solar payment assessment</span>
+        <h1>Replace your electricity bill with a lower monthly payment</h1>
+        <p>Get a location-aware solar plan using Google Solar, DREI/NREL, NASA POWER, and regional fallbacks, priced from a clear {{ costBasisLabel }} basis.</p>
       </div>
-    </section>
 
-    <!-- Step 1: Bill Input -->
-    <section v-if="currentStep === 1" class="assessment-step">
-      <div class="step-container">
-        <div class="step-progress">
-          <span class="step-indicator">Step 1 of 3</span>
-          <div class="progress-bar">
-            <div class="progress-fill" style="width: 33%"></div>
+      <div class="payment-preview">
+        <div class="swap-row">
+          <div>
+            <span>Current bill</span>
+            <strong>{{ formatPeso(heroBill) }}</strong>
+          </div>
+          <div class="swap-connector">to</div>
+          <div>
+            <span>Solar payment</span>
+            <strong class="positive">{{ formatPeso(heroSolarPayment) }}</strong>
           </div>
         </div>
-        
-        <h2 class="step-title">What's your monthly electricity bill?</h2>
-        <p class="step-helper">This helps us calculate your potential savings</p>
-        
-        <div class="input-group">
-          <label class="input-label">Monthly Bill (PHP)</label>
-          <div class="currency-input">
-            <span class="currency-symbol">₱</span>
-            <input 
-              type="number" 
-              v-model="formData.monthlyBill" 
-              placeholder="e.g., 5000"
-              class="bill-input"
-              @input="validateBill"
-              min="500"
-            />
-          </div>
-          <span v-if="billError" class="error-message">{{ billError }}</span>
+        <div class="savings-strip">
+          <span>Estimated monthly savings</span>
+          <strong>{{ formatPeso(Math.max(0, heroBill - heroSolarPayment)) }}</strong>
         </div>
-        
-        <button 
-          @click="nextStep" 
-          :disabled="!isStep1Valid"
-          class="cta-button cta-primary"
-        >
-          Continue
-        </button>
-        
-        <button @click="currentStep = 0" class="btn-link">← Back</button>
-      </div>
-    </section>
 
-    <!-- Step 2: Location -->
-    <section v-if="currentStep === 2" class="assessment-step">
-      <div class="step-container">
-        <div class="step-progress">
-          <span class="step-indicator">Step 2 of 3</span>
-          <div class="progress-bar">
-            <div class="progress-fill" style="width: 66%"></div>
+        <!-- PRD 3: Hero slider for instant intent capture -->
+        <div class="hero-slider-wrap">
+          <input 
+            type="range" 
+            v-model.number="heroBill" 
+            min="2000" 
+            max="100000" 
+            step="500" 
+            class="hero-slider"
+          />
+          <div class="slider-labels">
+            <span>PHP 2k</span>
+            <span>PHP 100k</span>
           </div>
         </div>
-        
-        <h2 class="step-title">Where is your property located?</h2>
-        <p class="step-helper">Location affects solar potential and available installers</p>
-        
-        <div class="input-group">
-          <label class="input-label">City/Province</label>
-          <select 
-            v-model="formData.location"
-            class="location-select"
-            @change="validateLocation"
-          >
-            <option value="">Select your location</option>
-            <option value="Metro Manila">Metro Manila</option>
-            <option value="Quezon City">Quezon City</option>
-            <option value="Makati">Makati</option>
-            <option value="Cebu">Cebu</option>
-            <option value="Davao">Davao</option>
-            <option value="Cavite">Cavite</option>
-            <option value="Laguna">Laguna</option>
-            <option value="Bulacan">Bulacan</option>
-            <option value="Pampanga">Pampanga</option>
-            <option value="Batangas">Batangas</option>
-          </select>
-          <span v-if="locationError" class="error-message">{{ locationError }}</span>
-        </div>
-        
-        <button 
-          @click="nextStep" 
-          :disabled="!isStep2Valid"
-          class="cta-button cta-primary"
-        >
-          Continue
-        </button>
-        
-        <button @click="currentStep = 1" class="btn-link">← Back</button>
-      </div>
-    </section>
 
-    <!-- Step 3: Property Type -->
-    <section v-if="currentStep === 3" class="assessment-step">
-      <div class="step-container">
-        <div class="step-progress">
-          <span class="step-indicator">Step 3 of 3</span>
-          <div class="progress-bar">
-            <div class="progress-fill" style="width: 100%"></div>
-          </div>
-        </div>
-        
-        <h2 class="step-title">What type of property is this?</h2>
-        <p class="step-helper">This helps us recommend the right solar solution</p>
-        
-        <div class="property-types">
-          <div 
-            v-for="type in propertyTypes" 
-            :key="type.value"
-            @click="formData.propertyType = type.value"
-            class="property-card"
-            :class="{ active: formData.propertyType === type.value }"
-          >
-            <div class="property-icon">{{ type.icon }}</div>
-            <h3 class="property-label">{{ type.label }}</h3>
-            <p class="property-description">{{ type.description }}</p>
-          </div>
-        </div>
-        
-        <button 
-          @click="processAssessment" 
-          :disabled="!isStep3Valid"
-          class="cta-button cta-primary"
-        >
-          Calculate My Savings
-        </button>
-        
-        <button @click="currentStep = 2" class="btn-link">← Back</button>
-      </div>
-    </section>
+        <button class="primary-button" @click="startAssessment">See my new monthly cost</button>
+        <p class="trust-note">Takes under a minute. Uses live solar data when available. Cost basis: {{ costBasisLabel }}.</p>
 
-    <!-- Step 4: Processing -->
-    <section v-if="currentStep === 4" class="processing-step">
-      <div class="processing-container">
-        <div class="spinner"></div>
-        <p class="processing-message">{{ processingMessage }}</p>
-      </div>
-    </section>
-
-    <!-- Step 5: Results -->
-    <section v-if="currentStep === 5" class="results-step">
-      <div class="results-container">
-        <h2 class="results-title">Your New Lower Monthly Payment</h2>
-        
-        <!-- Hero Swap Card -->
-        <div class="payment-swap-card hero-card">
-          <div class="swap-comparison">
-            <div class="swap-current">
-              <span class="swap-label">Current Bill</span>
-              <div class="swap-value">₱{{ formData.monthlyBill.toLocaleString() }}</div>
+        <aside class="saved-assessments saved-assessments--compact">
+          <div class="section-title">
+            <div>
+              <span class="eyebrow">Saved assessments</span>
+              <strong>From your account</strong>
             </div>
-            <div class="swap-arrow-lg">→</div>
-            <div class="swap-solar">
-              <span class="swap-label">Solar Payment</span>
-              <div class="swap-value highlight">₱{{ results.solarPayment.toLocaleString() }}</div>
+            <button class="ghost-button" type="button" :disabled="loadingSavedAssessments" @click="loadSavedAssessments">
+              {{ loadingSavedAssessments ? 'Loading' : 'Refresh' }}
+            </button>
+          </div>
+          <div v-if="savedAssessments.length" class="saved-list saved-list--compact">
+            <div v-for="item in savedAssessments.slice(0, 2)" :key="item.id" class="saved-item">
+              <strong>{{ assessmentCapacity(item) }}</strong>
+              <span>{{ assessmentLocation(item) }}</span>
+              <small>{{ formatSavedDate(item.created_at || item.createdAt || item.savings_estimate?.calculatedAt) }}</small>
             </div>
           </div>
-          
-          <div class="savings-hero">
-            <div class="savings-banner">
-              You save <strong>₱{{ results.monthlySavings.toLocaleString() }}</strong> every month
-            </div>
-          </div>
-        </div>
-        
-        <!-- Financing Breakdown -->
-        <div class="breakdown-card">
-          <h3 class="card-title">Your Solar Plan Details</h3>
-          <div class="breakdown-grid">
-            <div class="breakdown-item">
-              <span class="breakdown-label">System Size</span>
-              <strong class="breakdown-value">{{ results.systemSize }} kW</strong>
-            </div>
-            <div class="breakdown-item">
-              <span class="breakdown-label">Monthly Payment</span>
-              <strong class="breakdown-value">₱{{ results.solarPayment.toLocaleString() }}</strong>
-            </div>
-            <div class="breakdown-item">
-              <span class="breakdown-label">Loan Tenure</span>
-              <strong class="breakdown-value">{{ results.tenure }} years</strong>
-            </div>
-            <div class="breakdown-item">
-              <span class="breakdown-label">After Payoff</span>
-              <strong class="breakdown-value">You own it!</strong>
-            </div>
-          </div>
-          
-          <div class="confidence-score">
-            <span class="confidence-label">Confidence Score</span>
-            <div class="confidence-bar">
-              <div class="confidence-fill" :style="{ width: results.confidenceScore + '%' }"></div>
-            </div>
-            <span class="confidence-value">{{ results.confidenceScore }}%</span>
-          </div>
-          
-          <p class="disclaimer">
-            * Estimates based on {{ formData.location }} solar data. Final pricing may vary after installer inspection.
+          <p v-else class="saved-empty">
+            {{ loadingSavedAssessments ? 'Loading saved assessments from the database...' : 'No saved assessments in your account yet.' }}
           </p>
-        </div>
-        
-        <!-- Secondary metrics (de-emphasized) -->
-        <div class="secondary-metrics">
-          <h4 class="metrics-title">Long-term Impact</h4>
-          <div class="metrics-grid">
-            <div class="metric-item">
-              <span class="metric-label">Payback Period</span>
-              <div class="metric-value">{{ results.paybackYears }} years</div>
-            </div>
-            <div class="metric-item">
-              <span class="metric-label">20-Year Savings</span>
-              <div class="metric-value">₱{{ results.lifetimeSavings.toLocaleString() }}</div>
-            </div>
-            <div class="metric-item">
-              <span class="metric-label">Annual Savings</span>
-              <div class="metric-value">₱{{ (results.monthlySavings * 12).toLocaleString() }}</div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- CTA Section -->
-        <div class="cta-section">
-          <button 
-            v-if="results.monthlySavings > 0" 
-            @click="showLeadForm = true"
-            class="cta-button cta-primary cta-large"
-          >
-            Get My Lower Monthly Plan Installed
-          </button>
-          <button 
-            v-else
-            @click="showLeadForm = true"
-            class="cta-button cta-secondary cta-large"
-          >
-            Talk to a Solar Advisor
-          </button>
-          
-          <button @click="startOver" class="btn-link">Start a new assessment</button>
-        </div>
+        </aside>
       </div>
     </section>
 
-    <!-- Lead Capture Modal -->
-    <div v-if="showLeadForm" class="modal-overlay" @click.self="showLeadForm = false">
-      <div class="modal-content">
-        <button @click="showLeadForm = false" class="modal-close">×</button>
-        <h3 class="modal-title">Connect with a Solar Installer</h3>
-        <p class="modal-description">
-          Get personalized quotes from top-rated installers in {{ formData.location }}.
-        </p>
-        
-        <form @submit.prevent="submitLead" class="lead-form">
-          <div class="form-group">
-            <label>Full Name</label>
-            <input v-model="leadData.name" type="text" required placeholder="Juan Dela Cruz" />
+    <section v-else class="assessment-shell">
+      <nav class="stepper" aria-label="Assessment progress">
+        <button
+          v-for="step in visibleSteps"
+          :key="step.id"
+          class="step-dot"
+          :class="{ active: currentStep === step.id, complete: currentStep > step.id }"
+          type="button"
+          @click="goToStep(step.id)"
+        >
+          <span>{{ step.id }}</span>
+          <strong>{{ step.label }}</strong>
+        </button>
+      </nav>
+
+      <section v-if="currentStep === 1" class="step-panel step-panel--split">
+        <div class="step-copy">
+          <span class="eyebrow">Step 1 of 3</span>
+          <h2>What is your monthly electricity bill?</h2>
+          <p>This anchors the recommendation to the payment you want to replace, not just a technical system size.</p>
+        </div>
+
+        <div class="input-card">
+          <label for="monthlyBill">Monthly bill in PHP</label>
+          <div class="money-input">
+            <span>PHP</span>
+            <input id="monthlyBill" v-model.number="form.monthlyBill" type="number" min="500" step="500" placeholder="12000" @input="validateBill" />
           </div>
-          
-          <div class="form-group">
-            <label>Phone Number</label>
-            <input v-model="leadData.phone" type="tel" required placeholder="09XX XXX XXXX" />
+          <p v-if="billError" class="field-error">{{ billError }}</p>
+          <div class="quick-bills">
+            <button v-for="amount in quickBills" :key="amount" type="button" @click="setBill(amount)">{{ formatPeso(amount) }}</button>
           </div>
-          
-          <div class="form-group">
-            <label>Email</label>
-            <input v-model="leadData.email" type="email" required placeholder="juan@example.com" />
+          <div class="actions">
+            <button class="ghost-button" type="button" @click="currentStep = 0">Back</button>
+            <button class="primary-button" type="button" :disabled="!isStep1Valid" @click="continueFromBill">Continue</button>
           </div>
-          
-          <button type="submit" class="cta-button cta-primary" :disabled="submittingLead">
-            {{ submittingLead ? 'Submitting...' : 'Get My Lower Payment Installed' }}
+        </div>
+      </section>
+
+      <section v-if="currentStep === 2" class="step-panel step-panel--map">
+        <div class="step-copy">
+          <span class="eyebrow">Step 2 of 3</span>
+          <h2>Where is the property?</h2>
+          <p>We resolve your province to live solar resource data, then fall back gracefully if a provider is unavailable.</p>
+
+          <div class="input-stack">
+            <label for="location">City or province</label>
+            <select id="location" v-model="form.location" @change="refreshLiveData">
+              <option v-for="location in philippinesLocations" :key="location.value" :value="location.value">{{ location.value }}</option>
+            </select>
+
+            <label for="address">Street, barangay, or site name optional</label>
+            <input id="address" v-model="form.address" placeholder="Optional, improves rooftop precision" @blur="refreshLiveData" />
+          </div>
+
+          <div class="actions">
+            <button class="ghost-button" type="button" @click="currentStep = 1">Back</button>
+            <button class="secondary-button" type="button" :disabled="liveLoading" @click="refreshLiveData">{{ liveLoading ? 'Fetching live data' : 'Refresh live data' }}</button>
+            <button class="primary-button" type="button" :disabled="!isStep2Valid" @click="currentStep = 3">Continue</button>
+          </div>
+        </div>
+
+        <aside class="live-card">
+          <div class="live-card__top">
+            <span class="eyebrow">Live assessment data</span>
+            <strong>{{ liveLoading ? 'Fetching' : providerName }}</strong>
+          </div>
+
+          <div class="ph-map" :aria-label="`Assessment map for ${mapLocation.label}`">
+            <div class="ph-map__tiles">
+              <img v-for="tile in mapTiles" :key="tile.key" :src="tile.url" alt="" loading="lazy" />
+            </div>
+            <span class="map-pin"></span>
+            <div class="map-caption">
+              <strong>{{ mapLocation.label }}</strong>
+              <small>{{ mapLocation.lat.toFixed(4) }}, {{ mapLocation.lng.toFixed(4) }}</small>
+            </div>
+          </div>
+
+          <div class="source-grid">
+            <div>
+              <span>Cost basis</span>
+              <strong>{{ costBasisLabel }}</strong>
+            </div>
+            <div>
+              <span>Peak sun</span>
+              <strong>{{ peakSunHours }} hrs/day</strong>
+            </div>
+            <div>
+              <span>Annual output</span>
+              <strong>{{ annualProduction }}</strong>
+            </div>
+          </div>
+          <p v-if="liveError" class="field-error">{{ liveError }}</p>
+        </aside>
+      </section>
+
+      <section v-if="currentStep === 3" class="step-panel">
+        <div class="step-copy centered">
+          <span class="eyebrow">Step 3 of 3</span>
+          <h2>Choose the usage profile</h2>
+          <p>These three ranges are mutually exclusive and collectively cover the target systems this flow is designed to quote.</p>
+        </div>
+
+        <div class="plan-summary">
+          <div>
+            <span>Monthly bill</span>
+            <strong>{{ formatPeso(form.monthlyBill) }}</strong>
+          </div>
+          <div>
+            <span>Location</span>
+            <strong>{{ form.location }}</strong>
+          </div>
+          <div>
+            <span>Cost basis</span>
+            <strong>{{ costBasisLabel }}</strong>
+          </div>
+        </div>
+
+        <div class="usage-grid">
+          <button
+            v-for="profile in usageProfiles"
+            :key="profile.key"
+            type="button"
+            class="usage-card"
+            :class="{ active: form.propertyType === profile.key }"
+            @click="selectUsageProfile(profile.key)"
+          >
+            <span>{{ profile.label }}</span>
+            <strong>{{ profile.minKw }}-{{ profile.maxKw }} kW</strong>
+            <p>{{ profile.description }}</p>
           </button>
+        </div>
+
+        <div class="capacity-slider">
+          <div>
+            <span>Target system size</span>
+            <strong>{{ Number(form.targetCapacityKw).toFixed(1) }} kW</strong>
+          </div>
+          <input
+            v-model.number="form.targetCapacityKw"
+            type="range"
+            :min="selectedProfile.minKw"
+            :max="selectedProfile.maxKw"
+            step="0.1"
+          />
+          <div class="range-labels">
+            <span>{{ selectedProfile.minKw }} kW minimum</span>
+            <span>{{ selectedProfile.maxKw }} kW maximum</span>
+          </div>
+        </div>
+
+        <div class="actions actions--center">
+          <button class="ghost-button" type="button" @click="currentStep = 2">Back</button>
+          <button class="primary-button" type="button" :disabled="!isStep3Valid || processing" @click="processAssessment">
+            {{ processing ? 'Calculating' : 'Calculate my savings' }}
+          </button>
+        </div>
+      </section>
+
+      <section v-if="currentStep === 4" class="processing-panel">
+        <div class="spinner"></div>
+        <h2>{{ processingMessage }}</h2>
+        <p>Combining your bill, usage range, live solar data, and backend financial model.</p>
+      </section>
+
+      <section v-if="currentStep === 5 && results" class="results-panel">
+        <div class="results-hero">
+          <div>
+            <span class="eyebrow">Assessment results</span>
+            <h2>Your new lower monthly payment</h2>
+          </div>
+          <span class="confidence">{{ results.confidenceScore }}% confidence</span>
+        </div>
+
+        <div class="payment-result-card">
+          <div>
+            <span>Current bill</span>
+            <strong>{{ formatPeso(form.monthlyBill) }}</strong>
+          </div>
+          <div>
+            <span>Solar payment</span>
+            <strong class="positive">{{ formatPeso(results.solarPayment) }}</strong>
+          </div>
+          <div class="savings-result" :class="{ negative: results.monthlySavings < 0 }">
+            <span>{{ results.monthlySavings >= 0 ? 'Monthly savings' : 'Monthly gap' }}</span>
+            <strong>{{ formatPeso(Math.abs(results.monthlySavings)) }}</strong>
+          </div>
+        </div>
+
+        <div class="save-assessment-card">
+        <div>
+          <span class="eyebrow">Secure account record</span>
+          <h3>{{ savedAssessmentId ? 'Assessment saved' : 'Save this assessment' }}</h3>
+          <p>Save this plan to your account so it can be retrieved later and tied to your authenticated user profile.</p>
+          <p v-if="saveError" class="field-error">{{ saveError }}</p>
+          <p v-if="savedAssessmentId" class="save-success">Saved as: {{ formatSavedDate(new Date()) }}</p>
+        </div>
+        <button class="save-button" type="button" :disabled="savingAssessment || Boolean(savedAssessmentId)" @click="saveAssessment">
+          {{ savingAssessment ? 'Saving' : savedAssessmentId ? 'Saved' : 'Save assessment' }}
+        </button>
+        </div>
+        <div class="results-grid">
+          <div class="metric-card">
+            <span>System size</span>
+            <strong>{{ results.systemSize }} kW</strong>
+          </div>
+          <div class="metric-card">
+            <span>Installed cost</span>
+            <strong>{{ formatPeso(results.installedCost) }}</strong>
+            <small>{{ costBasisLabel }}</small>
+          </div>
+          <div class="metric-card">
+            <span>Loan tenure</span>
+            <strong>{{ results.tenure }} years</strong>
+          </div>
+          <div class="metric-card">
+            <span>Annual production</span>
+            <strong>{{ Number(results.annualProduction).toLocaleString() }} kWh</strong>
+          </div>
+        </div>
+
+        <div class="results-detail-grid">
+          <article class="detail-card">
+            <div class="section-title">
+              <span class="eyebrow">Data source</span>
+              <strong>{{ results.providerName }}</strong>
+            </div>
+            <p>{{ results.locationName }}</p>
+            <div class="mini-bars" v-if="solarBars.length">
+              <span v-for="(height, index) in solarBars" :key="index" :style="{ height: height + '%' }"></span>
+            </div>
+            <small>Calculation source: {{ results.calculationSource === 'backend' ? 'Backend assessment service' : 'Local fallback after backend failure' }}</small>
+          </article>
+
+          <article class="detail-card">
+            <div class="section-title">
+              <span class="eyebrow">Long-term impact</span>
+              <strong>{{ results.paybackYears ? results.paybackYears + ' years' : 'Advisor review' }}</strong>
+            </div>
+            <p>Projected 20-year value: {{ formatPeso(results.lifetimeSavings) }}</p>
+            <p>Down payment: {{ formatPeso(results.downPayment) }}. Principal: {{ formatPeso(results.loanPrincipal) }}.</p>
+          </article>
+          <article class="detail-card detail-card--highlight">
+            <div class="section-title">
+              <span class="eyebrow">Financing Swap</span>
+              <strong>{{ formatPeso(results.solarPayment) }}/mo</strong>
+            </div>
+            <p>Replace your current <strong>{{ formatPeso(form.monthlyBill) }}</strong> bill with a lower solar payment. You could start saving <strong>{{ formatPeso(results.monthlySavings) }}</strong> immediately.</p>
+            <router-link to="/finance" class="card-link">View detailed ROI and loan options →</router-link>
+          </article>
+        </div>
+
+        <div class="results-actions">
+          <button class="primary-button" type="button" @click="showLeadForm = true">Get my lower monthly plan installed</button>
+          <router-link class="secondary-button link-button" to="/finance">Explore Financing Options</router-link>
+          <router-link class="ghost-button link-button" to="/marketplace">View matching installers</router-link>
+          <button class="ghost-button" type="button" @click="startOver">Start a new assessment</button>
+        </div>
+
+        <div v-if="results" class="recommended-installers-preview mt-8">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold" :class="isDark ? 'text-white' : 'text-gray-900'">Recommended Installers</h3>
+            <span class="text-xs text-blue-500 font-bold uppercase tracking-widest">Matched for {{ form.location }}</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div v-for="installer in matchedInstallers" :key="installer.id" 
+                 class="p-4 border rounded-xl flex items-center justify-between"
+                 :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100 shadow-sm'">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xl">
+                  {{ installer.icon }}
+                </div>
+                <div>
+                  <h4 class="font-bold text-sm" :class="isDark ? 'text-white' : 'text-gray-900'">{{ installer.name }}</h4>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[10px] text-yellow-500">★ {{ installer.rating }}</span>
+                    <span class="text-[10px] text-gray-400">Verified Partner</span>
+                  </div>
+                </div>
+              </div>
+              <router-link :to="`/messaging?installerId=${installer.id}`" class="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition">
+                💬 Message
+              </router-link>
+            </div>
+          </div>
+        </div>
+
+        <aside class="saved-assessments" :class="{ 'saved-assessments--list': savedAssessments.length > 3 }">
+          <div class="section-title">
+            <div>
+              <span class="eyebrow">Saved assessments</span>
+              <strong>Retrievable account history</strong>
+            </div>
+            <button class="ghost-button" type="button" :disabled="loadingSavedAssessments" @click="loadSavedAssessments">
+              {{ loadingSavedAssessments ? 'Loading' : 'Refresh' }}
+            </button>
+          </div>
+          <div v-if="savedAssessments.length" class="saved-list" :class="{ 'saved-list--scrollable': savedAssessments.length > 3 }">
+            <div v-for="item in savedAssessments" :key="item.id" class="saved-item">
+              <strong>{{ assessmentCapacity(item) }}</strong>
+              <span>{{ assessmentLocation(item) }}</span>
+              <small>{{ formatSavedDate(item.created_at || item.createdAt || item.savings_estimate?.calculatedAt) }}</small>
+            </div>
+          </div>
+          <p v-else class="saved-empty">No saved assessments loaded yet. Save this result, then refresh this list.</p>
+        </aside>
+      </section>
+    </section>
+
+    <div v-if="showLeadForm" class="modal-overlay" @click.self="showLeadForm = false">
+      <section class="lead-modal">
+        <button class="modal-close" type="button" aria-label="Close" @click="showLeadForm = false">x</button>
+        <span class="eyebrow">Installer lead</span>
+        <h2>Connect with verified solar installers</h2>
+        <p>We will pass your location, system size, payment goal, and live-data source to installer partners.</p>
+
+        <form class="lead-form" @submit.prevent="submitLead">
+          <label>Full name<input v-model="lead.name" required placeholder="Juan Dela Cruz" /></label>
+          <label>Phone number<input v-model="lead.phone" required type="tel" placeholder="09XX XXX XXXX" /></label>
+          <label>Email<input v-model="lead.email" required type="email" placeholder="juan@example.com" /></label>
+          <button class="primary-button" type="submit" :disabled="submittingLead">{{ submittingLead ? 'Submitting' : 'Send installer request' }}</button>
         </form>
-      </div>
+      </section>
     </div>
 
-    <!-- Lead Submitted Confirmation -->
     <div v-if="leadSubmitted" class="modal-overlay">
-      <div class="modal-content confirmation-modal">
-        <div class="success-icon">✓</div>
-        <h3 class="confirmation-title">Request Received!</h3>
-        <p class="confirmation-text">
-          Thank you! We'll connect you with verified solar installers in {{ formData.location }} within 24 hours.
-          We'll match you with verified installers in your area.
-        </p>
-        <button @click="closeConfirmation" class="btn-primary">Done</button>
-      </div>
+      <section class="lead-modal lead-modal--success">
+        <span class="success-mark">OK</span>
+        <h2>Request received</h2>
+        <p>Installer context has been saved locally and the marketplace can now use your province and system range.</p>
+        <button class="primary-button" type="button" @click="leadSubmitted = false">Done</button>
+      </section>
     </div>
-  </div>
+  </main>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/themeStore'
+import { useMarketplaceStore } from '../stores/marketplaceStore'
+import {
+  calculateAssessmentPlan,
+  fetchSavedAssessmentPlans,
+  formatPeso,
+  getLocation,
+  getUsageProfile,
+  INSTALLED_COST_PER_KW,
+  loadLiveAssessmentData,
+  persistAssessmentState,
+  saveAssessmentPlan,
+  philippinesLocations,
+  providerLabel,
+  usageProfiles
+} from '../domains/assessment/assessmentDomain'
 
+const router = useRouter()
 const themeStore = useThemeStore()
+const marketplaceStore = useMarketplaceStore()
 const isDark = computed(() => themeStore.isDarkMode)
 
 const currentStep = ref(0)
-const processingMessage = ref('Analyzing your electricity usage...')
+const liveLoading = ref(false)
+const activeLiveRequest = ref(null)
+const processing = ref(false)
+const liveError = ref('')
+const billError = ref('')
+const liveSolarData = ref(null)
+const results = ref(null)
+const savedAssessmentId = ref('')
+const backendSavedAssessmentId = ref('')
+const saveError = ref('')
+const savingAssessment = ref(false)
+const savedAssessments = ref([])
+const loadingSavedAssessments = ref(false)
 const showLeadForm = ref(false)
 const leadSubmitted = ref(false)
+const submittingLead = ref(false)
+const processingMessage = ref('Checking live solar potential')
 
-const formData = ref({
+const form = reactive({
   monthlyBill: null,
-  location: '',
-  propertyType: 'residential'
+  location: 'Metro Manila',
+  address: '',
+  propertyType: 'residential',
+  targetCapacityKw: 4
 })
 
-const leadData = ref({
+const lead = reactive({
   name: '',
   phone: '',
   email: ''
 })
 
-const results = ref(null)
-const billError = ref('')
-const locationError = ref('')
-const submittingLead = ref(false)
-
-const propertyTypes = [
-  {
-    value: 'residential',
-    label: 'Residential',
-    icon: '🏠',
-    description: 'Single family home or condo'
-  },
-  {
-    value: 'sme',
-    label: 'Small Business',
-    icon: '🏪',
-    description: 'Shop, office, or commercial space'
-  }
+const visibleSteps = [
+  { id: 1, label: 'Bill' },
+  { id: 2, label: 'Location' },
+  { id: 3, label: 'Usage' }
 ]
-
+const quickBills = [5000, 12000, 25000, 50000]
+const heroBill = ref(12000)
+const heroSolarPayment = computed(() => {
+  // PRD 3: Use a simplified solar payment formula for the hero preview
+  // Logic: 0.7 reduction for large bills, slightly less for small
+  const discountFactor = heroBill.value > 15000 ? 0.75 : 0.65
+  return Math.round((heroBill.value * (1 - discountFactor)) / 100) * 100
+})
+const costBasisLabel = `${formatPeso(INSTALLED_COST_PER_KW)} / kW`
 const processingMessages = [
-  'Analyzing your electricity usage...',
-  'Checking solar potential in your area...',
-  'Optimizing your lower monthly payment...',
-  'Calculating optimal system size...'
+  'Checking live solar potential',
+  'Reading irradiance and temperature signals',
+  'Running backend payment calculation',
+  'Preparing installer-ready recommendation'
 ]
 
-const isStep1Valid = computed(() => formData.value.monthlyBill >= 500)
-const isStep2Valid = computed(() => formData.value.location !== '')
-const isStep3Valid = computed(() => formData.value.propertyType !== '')
+const selectedProfile = computed(() => getUsageProfile(form.propertyType))
+const isStep1Valid = computed(() => Number(form.monthlyBill || 0) >= 500)
+const isStep2Valid = computed(() => Boolean(form.location))
+const isStep3Valid = computed(() => {
+  const value = Number(form.targetCapacityKw)
+  return value >= selectedProfile.value.minKw && value <= selectedProfile.value.maxKw
+})
+const providerName = computed(() => providerLabel(liveSolarData.value?.provider))
+const peakSunHours = computed(() => Number(liveSolarData.value?.data?.estimatedPeakSunHoursPerDay || liveSolarData.value?.data?.solarRadiationAnnual || 4.8).toFixed(1))
+const annualProduction = computed(() => {
+  const value = liveSolarData.value?.data?.annualProductionKwh || liveSolarData.value?.data?.bestConfig?.yearlyEnergyDcKwh
+  return value ? `${Number(value).toLocaleString()} kWh` : 'Pending'
+})
+const mapLocation = computed(() => {
+  const data = liveSolarData.value?.data || {}
+  const location = getLocation(form.location)
+  return {
+    lat: Number(data.latitude || 14.5995),
+    lng: Number(data.longitude || 120.9842),
+    label: data.formattedAddress || `${location.city}, Philippines`
+  }
+})
+const mapTiles = computed(() => buildMapTiles(mapLocation.value.lat, mapLocation.value.lng, 12))
+const solarBars = computed(() => {
+  const values = results.value?.monthlyProduction || liveSolarData.value?.data?.monthlyProductionKwh || liveSolarData.value?.data?.solarRadiationMonthly || []
+  if (!values.length) return []
+  const max = Math.max(...values)
+  return values.map(value => Math.max(12, Math.round((Number(value || 0) / max) * 100)))
+})
 
-const startAssessment = () => {
+const matchedInstallers = computed(() => {
+  // Use real data from marketplace store if available
+  if (marketplaceStore.dealers.length > 0) {
+    const province = getLocation(form.location).province
+    // Filter dealers that serve this province or NCR
+    return marketplaceStore.dealers.filter(d => 
+      !d.provinces || 
+      d.provinces.includes(province) || 
+      d.provinces.includes('NCR')
+    ).slice(0, 3)
+  }
+
+  // Fallback to mock matched installers based on province
+  const province = getLocation(form.location).province
+  const base = [
+    { id: 'i1', name: 'Solara Energy Solutions', rating: 4.8, icon: '☀️' },
+    { id: 'i2', name: 'Lumina Solar PH', rating: 4.9, icon: '🔋' }
+  ]
+  if (province === 'NCR') return base
+  if (province === 'Cebu') return [{ id: 'i3', name: 'Visayas Solar Tech', rating: 4.7, icon: '🌊' }, ...base]
+  return base
+})
+
+watch(
+  () => form.propertyType,
+  (key) => {
+    form.targetCapacityKw = getUsageProfile(key).defaultKw
+  }
+)
+
+function startAssessment() {
   currentStep.value = 1
 }
 
-const validateBill = () => {
-  if (!formData.value.monthlyBill) {
-    billError.value = 'Please enter your monthly bill'
-  } else if (formData.value.monthlyBill < 500) {
-    billError.value = 'Minimum bill amount is ₱500'
-  } else {
-    billError.value = ''
+function validateBill() {
+  billError.value = isStep1Valid.value ? '' : 'Enter a monthly bill of at least PHP 500.'
+}
+
+function setBill(amount) {
+  form.monthlyBill = amount
+  validateBill()
+}
+
+async function continueFromBill() {
+  validateBill()
+  if (!isStep1Valid.value) return
+  currentStep.value = 2
+  if (!liveSolarData.value) refreshLiveData()
+}
+
+function goToStep(step) {
+  if (step === 1 || (step === 2 && isStep1Valid.value) || (step === 3 && isStep1Valid.value && isStep2Valid.value)) {
+    currentStep.value = step
   }
 }
 
-const validateLocation = () => {
-  locationError.value = formData.value.location ? '' : 'Please select your location'
+function selectUsageProfile(key) {
+  form.propertyType = key
 }
 
-const nextStep = () => {
-  currentStep.value++
+async function refreshLiveData() {
+  if (!form.location) return
+  if (activeLiveRequest.value) return activeLiveRequest.value
+  liveLoading.value = true
+  liveError.value = ''
+  activeLiveRequest.value = loadLiveAssessmentData(form)
+    .then((data) => {
+      liveSolarData.value = data
+      return data
+    })
+    .catch(() => {
+      liveError.value = 'Live providers are temporarily unavailable. The assessment will continue with a regional baseline.'
+      return null
+    })
+    .finally(() => {
+      activeLiveRequest.value = null
+      liveLoading.value = false
+    })
+  return activeLiveRequest.value
 }
 
-const processAssessment = () => {
+async function processAssessment() {
+  if (!isStep3Valid.value) return
+  processing.value = true
   currentStep.value = 4
-  
   let messageIndex = 0
-  const messageInterval = setInterval(() => {
+  const interval = window.setInterval(() => {
     messageIndex = (messageIndex + 1) % processingMessages.length
     processingMessage.value = processingMessages[messageIndex]
-  }, 800)
-  
-  setTimeout(() => {
-    clearInterval(messageInterval)
-    calculateResults()
-    currentStep.value = 5
-  }, 2500)
-}
+  }, 700)
 
-const calculateResults = () => {
-  const bill = formData.value.monthlyBill
-  const avgKwhRate = 11.5
-  const estimatedUsage = bill / avgKwhRate
-  const systemSize = Math.ceil(estimatedUsage / 120)
-  const systemCost = systemSize * 45000
-  const downPayment = systemCost * 0.2
-  const loanAmount = systemCost - downPayment
-  const tenure = 7
-  const interestRate = 0.085
-  const monthlyRate = interestRate / 12
-  const numPayments = tenure * 12
-  
-  const emi = (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
-               (Math.pow(1 + monthlyRate, numPayments) - 1)
-  
-  const solarPayment = Math.round(emi)
-  const monthlySavings = bill - solarPayment
-  const annualSavings = monthlySavings * 12
-  const paybackYears = Math.round((systemCost / annualSavings) * 10) / 10
-  const lifetimeSavings = Math.round(annualSavings * 20)
-  
-  let confidence = 70
-  if (formData.value.location) confidence += 15
-  if (formData.value.propertyType) confidence += 15
-  
-  results.value = {
-    systemSize,
-    solarPayment,
-    monthlySavings,
-    tenure,
-    paybackYears,
-    lifetimeSavings,
-    confidenceScore: confidence
+  try {
+    if (!liveSolarData.value) await waitForLiveData(3500)
+    results.value = await calculateAssessmentPlan(form, liveSolarData.value)
+    backendSavedAssessmentId.value = results.value.backendAssessmentId || ''
+    savedAssessmentId.value = ''
+    saveError.value = ''
+    persistAssessmentState(form, results.value, liveSolarData.value)
+    loadSavedAssessments()
+    currentStep.value = 5
+  } finally {
+    window.clearInterval(interval)
+    processing.value = false
   }
 }
 
-const submitLead = async () => {
+async function saveAssessment() {
+  if (!results.value || savingAssessment.value || savedAssessmentId.value) return
+  savingAssessment.value = true
+  saveError.value = ''
+  try {
+    if (backendSavedAssessmentId.value) {
+      savedAssessmentId.value = backendSavedAssessmentId.value
+    } else {
+      const saved = await saveAssessmentPlan(form, results.value, liveSolarData.value)
+      savedAssessmentId.value = saved.id || saved.data?.id || 'saved'
+    }
+    await loadSavedAssessments()
+  } catch (error) {
+    saveError.value = error.response?.status === 401
+      ? 'Please sign in again to save this assessment securely to your account.'
+      : 'Unable to save this assessment right now. Please try again.'
+  } finally {
+    savingAssessment.value = false
+  }
+}
+
+async function loadSavedAssessments() {
+  loadingSavedAssessments.value = true
+  try {
+    savedAssessments.value = await fetchSavedAssessmentPlans()
+  } catch {
+    savedAssessments.value = []
+  } finally {
+    loadingSavedAssessments.value = false
+  }
+}
+
+function formatSavedDate(date) {
+  if (!date) return 'Recently'
+  const d = new Date(date)
+  return d.toLocaleString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric', 
+    hour: 'numeric', 
+    minute: '2-digit' 
+  })
+}
+
+function assessmentCapacity(item) {
+  const value = Number(
+    item.recommended_capacity ||
+    item.recommendedCapacity ||
+    item.savings_estimate?.recommendedCapacity ||
+    item.savings_estimate?.recommendedCapacityKw ||
+    item.savings_estimate?.targetCapacityKw ||
+    item.savings_estimate?.systemSize ||
+    0
+  )
+  return value ? `${value.toFixed(1)} kW` : 'Assessment'
+}
+
+function assessmentLocation(item) {
+  return item.city ||
+    item.savings_estimate?.locationName ||
+    item.address ||
+    item.state ||
+    'Saved assessment'
+}
+
+async function waitForLiveData(timeoutMs) {
+  if (liveSolarData.value) return liveSolarData.value
+  const request = activeLiveRequest.value || refreshLiveData()
+  return Promise.race([
+    request,
+    new Promise(resolve => window.setTimeout(() => resolve(null), timeoutMs))
+  ])
+}
+
+function submitLead() {
   submittingLead.value = true
-  
-  setTimeout(() => {
-    console.log('Lead submitted:', {
-      ...leadData.value,
-      assessment: {
-        ...formData.value,
-        ...results.value
-      }
-    })
-    
+  const stored = JSON.parse(localStorage.getItem('assessmentLeadRequests') || '[]')
+  stored.unshift({
+    ...lead,
+    assessment: results.value,
+    form: { ...form },
+    createdAt: new Date().toISOString()
+  })
+  localStorage.setItem('assessmentLeadRequests', JSON.stringify(stored.slice(0, 10)))
+
+  window.setTimeout(() => {
     submittingLead.value = false
     showLeadForm.value = false
     leadSubmitted.value = true
-  }, 1000)
+    Object.assign(lead, { name: '', phone: '', email: '' })
+  }, 500)
 }
 
-const closeConfirmation = () => {
-  leadSubmitted.value = false
-}
-
-const startOver = () => {
+function startOver() {
   currentStep.value = 0
-  formData.value = {
+  Object.assign(form, {
     monthlyBill: null,
-    location: '',
-    propertyType: 'residential'
-  }
+    location: 'Metro Manila',
+    address: '',
+    propertyType: 'residential',
+    targetCapacityKw: 4
+  })
   results.value = null
-  showLeadForm.value = false
+  savedAssessmentId.value = ''
+  backendSavedAssessmentId.value = ''
+  saveError.value = ''
+  liveSolarData.value = null
+  liveError.value = ''
+  billError.value = ''
 }
+
+function lonToTileX(lng, zoom) {
+  return Math.floor(((lng + 180) / 360) * 2 ** zoom)
+}
+
+function latToTileY(lat, zoom) {
+  const radians = lat * Math.PI / 180
+  return Math.floor((1 - Math.log(Math.tan(radians) + 1 / Math.cos(radians)) / Math.PI) / 2 * 2 ** zoom)
+}
+
+function buildMapTiles(lat, lng, zoom) {
+  const centerX = lonToTileX(lng, zoom)
+  const centerY = latToTileY(lat, zoom)
+  const tiles = []
+  for (let row = -1; row <= 1; row += 1) {
+    for (let col = -1; col <= 1; col += 1) {
+      const x = centerX + col
+      const y = centerY + row
+      tiles.push({ key: `${zoom}-${x}-${y}`, url: `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png` })
+    }
+  }
+  return tiles
+}
+
+onMounted(() => {
+  loadSavedAssessments()
+  marketplaceStore.fetchDealers()
+
+  const saved = localStorage.getItem('financingAssessmentState')
+  if (!saved) return
+  try {
+    const assessment = JSON.parse(saved)
+    if (assessment.monthlyBill) form.monthlyBill = assessment.monthlyBill
+    if (assessment.location) form.location = assessment.location
+    if (assessment.propertyType) form.propertyType = assessment.propertyType
+    if (assessment.targetCapacityKw) form.targetCapacityKw = assessment.targetCapacityKw
+  } catch {
+    localStorage.removeItem('financingAssessmentState')
+  }
+})
 </script>
 
 <style scoped>
 .assessment-flow {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  padding: 2rem 1rem;
+  min-height: calc(100vh - 56px);
+  background: #f7fafc;
+  color: #16202a;
+  padding: 28px 18px 64px;
 }
 
-.dark-mode {
-  background: linear-gradient(135deg, #1a1c1e 0%, #2d3748 100%);
-  color: #e2e8f0;
+.assessment-flow--dark {
+  background: #101418;
+  color: #f8fafc;
 }
 
-.intent-capture {
-  max-width: 900px;
+.assessment-hero,
+.assessment-shell {
+  width: min(1120px, 100%);
   margin: 0 auto;
-  padding: 3rem 1rem;
-  text-align: center;
 }
 
-.intent-hero {
-  background: white;
-  border-radius: 24px;
-  padding: 3rem 2rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-}
-
-.dark-mode .intent-hero {
-  background: #2d3748;
-}
-
-.intent-title {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: #0F6CBD;
-  margin-bottom: 1rem;
-  line-height: 1.2;
-}
-
-.dark-mode .intent-title {
-  color: #F4C94C;
-}
-
-.intent-subtitle {
-  font-size: 1.25rem;
-  color: #64748b;
-  margin-bottom: 2.5rem;
-}
-
-.payment-swap-example {
-  display: flex;
+.assessment-hero {
+  min-height: calc(100vh - 160px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
   align-items: center;
-  justify-content: center;
-  gap: 2rem;
-  margin: 2rem 0;
-  padding: 2rem;
-  background: #f8fafc;
-  border-radius: 16px;
+  gap: 28px;
 }
 
-.dark-mode .payment-swap-example {
-  background: #1a1c1e;
+.hero-copy h1,
+.step-copy h2,
+.results-hero h2,
+.lead-modal h2,
+.processing-panel h2 {
+  margin: 8px 0 0;
+  line-height: 1;
+  letter-spacing: 0;
 }
 
-.swap-label {
-  display: block;
-  font-size: 0.875rem;
-  color: #64748b;
-  margin-bottom: 0.5rem;
+.hero-copy h1 {
+  max-width: 780px;
+  font-size: clamp(2.3rem, 5vw, 5rem);
+  font-weight: 950;
+}
+
+.hero-copy p,
+.step-copy p,
+.lead-modal p,
+.processing-panel p {
+  max-width: 620px;
+  color: #5c6b7a;
+  line-height: 1.6;
+}
+
+.assessment-flow--dark .hero-copy p,
+.assessment-flow--dark .step-copy p,
+.assessment-flow--dark .lead-modal p,
+.assessment-flow--dark .processing-panel p {
+  color: #b8c2cc;
+}
+
+.eyebrow {
+  color: #0f6cbd;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
 }
 
-.swap-amount {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #334155;
+.assessment-flow--dark .eyebrow {
+  color: #f4c94c;
 }
 
-.dark-mode .swap-amount {
-  color: #cbd5e1;
+.payment-preview,
+.step-panel,
+.live-card,
+.results-panel,
+.lead-modal {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.09);
 }
 
-.swap-amount.highlight {
-  color: #16a34a;
+.assessment-flow--dark .payment-preview,
+.assessment-flow--dark .step-panel,
+.assessment-flow--dark .live-card,
+.assessment-flow--dark .results-panel,
+.assessment-flow--dark .lead-modal {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: #171d23;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
 }
 
-.dark-mode .swap-amount.highlight {
-  color: #4ade80;
+.payment-preview {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
 }
 
-.swap-arrow {
-  font-size: 2rem;
-  color: #94a3b8;
+.swap-row,
+.payment-result-card {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 14px;
 }
 
-.savings-badge {
-  margin: 2rem 0;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-  border-radius: 12px;
-  color: white;
+.swap-row div,
+.payment-result-card > div,
+.metric-card,
+.plan-summary div,
+.source-grid div,
+.detail-card {
+  border-radius: 14px;
+  background: #f3f7fb;
+  padding: 18px;
 }
 
-.savings-label {
+.assessment-flow--dark .swap-row div,
+.assessment-flow--dark .payment-result-card > div,
+.assessment-flow--dark .metric-card,
+.assessment-flow--dark .plan-summary div,
+.assessment-flow--dark .source-grid div,
+.assessment-flow--dark .detail-card {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.swap-row span,
+.payment-result-card span,
+.metric-card span,
+.plan-summary span,
+.source-grid span,
+.capacity-slider span {
   display: block;
-  font-size: 0.875rem;
-  opacity: 0.9;
-  margin-bottom: 0.5rem;
+  color: #607080;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
-.savings-amount {
-  font-size: 2rem;
+.swap-row strong,
+.payment-result-card strong,
+.metric-card strong,
+.plan-summary strong,
+.source-grid strong,
+.capacity-slider strong {
+  display: block;
+  margin-top: 7px;
+  font-size: clamp(1.35rem, 2.4vw, 2rem);
+  line-height: 1;
+}
+
+.metric-card small {
+  display: block;
+  margin-top: 8px;
+  color: #607080;
+  font-size: 0.78rem;
   font-weight: 800;
 }
 
-.cta-button {
-  padding: 1rem 2rem;
+.source-grid strong,
+.plan-summary strong {
+  font-size: 1.08rem;
+  line-height: 1.15;
+}
+
+.swap-connector {
+  background: transparent !important;
+  color: #7a8794;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.positive {
+  color: #047857;
+}
+
+.savings-strip,
+.savings-result {
+  border-radius: 14px;
+  background: #0f6cbd;
+  color: #ffffff;
+  padding: 18px;
+}
+
+.savings-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.savings-strip span {
+  opacity: 0.84;
+  font-weight: 800;
+}
+
+.savings-strip strong {
+  font-size: 1.8rem;
+}
+
+.primary-button,
+.secondary-button,
+.ghost-button,
+.usage-card,
+.quick-bills button,
+.step-dot {
+  border: 0;
   border-radius: 12px;
-  font-size: 1.125rem;
-  font-weight: 600;
-  border: none;
+  font: inherit;
+  font-weight: 900;
   cursor: pointer;
-  transition: all 0.3s ease;
 }
 
-.cta-primary {
-  background: linear-gradient(135deg, #0F6CBD 0%, #0A4D8D 100%);
-  color: white;
-  box-shadow: 0 4px 20px rgba(15, 108, 189, 0.3);
+.primary-button,
+.secondary-button,
+.ghost-button {
+  min-height: 46px;
+  padding: 12px 16px;
 }
 
-.cta-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(15, 108, 189, 0.4);
+.primary-button {
+  background: #0f6cbd;
+  color: #ffffff;
 }
 
-.cta-primary:disabled {
-  opacity: 0.5;
+.secondary-button {
+  background: #e8f2fb;
+  color: #0f6cbd;
+}
+
+.ghost-button {
+  background: transparent;
+  color: #52616f;
+}
+
+.primary-button:disabled,
+.secondary-button:disabled {
   cursor: not-allowed;
-}
-
-.cta-secondary {
-  background: white;
-  color: #0F6CBD;
-  border: 2px solid #0F6CBD;
-}
-
-.cta-large {
-  padding: 1.25rem 2.5rem;
-  font-size: 1.25rem;
+  opacity: 0.55;
 }
 
 .trust-note {
-  margin-top: 1.5rem;
-  color: #64748b;
-  font-size: 0.875rem;
+  margin: 0;
+  color: #708090;
+  font-size: 0.88rem;
 }
 
-.assessment-step {
-  max-width: 600px;
-  margin: 0 auto;
+.stepper {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
 }
 
-.step-container {
-  background: white;
-  border-radius: 24px;
-  padding: 2.5rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-}
-
-.dark-mode .step-container {
-  background: #2d3748;
-}
-
-.step-progress {
-  margin-bottom: 2rem;
-}
-
-.step-indicator {
-  display: block;
-  font-size: 0.875rem;
-  color: #64748b;
-  margin-bottom: 0.5rem;
-}
-
-.progress-bar {
-  height: 8px;
-  background: #e2e8f0;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.dark-mode .progress-bar {
-  background: #1a1c1e;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #0F6CBD 0%, #0A4D8D 100%);
-  transition: width 0.3s ease;
-}
-
-.step-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #0F6CBD;
-  margin-bottom: 0.5rem;
-}
-
-.dark-mode .step-title {
-  color: #F4C94C;
-}
-
-.step-helper {
-  color: #64748b;
-  margin-bottom: 2rem;
-}
-
-.input-group {
-  margin-bottom: 2rem;
-}
-
-.input-label {
-  display: block;
-  font-weight: 600;
-  color: #334155;
-  margin-bottom: 0.5rem;
-}
-
-.dark-mode .input-label {
-  color: #cbd5e1;
-}
-
-.currency-input {
+.step-dot {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  background: #f8fafc;
-  transition: border-color 0.3s ease;
+  gap: 10px;
+  background: #ffffff;
+  color: #617080;
+  padding: 12px;
+  text-align: left;
 }
 
-.dark-mode .currency-input {
-  background: #1a1c1e;
-  border-color: #475569;
+.assessment-flow--dark .step-dot {
+  background: #171d23;
 }
 
-.currency-input:focus-within {
-  border-color: #0F6CBD;
-}
-
-.currency-symbol {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #64748b;
-}
-
-.bill-input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #334155;
-  outline: none;
-}
-
-.dark-mode .bill-input {
-  color: #cbd5e1;
-}
-
-.bill-input::placeholder {
-  color: #94a3b8;
-}
-
-.location-select {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  background: #f8fafc;
-  font-size: 1.125rem;
-  color: #334155;
-  cursor: pointer;
-}
-
-.dark-mode .location-select {
-  background: #1a1c1e;
-  border-color: #475569;
-  color: #cbd5e1;
-}
-
-.error-message {
-  display: block;
-  color: #dc2626;
-  font-size: 0.875rem;
-  margin-top: 0.5rem;
-}
-
-.property-types {
+.step-dot span {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-  margin-bottom: 2rem;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e8f2fb;
+  color: #0f6cbd;
 }
 
-.property-card {
-  padding: 1.5rem;
-  border: 2px solid #e2e8f0;
+.step-dot.active,
+.step-dot.complete {
+  background: #0f6cbd;
+  color: #ffffff;
+}
+
+.step-dot.active span,
+.step-dot.complete span {
+  background: #ffffff;
+}
+
+.step-panel {
+  padding: 24px;
+}
+
+.step-panel--split,
+.step-panel--map {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.step-copy h2,
+.results-hero h2,
+.lead-modal h2,
+.processing-panel h2 {
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  font-weight: 950;
+}
+
+.centered {
+  text-align: center;
+  margin: 0 auto 22px;
+}
+
+.centered p {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.input-card,
+.input-stack,
+.lead-form {
+  display: grid;
+  gap: 14px;
+}
+
+label {
+  display: grid;
+  gap: 7px;
+  color: #4d5c6a;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+input,
+select {
+  min-height: 48px;
+  border: 1px solid #dbe5ee;
   border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  background: #f8fbfd;
+  color: inherit;
+  font: inherit;
+  padding: 0 14px;
+  outline: 2px solid transparent;
+}
+
+input:focus,
+select:focus {
+  outline-color: rgba(15, 108, 189, 0.2);
+  background: #ffffff;
+}
+
+.assessment-flow--dark input,
+.assessment-flow--dark select {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: #101418;
+}
+
+.money-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #dbe5ee;
+  border-radius: 14px;
+  background: #f8fbfd;
+  padding: 0 14px;
+}
+
+.money-input span {
+  color: #0f6cbd;
+  font-weight: 950;
+}
+
+.money-input input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 1.8rem;
+  font-weight: 950;
+}
+
+.quick-bills,
+.actions,
+.results-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quick-bills button {
+  background: #eef4f9;
+  color: #445160;
+  padding: 9px 12px;
+}
+
+.actions {
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.actions--center {
+  justify-content: center;
+}
+
+.field-error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.live-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.live-card__top,
+.section-title,
+.results-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.live-card__top strong,
+.section-title strong {
+  font-size: 1.05rem;
+}
+
+.ph-map {
+  position: relative;
+  min-height: 290px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #d8e8f6;
+}
+
+.ph-map::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 0 24%, rgba(15, 23, 42, 0.08) 62%, rgba(15, 23, 42, 0.34) 100%);
+}
+
+.ph-map__tiles {
+  position: absolute;
+  inset: -10%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+}
+
+.ph-map__tiles img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.map-pin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background: #f4c94c;
+  box-shadow: 0 0 0 12px rgba(244, 201, 76, 0.28), 0 10px 24px rgba(15, 23, 42, 0.35);
+  transform: translate(-50%, -50%);
+}
+
+.map-caption {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  z-index: 3;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.82);
+  color: #ffffff;
+  padding: 10px 12px;
+}
+
+.map-caption small {
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 800;
+}
+
+.source-grid,
+.plan-summary,
+.results-grid,
+.results-detail-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.source-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.plan-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+
+.usage-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.usage-card {
+  min-height: 190px;
+  border: 1px solid #dbe5ee;
+  background: #ffffff;
+  color: inherit;
+  padding: 18px;
+  text-align: left;
+}
+
+.assessment-flow--dark .usage-card {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: #101418;
+}
+
+.usage-card.active {
+  border-color: #0f6cbd;
+  background: #eaf4fc;
+  box-shadow: 0 16px 32px rgba(15, 108, 189, 0.12);
+}
+
+.assessment-flow--dark .usage-card.active {
+  background: rgba(15, 108, 189, 0.18);
+}
+
+.usage-card span,
+.usage-card strong {
+  display: block;
+}
+
+.usage-card span {
+  color: #0f6cbd;
+  font-weight: 950;
+}
+
+.usage-card strong {
+  margin-top: 10px;
+  font-size: 1.9rem;
+}
+
+.usage-card p {
+  color: #607080;
+  line-height: 1.5;
+}
+
+.capacity-slider {
+  display: grid;
+  gap: 14px;
+  margin: 22px auto 0;
+  max-width: 760px;
+  border-radius: 16px;
+  background: #f3f7fb;
+  padding: 20px;
+}
+
+.assessment-flow--dark .capacity-slider {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.capacity-slider > div:first-child,
+.range-labels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.capacity-slider input {
+  width: 100%;
+  padding: 0;
+}
+
+.range-labels {
+  color: #607080;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.processing-panel {
+  display: grid;
+  min-height: 420px;
+  place-items: center;
   text-align: center;
-}
-
-.dark-mode .property-card {
-  border-color: #475569;
-}
-
-.property-card:hover {
-  border-color: #0F6CBD;
-  transform: translateY(-2px);
-}
-
-.property-card.active {
-  border-color: #0F6CBD;
-  background: #eff6ff;
-}
-
-.dark-mode .property-card.active {
-  background: #1e3a5f;
-}
-
-.property-icon {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.property-label {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #334155;
-  margin-bottom: 0.25rem;
-}
-
-.dark-mode .property-label {
-  color: #cbd5e1;
-}
-
-.property-description {
-  font-size: 0.875rem;
-  color: #64748b;
-}
-
-.btn-link {
-  background: none;
-  border: none;
-  color: #0F6CBD;
-  font-size: 1rem;
-  cursor: pointer;
-  margin-top: 1rem;
-  padding: 0.5rem;
-}
-
-.btn-link:hover {
-  text-decoration: underline;
-}
-
-.processing-step {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 4rem 1rem;
-  text-align: center;
-}
-
-.processing-container {
-  background: white;
-  border-radius: 24px;
-  padding: 4rem 2rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-}
-
-.dark-mode .processing-container {
-  background: #2d3748;
 }
 
 .spinner {
-  width: 60px;
-  height: 60px;
-  border: 4px solid #e2e8f0;
-  border-top-color: #0F6CBD;
+  width: 58px;
+  height: 58px;
+  border: 5px solid #dce8f2;
+  border-top-color: #0f6cbd;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 2rem;
+  animation: spin 0.9s linear infinite;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-.processing-message {
-  font-size: 1.125rem;
-  color: #64748b;
+.results-panel {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
 }
 
-.results-step {
-  max-width: 800px;
-  margin: 0 auto;
+.confidence {
+  border-radius: 999px;
+  background: rgba(4, 120, 87, 0.12);
+  color: #047857;
+  padding: 8px 12px;
+  font-weight: 950;
 }
 
-.results-container {
-  background: white;
-  border-radius: 24px;
-  padding: 2.5rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+.payment-result-card,
+.results-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.dark-mode .results-container {
-  background: #2d3748;
+.payment-result-card {
+  gap: 14px;
 }
 
-.results-title {
-  font-size: 2rem;
-  font-weight: 800;
-  color: #0F6CBD;
-  text-align: center;
-  margin-bottom: 2rem;
+.payment-result-card > div {
+  min-height: 118px;
 }
 
-.dark-mode .results-title {
-  color: #F4C94C;
+.savings-result {
+  background: #f4c94c !important;
+  color: #1a1c1e;
+  border: 2px solid #1a1c1e;
+  box-shadow: 0 16px 34px rgba(244, 201, 76, 0.32);
 }
 
-.payment-swap-card {
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2rem;
+.savings-result span {
+  color: #3a2a00;
 }
 
-.dark-mode .payment-swap-card {
-  background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
+.savings-result strong {
+  color: #111418;
+  font-size: clamp(2rem, 4vw, 3rem);
 }
 
-.swap-comparison {
+.savings-result.negative {
+  background: #b45309 !important;
+  color: #ffffff;
+  border-color: #7c2d12;
+  box-shadow: 0 16px 34px rgba(180, 83, 9, 0.24);
+}
+
+.savings-result.negative span,
+.savings-result.negative strong {
+  color: #ffffff;
+}
+
+.save-assessment-card,
+.saved-assessments {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 2rem;
-  margin-bottom: 1.5rem;
-}
-
-.swap-value {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: #334155;
-}
-
-.dark-mode .swap-value {
-  color: #cbd5e1;
-}
-
-.swap-value.highlight {
-  color: #16a34a;
-}
-
-.dark-mode .swap-value.highlight {
-  color: #4ade80;
-}
-
-.swap-arrow-lg {
-  font-size: 3rem;
-  color: #94a3b8;
-}
-
-.savings-hero {
-  text-align: center;
-}
-
-.savings-banner {
-  padding: 1rem 2rem;
-  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-  border-radius: 12px;
-  color: white;
-  font-size: 1.25rem;
-}
-
-.breakdown-card {
-  background: #f8fafc;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid #dbe5ee;
   border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2rem;
+  background: #ffffff;
+  padding: 18px;
+  box-shadow: 0 1px 16px rgba(15, 23, 42, 0.08);
 }
 
-.dark-mode .breakdown-card {
-  background: #1a1c1e;
+.assessment-flow--dark .save-assessment-card,
+.assessment-flow--dark .saved-assessments {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.card-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #334155;
-  margin-bottom: 1.5rem;
+.save-assessment-card h3 {
+  margin: 6px 0 0;
+  font-size: 1.35rem;
 }
 
-.dark-mode .card-title {
-  color: #f1f5f9;
+.save-assessment-card p {
+  margin: 8px 0 0;
+  color: #607080;
+  line-height: 1.45;
 }
 
-.breakdown-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.breakdown-item {
-  text-align: center;
-}
-
-.breakdown-label {
-  display: block;
-  font-size: 0.875rem;
-  color: #64748b;
-  margin-bottom: 0.5rem;
-}
-
-.breakdown-value {
-  display: block;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #0F6CBD;
-}
-
-.dark-mode .breakdown-value {
-  color: #F4C94C;
-}
-
-.confidence-score {
-  padding: 1.5rem;
-  background: white;
+.save-button {
+  flex: 0 0 auto;
+  min-height: 48px;
+  border: 0;
   border-radius: 12px;
-  margin-bottom: 1rem;
+  background: #0f6cbd;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 950;
+  padding: 12px 18px;
+  box-shadow: 0 12px 26px rgba(15, 108, 189, 0.2);
 }
 
-.dark-mode .confidence-score {
-  background: #2d3748;
+.save-button:disabled {
+  cursor: default;
+  opacity: 0.68;
 }
 
-.confidence-label {
-  display: block;
-  font-size: 0.875rem;
-  color: #64748b;
-  margin-bottom: 0.5rem;
+.save-success {
+  color: #047857 !important;
+  font-weight: 900;
 }
 
-.confidence-bar {
-  height: 12px;
-  background: #e2e8f0;
-  border-radius: 6px;
-  overflow: hidden;
-  margin-bottom: 0.5rem;
-}
-
-.dark-mode .confidence-bar {
-  background: #1a1c1e;
-}
-
-.confidence-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #16a34a 0%, #22c55e 100%);
-  transition: width 0.5s ease;
-}
-
-.confidence-value {
-  font-weight: 700;
-  color: #16a34a;
-}
-
-.disclaimer {
-  font-size: 0.75rem;
-  color: #94a3b8;
-  font-style: italic;
-}
-
-.secondary-metrics {
-  padding: 1.5rem;
-  background: #f8fafc;
-  border-radius: 12px;
-  margin-bottom: 2rem;
-}
-
-.dark-mode .secondary-metrics {
-  background: #1a1c1e;
-}
-
-.metrics-title {
-  font-size: 1rem;
-  color: #64748b;
-  margin-bottom: 1rem;
-}
-
-.metrics-grid {
+.saved-assessments {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+  align-items: stretch;
 }
 
-.metric-item {
-  text-align: center;
+.saved-assessments--compact {
+  margin-top: 4px;
+  padding: 14px;
 }
 
-.metric-label {
-  display: block;
-  font-size: 0.75rem;
-  color: #94a3b8;
-  margin-bottom: 0.25rem;
+.saved-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.metric-value {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #334155;
+.saved-list--scrollable {
+  display: flex;
+  flex-direction: column;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 5px;
 }
 
-.dark-mode .metric-value {
-  color: #cbd5e1;
+.saved-list--scrollable .saved-item {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
-.cta-section {
-  text-align: center;
-  padding-top: 1rem;
+.saved-list--compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.saved-item {
+  display: grid;
+  gap: 5px;
+  border-radius: 12px;
+  background: #f3f7fb;
+  padding: 12px;
+}
+
+.assessment-flow--dark .saved-item {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.saved-item strong {
+  color: #0f6cbd;
+  font-size: 1.15rem;
+}
+
+.saved-item span,
+.saved-item small,
+.saved-empty {
+  color: #607080;
+  font-weight: 800;
+}
+
+.results-detail-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.detail-card {
+  display: grid;
+  gap: 10px;
+}
+
+.detail-card--highlight {
+  border-color: #0f6cbd;
+  background: #f0f7ff;
+}
+
+.detail-card--highlight strong {
+  color: #0f6cbd;
+}
+
+.card-link {
+  display: inline-block;
+  margin-top: 10px;
+  color: #0f6cbd;
+  font-weight: 800;
+  font-size: 0.85rem;
+  text-decoration: underline;
+}
+
+.detail-card p,
+.detail-card small {
+  margin: 0;
+  color: #607080;
+  line-height: 1.55;
+}
+
+.mini-bars {
+  display: flex;
+  align-items: end;
+  gap: 7px;
+  height: 120px;
+  padding-top: 10px;
+}
+
+.mini-bars span {
+  flex: 1;
+  min-height: 10px;
+  border-radius: 999px 999px 0 0;
+  background: #0f6cbd;
+}
+
+.results-actions {
+  align-items: center;
+}
+
+.link-button {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
 }
 
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  z-index: 1000;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.56);
+  padding: 18px;
 }
 
-.modal-content {
-  background: white;
-  border-radius: 24px;
-  padding: 2rem;
-  max-width: 500px;
-  width: 100%;
+.lead-modal {
   position: relative;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-}
-
-.dark-mode .modal-content {
-  background: #2d3748;
+  width: min(520px, 100%);
+  padding: 24px;
 }
 
 .modal-close {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: none;
-  border: none;
-  font-size: 2rem;
-  color: #94a3b8;
-  cursor: pointer;
-  line-height: 1;
-}
-
-.modal-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #0F6CBD;
-  margin-bottom: 0.5rem;
-}
-
-.dark-mode .modal-title {
-  color: #F4C94C;
-}
-
-.modal-description {
-  color: #64748b;
-  margin-bottom: 1.5rem;
-}
-
-.lead-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-group label {
-  font-weight: 600;
-  color: #334155;
-}
-
-.dark-mode .form-group label {
-  color: #cbd5e1;
-}
-
-.form-group input {
-  padding: 0.75rem 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 1rem;
-  transition: border-color 0.3s ease;
-}
-
-.dark-mode .form-group input {
-  background: #1a1c1e;
-  border-color: #475569;
-  color: #cbd5e1;
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: #0F6CBD;
-}
-
-.btn-primary {
-  padding: 1rem 2rem;
-  background: linear-gradient(135deg, #0F6CBD 0%, #0A4D8D 100%);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 1.125rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.success-icon {
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  top: 12px;
+  right: 12px;
+  border: 0;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 3rem;
-  color: white;
-  margin: 0 auto 1.5rem;
+  background: #eef4f9;
+  color: #52616f;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
 }
 
-.confirmation-modal {
+.lead-modal--success {
   text-align: center;
 }
 
-.confirmation-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #16a34a;
-  margin-bottom: 1rem;
+.success-mark {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  border-radius: 50%;
+  background: #047857;
+  color: #ffffff;
+  font-weight: 950;
+  margin: 0 auto 14px;
 }
 
-.dark-mode .confirmation-title {
-  color: #4ade80;
-}
-
-.confirmation-text {
-  color: #64748b;
-  margin-bottom: 2rem;
-  line-height: 1.6;
-}
-
-@media (max-width: 768px) {
-  .intent-title {
-    font-size: 1.75rem;
-  }
-  
-  .payment-swap-example {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .swap-arrow {
-    transform: rotate(90deg);
-  }
-  
-  .swap-comparison {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .swap-arrow-lg {
-    transform: rotate(90deg);
-  }
-  
-  .breakdown-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .metrics-grid {
+@media (max-width: 860px) {
+  .assessment-hero,
+  .step-panel--split,
+  .step-panel--map,
+  .usage-grid,
+  .source-grid,
+  .plan-summary,
+  .payment-result-card,
+  .results-grid,
+  .saved-list,
+  .results-detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .assessment-hero {
+    min-height: auto;
+    padding-top: 20px;
+  }
+
+  .swap-row {
+    grid-template-columns: 1fr;
+  }
+
+  .swap-connector {
+    padding: 0;
+  }
+
+  .stepper {
+    overflow-x: auto;
+  }
+
+  .step-dot {
+    min-width: 140px;
+  }
+
+  .map-caption,
+  .savings-strip,
+  .capacity-slider > div:first-child,
+  .range-labels,
+  .results-hero,
+  .save-assessment-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .actions,
+  .results-actions {
+    flex-direction: column;
+  }
+
+  .primary-button,
+  .secondary-button,
+  .ghost-button,
+  .save-button,
+  .link-button {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>
