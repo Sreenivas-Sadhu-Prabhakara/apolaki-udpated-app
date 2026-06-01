@@ -324,6 +324,7 @@
           <button class="primary-button" type="button" @click="continueToInstallerJourney">Get my lower monthly plan installed</button>
           <button class="secondary-button link-button" type="button" @click="continueToProtectedRoute('/finance')">Explore Financing Options</button>
           <button class="ghost-button link-button" type="button" @click="continueToProtectedRoute('/marketplace')">View matching installers</button>
+          <router-link class="feedback-button link-button" to="/feedback">Share feedback</router-link>
           <button class="ghost-button" type="button" @click="startOver">Start a new assessment</button>
         </div>
         <p v-if="!userStore.isAuthenticated" class="auth-gate-note">
@@ -1086,6 +1087,24 @@ onMounted(() => {
 .ghost-button {
   background: transparent;
   color: #52616f;
+}
+
+.feedback-button {
+  min-height: 46px;
+  border: 1px solid rgba(15, 108, 189, 0.2);
+  background: #ffffff;
+  color: #0f6cbd;
+  padding: 12px 16px;
+}
+
+.feedback-button:hover {
+  background: #e8f2fb;
+}
+
+.assessment-flow--dark .feedback-button {
+  border-color: rgba(244, 201, 76, 0.3);
+  background: rgba(244, 201, 76, 0.12);
+  color: #f4c94c;
 }
 
 .primary-button:disabled,

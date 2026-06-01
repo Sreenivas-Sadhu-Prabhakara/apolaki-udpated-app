@@ -46,6 +46,11 @@
               Get Help
             </router-link>
           </li>
+          <li>
+            <router-link to="/feedback" class="nav-link nav-link-feedback transition">
+              Feedback
+            </router-link>
+          </li>
 
           <!-- \"More\" dropdown for secondary + role-specific links -->
           <li class="nav-more-wrapper">
@@ -130,6 +135,9 @@
             </li>
             <li v-else>
               <router-link to="/messaging?support=true" class="mobile-link" @click="mobileMenuOpen = false">💬 Leave a Message</router-link>
+            </li>
+            <li>
+              <router-link to="/feedback" class="mobile-link mobile-link-feedback" @click="mobileMenuOpen = false">Feedback</router-link>
             </li>
             <li v-if="userStore.user" class="mt-2 pt-2 border-t border-white/20">
               <button @click="logout(); mobileMenuOpen = false" class="mobile-link w-full text-left">Logout</button>
@@ -366,6 +374,18 @@ const logout = async () => {
   font-weight: 600;
 }
 
+.nav-link-feedback {
+  background: #0F6CBD;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.nav-link-feedback:hover,
+.nav-link-feedback.router-link-active {
+  background: #0b5ca4;
+  color: #ffffff;
+}
+
 .navbar-kinetic--dark .nav-link {
   color: rgba(255, 255, 255, 0.78);
 }
@@ -374,6 +394,13 @@ const logout = async () => {
 .navbar-kinetic--dark .nav-link.router-link-active {
   color: #F4C94C;
   background: rgba(244, 201, 76, 0.12);
+}
+
+.navbar-kinetic--dark .nav-link-feedback,
+.navbar-kinetic--dark .nav-link-feedback:hover,
+.navbar-kinetic--dark .nav-link-feedback.router-link-active {
+  background: #F4C94C;
+  color: #142033;
 }
 
 /* "More" dropdown ─────────────────────────────────── */
@@ -629,6 +656,12 @@ const logout = async () => {
 .mobile-link:hover,
 .mobile-link.router-link-active {
   background: rgba(255, 255, 255, 0.15);
+}
+
+.mobile-link-feedback {
+  background: #0F6CBD;
+  color: #ffffff;
+  font-weight: 800;
 }
 
 @media (max-width: 768px) {

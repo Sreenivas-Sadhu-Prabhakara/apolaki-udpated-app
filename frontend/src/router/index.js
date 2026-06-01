@@ -118,6 +118,12 @@ const routes = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/feedback',
+    name: 'Feedback',
+    component: () => import('../views/Feedback.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/kitchen-sink',
     redirect: '/dashboard'
   },
