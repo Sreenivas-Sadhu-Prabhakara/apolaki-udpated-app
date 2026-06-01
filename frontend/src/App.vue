@@ -47,9 +47,19 @@
             </router-link>
           </li>
           <li>
-            <router-link to="/feedback" class="nav-link nav-link-feedback transition">
-              Feedback
-            </router-link>
+            <a
+              :href="feedbackFormUrl"
+              class="nav-link nav-link-feedback transition"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open feedback form"
+              title="Share feedback"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 5.8A2.8 2.8 0 0 1 6.8 3h10.4A2.8 2.8 0 0 1 20 5.8v7.4a2.8 2.8 0 0 1-2.8 2.8H9.1L5 20v-4.2a2.8 2.8 0 0 1-1-2.1V5.8Z" />
+                <path d="M8 8h8M8 11.5h5" />
+              </svg>
+            </a>
           </li>
 
           <!-- \"More\" dropdown for secondary + role-specific links -->
@@ -137,7 +147,13 @@
               <router-link to="/messaging?support=true" class="mobile-link" @click="mobileMenuOpen = false">💬 Leave a Message</router-link>
             </li>
             <li>
-              <router-link to="/feedback" class="mobile-link mobile-link-feedback" @click="mobileMenuOpen = false">Feedback</router-link>
+              <a :href="feedbackFormUrl" class="mobile-link mobile-link-feedback" target="_blank" rel="noopener noreferrer" @click="mobileMenuOpen = false">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 5.8A2.8 2.8 0 0 1 6.8 3h10.4A2.8 2.8 0 0 1 20 5.8v7.4a2.8 2.8 0 0 1-2.8 2.8H9.1L5 20v-4.2a2.8 2.8 0 0 1-1-2.1V5.8Z" />
+                  <path d="M8 8h8M8 11.5h5" />
+                </svg>
+                Feedback
+              </a>
             </li>
             <li v-if="userStore.user" class="mt-2 pt-2 border-t border-white/20">
               <button @click="logout(); mobileMenuOpen = false" class="mobile-link w-full text-left">Logout</button>
@@ -175,6 +191,7 @@ const themeStore = useThemeStore()
 const messagingStore = useMessagingStore()
 const mobileMenuOpen = ref(false)
 const moreMenuOpen = ref(false)
+const feedbackFormUrl = 'https://forms.cloud.microsoft/r/9FYr3SSbvs'
 
 // Computed so templates can use it reactively
 const isDarkMode = computed(() => themeStore.isDarkMode)
@@ -375,9 +392,23 @@ const logout = async () => {
 }
 
 .nav-link-feedback {
+  align-items: center;
   background: #0F6CBD;
   color: #ffffff;
+  display: inline-flex;
   font-weight: 700;
+  justify-content: center;
+  min-width: 36px;
+}
+
+.nav-link-feedback svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
 }
 
 .nav-link-feedback:hover,
@@ -659,9 +690,22 @@ const logout = async () => {
 }
 
 .mobile-link-feedback {
+  align-items: center;
   background: #0F6CBD;
   color: #ffffff;
+  display: flex;
+  gap: 0.55rem;
   font-weight: 800;
+}
+
+.mobile-link-feedback svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
 }
 
 @media (max-width: 768px) {

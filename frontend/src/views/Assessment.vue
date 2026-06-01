@@ -324,7 +324,20 @@
           <button class="primary-button" type="button" @click="continueToInstallerJourney">Get my lower monthly plan installed</button>
           <button class="secondary-button link-button" type="button" @click="continueToProtectedRoute('/finance')">Explore Financing Options</button>
           <button class="ghost-button link-button" type="button" @click="continueToProtectedRoute('/marketplace')">View matching installers</button>
-          <router-link class="feedback-button link-button" to="/feedback">Share feedback</router-link>
+          <a
+            class="feedback-button link-button"
+            href="https://forms.cloud.microsoft/r/9FYr3SSbvs"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Open feedback form"
+            title="Share feedback"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 5.8A2.8 2.8 0 0 1 6.8 3h10.4A2.8 2.8 0 0 1 20 5.8v7.4a2.8 2.8 0 0 1-2.8 2.8H9.1L5 20v-4.2a2.8 2.8 0 0 1-1-2.1V5.8Z" />
+              <path d="M8 8h8M8 11.5h5" />
+            </svg>
+            Feedback
+          </a>
           <button class="ghost-button" type="button" @click="startOver">Start a new assessment</button>
         </div>
         <p v-if="!userStore.isAuthenticated" class="auth-gate-note">
@@ -1090,11 +1103,23 @@ onMounted(() => {
 }
 
 .feedback-button {
+  align-items: center;
   min-height: 46px;
   border: 1px solid rgba(15, 108, 189, 0.2);
   background: #ffffff;
   color: #0f6cbd;
+  gap: 8px;
   padding: 12px 16px;
+}
+
+.feedback-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
 }
 
 .feedback-button:hover {
