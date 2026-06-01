@@ -135,7 +135,18 @@ const routes = [
     meta: {
       requiresAuth: true,
       allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'],
-      requiredConsents: ['partner_sharing'],
+      requiredConsents: ['installation_monitoring', 'partner_sharing'],
+      consentBypassRoles: ['admin', 'superadmin']
+    }
+  },
+  {
+    path: '/installer',
+    name: 'InstallerPortal',
+    component: () => import('../views/DealerPortal.vue'),
+    meta: {
+      requiresAuth: true,
+      allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'],
+      requiredConsents: ['installation_monitoring', 'partner_sharing'],
       consentBypassRoles: ['admin', 'superadmin']
     }
   },

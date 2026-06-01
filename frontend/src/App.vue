@@ -80,7 +80,7 @@
                 </li>
                 <div class="dropdown-divider"></div>
                 <li v-if="canOpenDealerPortal">
-                  <router-link to="/dealer" class="dropdown-link" @click="moreMenuOpen = false">🔧 Dealer Portal</router-link>
+                  <router-link to="/installer" class="dropdown-link" @click="moreMenuOpen = false">🔧 Installer Portal</router-link>
                 </li>
                 <li v-if="canOpenOperationsPortal">
                   <router-link to="/operations" class="dropdown-link" @click="moreMenuOpen = false">🛠️ Operations</router-link>
@@ -132,7 +132,7 @@
             <li><router-link to="/installations" class="mobile-link" @click="mobileMenuOpen = false">5. Installations</router-link></li>
             <div class="dropdown-divider"></div>
             <li v-if="canOpenDealerPortal">
-              <router-link to="/dealer" class="mobile-link" @click="mobileMenuOpen = false">🔧 Dealer Portal</router-link>
+              <router-link to="/installer" class="mobile-link" @click="mobileMenuOpen = false">🔧 Installer Portal</router-link>
             </li>
             <li v-if="canOpenOperationsPortal">
               <router-link to="/operations" class="mobile-link" @click="mobileMenuOpen = false">🛠️ Operations</router-link>
@@ -216,8 +216,7 @@ const canAccessConsentFeature = (...consents) => {
 }
 
 const canOpenDealerPortal = computed(() => {
-  return userStore.hasRole('admin', 'superadmin') ||
-    (userStore.hasRole('dealer', 'installer') && userStore.hasConsent('partner_sharing'))
+  return userStore.hasRole('dealer', 'installer', 'admin', 'superadmin')
 })
 
 const canOpenOperationsPortal = computed(() => {

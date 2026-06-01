@@ -135,6 +135,126 @@ function sanitizeAttachment(attachment) {
   };
 }
 
+function sanitizeLead(payload = {}) {
+  const contact = payload.contact || {};
+  return {
+    source: String(payload.source || 'messaging').slice(0, 100),
+    status: String(payload.status || 'new').slice(0, 50),
+    priority: String(payload.priority || 'new_lead').slice(0, 50),
+    assignedTo: String(payload.assignedTo || payload.assigned_to || '').slice(0, 255),
+    contact: {
+      name: String(contact.name || payload.name || '').slice(0, 160),
+      phone: String(contact.phone || payload.phone || '').slice(0, 80),
+      email: String(contact.email || payload.email || '').slice(0, 180)
+    },
+    message: String(payload.message || '').slice(0, 4000),
+    contextType: String(payload.contextType || payload.context_type || 'support').slice(0, 100),
+    contextId: payload.contextId || payload.context_id || null,
+    installerId: payload.installerId || payload.installer_id || null,
+    financierId: payload.financierId || payload.financier_id || null,
+    location: String(payload.location || '').slice(0, 255),
+    monthlyBill: Number.isFinite(Number(payload.monthlyBill || payload.monthly_bill))
+      ? Number(payload.monthlyBill || payload.monthly_bill)
+      : null,
+    assessment: payload.assessment || null
+  };
+}
+
+function serializeLead(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    source: row.source,
+    status: row.status,
+    priority: row.priority,
+    assignedTo: row.assigned_to || '',
+    contact: row.contact || {},
+    message: row.message || '',
+    contextType: row.context_type,
+    contextId: row.context_id,
+    installerId: row.installer_id,
+    financierId: row.financier_id,
+    location: row.location || '',
+    monthlyBill: row.monthly_bill,
+    assessment: row.assessment || null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+function userLeadAliases(user) {
+  return [
+    user.id,
+    user.email,
+    user.first_name,
+    user.last_name,
+    [user.first_name, user.last_name].filter(Boolean).join(' '),
+    normalizeRole(user.role) === 'dealer' ? 'installer' : ''
+  ].filter(Boolean).map(value => String(value).toLowerCase());
+}
+
+function canSeeLead(user, lead) {
+  if (isPrivileged(user)) return true;
+  const role = normalizeRole(user.role);
+  if (role !== 'dealer') return false;
+  const assignee = String(lead.assigned_to || '').trim().toLowerCase();
+  if (!assignee) return true;
+  return userLeadAliases(user).some(alias => assignee.includes(alias));
+}
+
+router.post('/anonymous-leads', async (req, res) => {
+  try {
+    const lead = await messaging.createAnonymousLead(sanitizeLead(req.body));
+    await audit(req, 'ANONYMOUS_LEAD_CREATED', 'anonymous_lead', lead.id, 'success', {
+      source: lead.source,
+      contextType: lead.context_type
+    });
+    res.status(201).json({ success: true, data: serializeLead(lead) });
+  } catch (error) {
+    console.error('Anonymous lead create failed:', error.message);
+    res.status(500).json({ success: false, error: 'Unable to save lead request.' });
+  }
+});
+
+router.get('/anonymous-leads', authenticateToken, authorizeRole('operations', 'dealer', 'installer', 'admin', 'superadmin'), async (req, res) => {
+  try {
+    const leads = await messaging.listAnonymousLeads();
+    const visibleLeads = leads.filter(lead => canSeeLead(req.user, lead)).map(serializeLead);
+    res.json({ success: true, count: visibleLeads.length, data: visibleLeads });
+  } catch (error) {
+    console.error('Anonymous lead list failed:', error.message);
+    res.status(500).json({ success: false, error: 'Unable to load lead inbox.' });
+  }
+});
+
+router.patch('/anonymous-leads/:leadId', authenticateToken, authorizeRole('operations', 'dealer', 'installer', 'admin', 'superadmin'), async (req, res) => {
+  try {
+    const existing = await messaging.getAnonymousLeadById(req.params.leadId);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Lead not found.', code: 'LEAD_NOT_FOUND' });
+    }
+    if (!canSeeLead(req.user, existing)) {
+      return res.status(403).json({ success: false, error: 'Lead access denied.', code: 'LEAD_DENIED' });
+    }
+
+    const sanitized = sanitizeLead(req.body);
+    const updated = await messaging.updateAnonymousLead(req.params.leadId, {
+      status: req.body?.status !== undefined ? sanitized.status : undefined,
+      assignedTo: req.body?.assignedTo !== undefined || req.body?.assigned_to !== undefined ? sanitized.assignedTo : undefined
+    });
+
+    await audit(req, 'ANONYMOUS_LEAD_UPDATED', 'anonymous_lead', updated.id, 'success', {
+      status: updated.status,
+      assignedTo: updated.assigned_to
+    });
+
+    res.json({ success: true, data: serializeLead(updated) });
+  } catch (error) {
+    console.error('Anonymous lead update failed:', error.message);
+    res.status(500).json({ success: false, error: 'Unable to update lead.' });
+  }
+});
+
 router.post('/push-subscription', authenticateToken, async (req, res) => {
   const { subscription, platform = 'web' } = req.body || {};
   if (!subscription) {
