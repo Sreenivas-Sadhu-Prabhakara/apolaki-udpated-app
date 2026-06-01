@@ -304,8 +304,11 @@ const mainBgClass = computed(() => {
 })
 
 const logout = async () => {
+  mobileMenuOpen.value = false
+  moreMenuOpen.value = false
+  messagingStore.resetSessionState()
   await userStore.logout()
-  router.push('/login')
+  await router.replace({ path: '/login', query: { loggedOut: '1' } })
 }
 </script>
 

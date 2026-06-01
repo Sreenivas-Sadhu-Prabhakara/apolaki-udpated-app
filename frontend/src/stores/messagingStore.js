@@ -202,6 +202,18 @@ export const useMessagingStore = defineStore('messaging', () => {
     }
   }
 
+  const resetSessionState = () => {
+    stopPolling()
+    conversations.value = []
+    currentConversation.value = null
+    messages.value = []
+    loading.value = false
+    error.value = null
+    securityBanner.value = null
+    isWidgetOpen.value = false
+    showConversationList.value = true
+  }
+
   const createConversation = async (payload) => {
     loading.value = true
     try {
@@ -238,6 +250,7 @@ export const useMessagingStore = defineStore('messaging', () => {
     fetchSecurityBanner,
     startPolling,
     stopPolling,
+    resetSessionState,
     createConversation
   }
 })

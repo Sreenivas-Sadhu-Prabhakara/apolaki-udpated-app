@@ -138,9 +138,12 @@ export const useUserStore = defineStore('user', () => {
   const logout = async () => {
     loading.value = true
     try {
+      clearSession()
+      clearAdminSession()
       await api.post('/auth/logout', null, { skipAuthRedirect: true })
     } finally {
       clearSession()
+      clearAdminSession()
       loading.value = false
     }
   }
