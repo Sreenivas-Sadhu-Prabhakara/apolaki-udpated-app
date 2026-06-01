@@ -191,20 +191,40 @@ function missingRouteConsents(to, userStore) {
   return requiredConsents.filter(key => !userStore.hasConsent(key))
 }
 
+function routeRequiredConsents(to, userStore) {
+  const requiredConsents = to.meta.requiredConsents || []
+  const bypassRoles = to.meta.consentBypassRoles || []
+
+  if (!requiredConsents.length) return []
+  if (bypassRoles.includes(userStore.userRole)) return []
+  return requiredConsents
+}
+
 // Navigation guard for authentication & role-based access
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
   const isElevated = ['admin', 'superadmin'].includes(userStore.userRole)
   const missingConsents = missingRouteConsents(to, userStore)
+  const requiredRouteConsents = routeRequiredConsents(to, userStore)
   const requestedNext = typeof to.query.next === 'string' && to.query.next.startsWith('/')
     ? to.query.next
     : null
+  const requestedConsentList = String(to.query.required || '')
+    .split(',')
+    .map(key => key.trim())
+    .filter(Boolean)
 
   if (to.meta.requiresAuth && !userStore.isAuthenticated) {
     next({ path: '/login', query: { next: to.fullPath } })
   } else if (to.meta.requiresAuth && !to.meta.allowsPendingConsent && !userStore.onboardingComplete && !isElevated) {
-    next({ path: '/consent', query: { next: to.fullPath } })
-  } else if (to.name === 'ConsentOnboarding' && userStore.onboardingComplete) {
+    next({
+      path: '/consent',
+      query: {
+        next: to.fullPath,
+        ...(requiredRouteConsents.length ? { required: requiredRouteConsents.join(',') } : {})
+      }
+    })
+  } else if (to.name === 'ConsentOnboarding' && userStore.onboardingComplete && !requestedConsentList.length) {
     next(requestedNext || '/assessment')
   } else if (to.meta.publicOnly && userStore.isAuthenticated) {
     next(userStore.onboardingComplete ? requestedNext || '/assessment' : '/consent')

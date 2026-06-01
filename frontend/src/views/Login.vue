@@ -100,7 +100,8 @@ async function handleLogin() {
   if (profile) {
     const nextPath = requestedNextPath || localStorage.getItem(POST_LOGIN_REDIRECT_KEY) || '/assessment'
     localStorage.removeItem(POST_LOGIN_REDIRECT_KEY)
-    await router.replace(profile.onboardingComplete ? nextPath : { path: '/consent', query: { next: nextPath } })
+    const onboardingComplete = profile.onboardingComplete || userStore.onboardingComplete
+    await router.replace(onboardingComplete ? nextPath : { path: '/consent', query: { next: nextPath } })
   }
 }
 </script>
