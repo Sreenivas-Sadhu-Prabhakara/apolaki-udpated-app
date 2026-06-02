@@ -26,7 +26,15 @@ export function getPool(databaseUrl) {
     );
   }
 
-  pool = new Pool({ connectionString: databaseUrl });
+  const needsSsl = databaseUrl.includes('neon.tech') ||
+    databaseUrl.includes('neon-') ||
+    databaseUrl.includes('sslmode=require') ||
+    process.env.DB_SSL === 'true';
+
+  pool = new Pool({
+    connectionString: databaseUrl,
+    ssl: needsSsl ? { rejectUnauthorized: false } : false,
+  });
 
   pool.on('error', (err) => {
     console.error('[seed:db] Unexpected pool error', err.message);

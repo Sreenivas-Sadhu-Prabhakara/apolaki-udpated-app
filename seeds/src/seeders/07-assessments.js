@@ -201,8 +201,24 @@ export async function seed() {
           annual_usage, sun_exposure, obstruction_level, recommended_capacity,
           estimated_cost, savings_estimate, status, notes, created_at, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16, NOW(), NOW())
-       ON CONFLICT (id) DO NOTHING
-       RETURNING id`,
+       ON CONFLICT (id) DO UPDATE SET
+         user_id = EXCLUDED.user_id,
+         address = EXCLUDED.address,
+         city = EXCLUDED.city,
+         state = EXCLUDED.state,
+         zip_code = EXCLUDED.zip_code,
+         roof_condition = EXCLUDED.roof_condition,
+         roof_area = EXCLUDED.roof_area,
+         annual_usage = EXCLUDED.annual_usage,
+         sun_exposure = EXCLUDED.sun_exposure,
+         obstruction_level = EXCLUDED.obstruction_level,
+         recommended_capacity = EXCLUDED.recommended_capacity,
+         estimated_cost = EXCLUDED.estimated_cost,
+         savings_estimate = EXCLUDED.savings_estimate,
+         status = EXCLUDED.status,
+         notes = EXCLUDED.notes,
+         updated_at = NOW()
+       RETURNING id, (xmax = 0) AS inserted`,
       [
         a.id, a.user_id, a.address, a.city, a.state, a.zip_code,
         a.roof_condition, a.roof_area, a.annual_usage, a.sun_exposure,
@@ -214,7 +230,7 @@ export async function seed() {
     results.push({
       address: `${a.city} – ${a.address.slice(0, 25)}`,
       capacity: `${a.recommended_capacity} kW`,
-      status: res.rowCount > 0 ? 'created' : 'skipped (exists)',
+      status: res.rows[0]?.inserted ? 'created' : 'repaired',
     });
   }
 

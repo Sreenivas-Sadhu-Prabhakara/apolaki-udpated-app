@@ -121,8 +121,21 @@ export async function seed() {
          (id, user_id, name, address, city, state, zip_code, latitude, longitude,
           capacity, panel_count, inverter_type, status, created_at, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13, NOW(), NOW())
-       ON CONFLICT (id) DO NOTHING
-       RETURNING id, name`,
+       ON CONFLICT (id) DO UPDATE SET
+         user_id = EXCLUDED.user_id,
+         name = EXCLUDED.name,
+         address = EXCLUDED.address,
+         city = EXCLUDED.city,
+         state = EXCLUDED.state,
+         zip_code = EXCLUDED.zip_code,
+         latitude = EXCLUDED.latitude,
+         longitude = EXCLUDED.longitude,
+         capacity = EXCLUDED.capacity,
+         panel_count = EXCLUDED.panel_count,
+         inverter_type = EXCLUDED.inverter_type,
+         status = EXCLUDED.status,
+         updated_at = NOW()
+       RETURNING id, name, (xmax = 0) AS inserted`,
       [
         inst.id, inst.user_id, inst.name, inst.address, inst.city, inst.state,
         inst.zip_code, inst.latitude, inst.longitude, inst.capacity,
@@ -133,7 +146,7 @@ export async function seed() {
     results.push({
       name: inst.name,
       capacity: `${inst.capacity} kW`,
-      status: res.rowCount > 0 ? 'created' : 'skipped (exists)',
+      status: res.rows[0]?.inserted ? 'created' : 'repaired',
     });
   }
 

@@ -112,10 +112,10 @@ async function teardownAll() {
 // ─── Main ────────────────────────────────────────────────────────────────
 async function main() {
   const opts = parseArgs(process.argv);
-  const dbUrl = process.env.DATABASE_URL;
+  const dbUrl = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
 
   if (!dbUrl) {
-    logger.error('DATABASE_URL not set. Copy .env.example → .env and configure it.');
+    logger.error('DATABASE_URL or NETLIFY_DATABASE_URL not set. Copy .env.example → .env and configure it.');
     process.exit(1);
   }
 

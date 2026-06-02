@@ -154,8 +154,18 @@ export async function seed() {
       `INSERT INTO marketplace_products
          (id, name, category, description, price, currency, inventory, rating, active, metadata, created_at, updated_at)
        VALUES ($1,$2,$3,$4,$5,'USD',$6,$7,true,$8, NOW(), NOW())
-       ON CONFLICT (id) DO NOTHING
-       RETURNING id, name`,
+       ON CONFLICT (id) DO UPDATE SET
+         name = EXCLUDED.name,
+         category = EXCLUDED.category,
+         description = EXCLUDED.description,
+         price = EXCLUDED.price,
+         currency = EXCLUDED.currency,
+         inventory = EXCLUDED.inventory,
+         rating = EXCLUDED.rating,
+         active = true,
+         metadata = EXCLUDED.metadata,
+         updated_at = NOW()
+       RETURNING id, name, (xmax = 0) AS inserted`,
       [p.id, p.name, p.category, p.description, p.price, p.inventory, p.rating, JSON.stringify(p.metadata)]
     );
 
@@ -163,7 +173,7 @@ export async function seed() {
       name: p.name,
       category: p.category,
       price: `$${p.price}`,
-      status: res.rowCount > 0 ? 'created' : 'skipped (exists)',
+      status: res.rows[0]?.inserted ? 'created' : 'repaired',
     });
   }
 

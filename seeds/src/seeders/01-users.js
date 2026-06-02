@@ -9,6 +9,45 @@ import bcrypt from 'bcryptjs';
 import { query } from '../db.js';
 
 const BCRYPT_ROUNDS = parseInt(process.env.SEED_BCRYPT_ROUNDS || '10', 10);
+const CONSENT_VERSION = '1.0';
+
+const CONSENTS = [
+  {
+    key: 'profile_account',
+    purpose: 'Create your account, maintain your profile, and apply your access role.',
+    data_scope: ['identity', 'contact_profile', 'access_role'],
+  },
+  {
+    key: 'location_assessment',
+    purpose: 'Calculate solar potential and save assessments you request.',
+    data_scope: ['property_location', 'solar_assessment'],
+  },
+  {
+    key: 'installation_monitoring',
+    purpose: 'Display system production, alerts, and service history after installation.',
+    data_scope: ['installation', 'monitoring'],
+  },
+  {
+    key: 'contracts_signing',
+    purpose: 'Prepare, review, and sign energy or installation agreements.',
+    data_scope: ['contracts', 'signatures'],
+  },
+  {
+    key: 'finance_data',
+    purpose: 'Support financing offers, billing, and related financial workflows.',
+    data_scope: ['finance'],
+  },
+  {
+    key: 'partner_sharing',
+    purpose: 'Share relevant project data with assigned delivery and support teams.',
+    data_scope: ['dealer_sharing', 'operations_sharing'],
+  },
+  {
+    key: 'installer_messaging',
+    purpose: 'Coordinate installation questions, support requests, and project documents with your recommended or admin-assigned installer inside Apolaki.',
+    data_scope: ['message_envelopes', 'project_context', 'attachment_metadata', 'in_app_notifications'],
+  },
+];
 
 /** Fixed UUIDs for deterministic cross-seeder references */
 export const USER_IDS = {
@@ -108,15 +147,45 @@ export async function seed() {
     const res = await query(
       `INSERT INTO users (id, email, password_hash, first_name, last_name, phone, role, active, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, true, NOW(), NOW())
-       ON CONFLICT (id) DO NOTHING
-       RETURNING id, email, role`,
+       ON CONFLICT (id) DO UPDATE SET
+         email = EXCLUDED.email,
+         password_hash = EXCLUDED.password_hash,
+         first_name = EXCLUDED.first_name,
+         last_name = EXCLUDED.last_name,
+         phone = EXCLUDED.phone,
+         role = EXCLUDED.role,
+         active = true,
+         updated_at = NOW()
+       RETURNING id, email, role, (xmax = 0) AS inserted`,
       [user.id, user.email, hash, user.first_name, user.last_name, user.phone, user.role]
     );
+
+    for (const consent of CONSENTS) {
+      await query(
+        `INSERT INTO user_consents (
+           user_id, consent_key, consent_version, decision, purpose, data_scope,
+           granted_at, revoked_at, actor_id, source, created_at, updated_at
+         )
+         VALUES ($1, $2, $3, 'granted', $4, $5, NOW(), NULL, $1, 'seed', NOW(), NOW())
+         ON CONFLICT (user_id, consent_key, consent_version)
+         DO UPDATE SET
+           decision = 'granted',
+           purpose = EXCLUDED.purpose,
+           data_scope = EXCLUDED.data_scope,
+           granted_at = NOW(),
+           revoked_at = NULL,
+           actor_id = EXCLUDED.actor_id,
+           source = 'seed',
+           updated_at = NOW()`,
+        [user.id, consent.key, CONSENT_VERSION, consent.purpose, JSON.stringify(consent.data_scope)]
+      );
+    }
 
     results.push({
       email: user.email,
       role: user.role,
-      status: res.rowCount > 0 ? 'created' : 'skipped (exists)',
+      status: res.rows[0]?.inserted ? 'created' : 'repaired',
+      consents: CONSENTS.length,
     });
   }
 

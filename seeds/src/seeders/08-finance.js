@@ -213,8 +213,19 @@ export async function seed() {
          (id, user_id, transaction_id, amount, currency, type, category,
           status, transaction_date, description, metadata, created_at, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, NOW(), NOW())
-       ON CONFLICT (id) DO NOTHING
-       RETURNING id`,
+       ON CONFLICT (id) DO UPDATE SET
+         user_id = EXCLUDED.user_id,
+         transaction_id = EXCLUDED.transaction_id,
+         amount = EXCLUDED.amount,
+         currency = EXCLUDED.currency,
+         type = EXCLUDED.type,
+         category = EXCLUDED.category,
+         status = EXCLUDED.status,
+         transaction_date = EXCLUDED.transaction_date,
+         description = EXCLUDED.description,
+         metadata = EXCLUDED.metadata,
+         updated_at = NOW()
+       RETURNING id, (xmax = 0) AS inserted`,
       [
         f.id, f.user_id, f.transaction_id, f.amount, f.currency,
         f.type, f.category, f.status, f.transaction_date,
@@ -226,7 +237,7 @@ export async function seed() {
       txn: f.transaction_id,
       type: f.type,
       amount: `${f.currency} ${f.amount.toLocaleString()}`,
-      status: res.rowCount > 0 ? 'created' : 'skipped (exists)',
+      status: res.rows[0]?.inserted ? 'created' : 'repaired',
     });
   }
 
