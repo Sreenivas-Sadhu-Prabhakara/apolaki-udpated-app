@@ -365,7 +365,7 @@
                   </div>
                 </div>
               </div>
-              <router-link :to="`/messaging?installerId=${installer.id}`" class="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition">
+              <router-link to="/messaging?support=true" class="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition">
                 💬 Message
               </router-link>
             </div>
