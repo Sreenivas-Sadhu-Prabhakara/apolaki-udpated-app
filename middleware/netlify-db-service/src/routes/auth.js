@@ -254,20 +254,26 @@ router.get('/facebook', startOAuth('facebook', ['public_profile', 'email']));
 router.get('/facebook/callback', requireOAuthState('facebook'), finishOAuth('facebook'));
 
 router.post('/logout', async (req, res) => {
-  const sessionToken = readCookie(req, SESSION_COOKIE_NAME);
-  res.clearCookie(SESSION_COOKIE_NAME, expiredSessionCookieOptions());
+  // Logout must never fail the client: always clear the cookie and return success,
+  // even if session lookup/invalidation/audit throws.
+  try {
+    const sessionToken = readCookie(req, SESSION_COOKIE_NAME);
+    res.clearCookie(SESSION_COOKIE_NAME, expiredSessionCookieOptions());
 
-  if (sessionToken) {
-    try {
-      const session = await sessions.getByToken(sessionToken);
-      await sessions.invalidate(sessionToken);
-      if (session) await audit(req, session.user_id, 'LOGOUT', 'success');
-    } catch (error) {
-      console.warn('Logout session invalidation failed:', error.message);
+    if (sessionToken) {
+      try {
+        const session = await sessions.getByToken(sessionToken);
+        await sessions.invalidate(sessionToken);
+        if (session) await audit(req, session.user_id, 'LOGOUT', 'success');
+      } catch (error) {
+        console.warn('Logout session invalidation failed:', error.message);
+      }
     }
+  } catch (error) {
+    console.warn('Logout failed unexpectedly, returning success anyway:', error?.message);
   }
 
-  res.json({ success: true, message: 'Logout successful' });
+  return res.json({ success: true, message: 'Logout successful' });
 });
 
 router.get('/me', authenticateToken, async (req, res) => {
