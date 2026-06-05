@@ -25,7 +25,11 @@
             <span v-if="m.rated" class="sa-thanks">salamat! 🙏</span>
           </div>
         </div>
-        <div v-if="loading" class="sa-msg sa-bot"><div class="sa-bubble sa-typing">…</div></div>
+        <div v-if="loading" class="sa-msg sa-bot">
+          <div class="sa-bubble sa-typing" role="status" aria-label="Naghahanda ng sagot">
+            <span class="sa-dot"></span><span class="sa-dot"></span><span class="sa-dot"></span>
+          </div>
+        </div>
       </div>
 
       <form class="sa-form" data-test="assistant-send" @submit.prevent="send">
@@ -115,7 +119,21 @@ async function rate(m, rating) {
 .sa-bubble { padding: .5rem .7rem; border-radius: .6rem; white-space: pre-wrap; max-width: 85%; }
 .sa-user .sa-bubble { background: #2563eb; color: #fff; }
 .sa-bot .sa-bubble { background: #f3f4f6; }
-.sa-typing { letter-spacing: .15rem; }
+.sa-typing { display: inline-flex; align-items: center; gap: 5px; min-height: 1.1rem; }
+.sa-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: #9ca3af;
+  animation: sa-typing-bounce 1.2s infinite ease-in-out both;
+}
+.sa-dot:nth-child(2) { animation-delay: .15s; }
+.sa-dot:nth-child(3) { animation-delay: .3s; }
+@keyframes sa-typing-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: .35; }
+  40% { transform: translateY(-5px); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sa-dot { animation: sa-typing-fade 1.2s infinite ease-in-out both; }
+  @keyframes sa-typing-fade { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+}
 .sa-sources { display: flex; flex-wrap: wrap; gap: .3rem; }
 .sa-chip { font-size: .7rem; background: #fef3c7; color: #92400e; padding: .1rem .4rem; border-radius: 999px; }
 .sa-fb button { border: none; background: none; cursor: pointer; font-size: 1rem; }
