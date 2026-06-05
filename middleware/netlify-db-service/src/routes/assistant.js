@@ -9,6 +9,13 @@ const router = express.Router();
 const BASE = process.env.SOLAR_ASSISTANT_URL || 'http://localhost:8090';
 const TIMEOUT = Number(process.env.SOLAR_ASSISTANT_TIMEOUT_MS || 60000);
 const MODES = new Set(['customer', 'buyer', 'installer']);
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// The assistant's user_id column is UUID; only forward a valid UUID so a
+// non-UUID id can never break its (non-fatal) turn logging.
+function uuidOrNull(id) {
+  return id && UUID_RE.test(String(id)) ? String(id) : null;
+}
 
 router.post('/chat', authenticateToken, async (req, res) => {
   const { message, mode, context, conversation_id: conversationId } = req.body || {};
@@ -22,7 +29,7 @@ router.post('/chat', authenticateToken, async (req, res) => {
   try {
     const result = await chatViaAssistant({
       baseUrl: BASE, message: fullMessage, mode: m,
-      userId: req.user?.id, conversationId, timeoutMs: TIMEOUT,
+      userId: uuidOrNull(req.user?.id), conversationId, timeoutMs: TIMEOUT,
     });
     return res.json({ success: true, ...result });
   } catch (err) {
