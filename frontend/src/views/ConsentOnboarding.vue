@@ -96,10 +96,16 @@ const message = ref('')
 const featureChoices = reactive({})
 
 const requestedConsentKeys = computed(() => {
-  return String(route.query.required || '')
+  const explicitKeys = String(route.query.required || '')
     .split(',')
     .map(key => key.trim())
     .filter(Boolean)
+  const nextPath = typeof route.query.next === 'string' && route.query.next.startsWith('/')
+    ? route.query.next
+    : ''
+  const nextRoute = nextPath ? router.resolve(nextPath) : null
+  const inferredKeys = nextRoute?.meta?.requiredConsents || []
+  return [...new Set([...explicitKeys, ...inferredKeys])]
 })
 
 const optionalConsents = computed(() => status.value?.consents?.filter(consent => !consent.required) || [])

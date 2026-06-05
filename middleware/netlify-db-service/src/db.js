@@ -293,6 +293,27 @@ async function ensureMessagingSchema() {
     `;
 
     await sqlInstance`
+      CREATE TABLE IF NOT EXISTS anonymous_leads (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        source VARCHAR(100) NOT NULL DEFAULT 'messaging',
+        status VARCHAR(50) NOT NULL DEFAULT 'new',
+        priority VARCHAR(50) NOT NULL DEFAULT 'new_lead',
+        assigned_to VARCHAR(255) DEFAULT '',
+        contact JSONB DEFAULT '{}',
+        message TEXT DEFAULT '',
+        context_type VARCHAR(100) NOT NULL DEFAULT 'support',
+        context_id VARCHAR(255),
+        installer_id VARCHAR(255),
+        financier_id VARCHAR(255),
+        location VARCHAR(255),
+        monthly_bill DECIMAL(12, 2),
+        assessment JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
       CREATE TABLE IF NOT EXISTS messaging_attachments (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         message_id UUID NOT NULL REFERENCES messaging_messages(id) ON DELETE CASCADE,
@@ -334,12 +355,20 @@ async function ensureMessagingSchema() {
     await sqlInstance`ALTER TABLE messaging_conversations ADD COLUMN IF NOT EXISTS assignment_source VARCHAR(50) NOT NULL DEFAULT 'recommendation'`;
     await sqlInstance`ALTER TABLE messaging_conversations ADD COLUMN IF NOT EXISTS encryption_scheme VARCHAR(100) NOT NULL DEFAULT 'client_envelope_v1'`;
     await sqlInstance`ALTER TABLE messaging_conversations ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id) ON DELETE SET NULL`;
+    await sqlInstance`ALTER TABLE anonymous_leads ADD COLUMN IF NOT EXISTS source VARCHAR(100) NOT NULL DEFAULT 'messaging'`;
+    await sqlInstance`ALTER TABLE anonymous_leads ADD COLUMN IF NOT EXISTS priority VARCHAR(50) NOT NULL DEFAULT 'new_lead'`;
+    await sqlInstance`ALTER TABLE anonymous_leads ADD COLUMN IF NOT EXISTS assigned_to VARCHAR(255) DEFAULT ''`;
+    await sqlInstance`ALTER TABLE anonymous_leads ADD COLUMN IF NOT EXISTS contact JSONB DEFAULT '{}'`;
+    await sqlInstance`ALTER TABLE anonymous_leads ADD COLUMN IF NOT EXISTS assessment JSONB`;
+    await sqlInstance`ALTER TABLE anonymous_leads ADD COLUMN IF NOT EXISTS monthly_bill DECIMAL(12, 2)`;
 
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_installer_recommendations_consumer ON installer_recommendations(consumer_id, status)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_installer_recommendations_installer ON installer_recommendations(installer_id, status)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_conversations_consumer ON messaging_conversations(consumer_id, status)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_conversations_installer ON messaging_conversations(installer_id, status)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_messages_conversation ON messaging_messages(conversation_id, created_at)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_anonymous_leads_status ON anonymous_leads(status, created_at DESC)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_anonymous_leads_assigned ON anonymous_leads(assigned_to, status)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_messaging_attachments_message ON messaging_attachments(message_id)`;
     await sqlInstance`CREATE INDEX IF NOT EXISTS idx_in_app_notifications_user ON in_app_notifications(user_id, created_at DESC)`;
@@ -1799,6 +1828,68 @@ export const userConsents = {
  * or return plaintext message content.
  */
 export const messaging = {
+  async createAnonymousLead({
+    source = 'messaging',
+    status = 'new',
+    priority = 'new_lead',
+    assignedTo = '',
+    contact = {},
+    message = '',
+    contextType = 'support',
+    contextId = null,
+    installerId = null,
+    financierId = null,
+    location = '',
+    monthlyBill = null,
+    assessment = null
+  }) {
+    await ensureMessagingSchema();
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      INSERT INTO anonymous_leads (
+        source, status, priority, assigned_to, contact, message, context_type,
+        context_id, installer_id, financier_id, location, monthly_bill, assessment
+      )
+      VALUES (
+        ${source}, ${status}, ${priority}, ${assignedTo}, ${JSON.stringify(contact || {})}, ${message},
+        ${contextType}, ${contextId}, ${installerId}, ${financierId}, ${location}, ${monthlyBill}, ${assessment ? JSON.stringify(assessment) : null}
+      )
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  async listAnonymousLeads(limit = 200) {
+    await ensureMessagingSchema();
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`
+      SELECT * FROM anonymous_leads
+      ORDER BY created_at DESC
+      LIMIT ${limit}
+    `;
+  },
+
+  async getAnonymousLeadById(id) {
+    await ensureMessagingSchema();
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`SELECT * FROM anonymous_leads WHERE id = ${id}`;
+    return result[0];
+  },
+
+  async updateAnonymousLead(id, { status, assignedTo }) {
+    await ensureMessagingSchema();
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      UPDATE anonymous_leads
+      SET status = COALESCE(${status || null}, status),
+          assigned_to = COALESCE(${assignedTo !== undefined ? assignedTo : null}, assigned_to),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${id}
+      RETURNING *
+    `;
+    return result[0];
+  },
+
   async createRecommendation({ consumerId, installerId, contextType = 'general', contextId = null, source = 'admin_allocation', reason = null, createdBy = null }) {
     await ensureMessagingSchema();
     const sqlInstance = getSqlInstance();

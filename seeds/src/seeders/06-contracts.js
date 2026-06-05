@@ -83,14 +83,24 @@ export async function seed() {
       `INSERT INTO contracts
          (id, user_id, contract_type, start_date, end_date, term_months, amount, currency, status, metadata, created_at, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,'USD',$8,$9, NOW(), NOW())
-       ON CONFLICT (id) DO NOTHING
-       RETURNING id`,
+       ON CONFLICT (id) DO UPDATE SET
+         user_id = EXCLUDED.user_id,
+         contract_type = EXCLUDED.contract_type,
+         start_date = EXCLUDED.start_date,
+         end_date = EXCLUDED.end_date,
+         term_months = EXCLUDED.term_months,
+         amount = EXCLUDED.amount,
+         currency = EXCLUDED.currency,
+         status = EXCLUDED.status,
+         metadata = EXCLUDED.metadata,
+         updated_at = NOW()
+       RETURNING id, (xmax = 0) AS inserted`,
       [c.id, c.user_id, c.contract_type, c.start_date, c.end_date, c.term_months, c.amount, c.status, JSON.stringify(c.metadata)]
     );
 
     results.push({
       type: c.contract_type,
-      status: res.rowCount > 0 ? 'created' : 'skipped (exists)',
+      status: res.rows[0]?.inserted ? 'created' : 'repaired',
     });
   }
 

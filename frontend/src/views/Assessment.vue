@@ -316,16 +316,33 @@
               <strong>{{ formatPeso(results.solarPayment) }}/mo</strong>
             </div>
             <p>Replace your current <strong>{{ formatPeso(form.monthlyBill) }}</strong> bill with a lower solar payment. You could start saving <strong>{{ formatPeso(results.monthlySavings) }}</strong> immediately.</p>
-            <router-link to="/finance" class="card-link">View detailed ROI and loan options →</router-link>
+            <button type="button" class="card-link button-link" @click="continueToProtectedRoute('/finance')">View detailed ROI and loan options</button>
           </article>
         </div>
 
         <div class="results-actions">
-          <button class="primary-button" type="button" @click="showLeadForm = true">Get my lower monthly plan installed</button>
-          <router-link class="secondary-button link-button" to="/finance">Explore Financing Options</router-link>
-          <router-link class="ghost-button link-button" to="/marketplace">View matching installers</router-link>
+          <button class="primary-button" type="button" @click="continueToInstallerJourney">Get my lower monthly plan installed</button>
+          <button class="secondary-button link-button" type="button" @click="continueToProtectedRoute('/finance')">Explore Financing Options</button>
+          <button class="ghost-button link-button" type="button" @click="continueToProtectedRoute('/marketplace')">View matching installers</button>
+          <a
+            class="feedback-button link-button"
+            href="https://forms.cloud.microsoft/r/9FYr3SSbvs"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Open feedback form"
+            title="Share feedback"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 5.8A2.8 2.8 0 0 1 6.8 3h10.4A2.8 2.8 0 0 1 20 5.8v7.4a2.8 2.8 0 0 1-2.8 2.8H9.1L5 20v-4.2a2.8 2.8 0 0 1-1-2.1V5.8Z" />
+              <path d="M8 8h8M8 11.5h5" />
+            </svg>
+            Feedback
+          </a>
           <button class="ghost-button" type="button" @click="startOver">Start a new assessment</button>
         </div>
+        <p v-if="!userStore.isAuthenticated" class="auth-gate-note">
+          No login was needed for this assessment. Sign in to continue with installers, financing, and saved project details.
+        </p>
 
         <div v-if="results" class="recommended-installers-preview mt-8">
           <div class="flex justify-between items-center mb-4">
@@ -388,6 +405,7 @@
           <label>Full name<input v-model="lead.name" required placeholder="Juan Dela Cruz" /></label>
           <label>Phone number<input v-model="lead.phone" required type="tel" placeholder="09XX XXX XXXX" /></label>
           <label>Email<input v-model="lead.email" required type="email" placeholder="juan@example.com" /></label>
+          <label>Message<textarea v-model="lead.message" rows="3" placeholder="Share your preferred install timeline or any project notes."></textarea></label>
           <button class="primary-button" type="submit" :disabled="submittingLead">{{ submittingLead ? 'Submitting' : 'Send installer request' }}</button>
         </form>
       </section>
@@ -397,7 +415,7 @@
       <section class="lead-modal lead-modal--success">
         <span class="success-mark">OK</span>
         <h2>Request received</h2>
-        <p>Installer context has been saved locally and the marketplace can now use your province and system range.</p>
+        <p>Your request is in the common allocation inbox for installer assignment.</p>
         <button class="primary-button" type="button" @click="leadSubmitted = false">Done</button>
       </section>
     </div>
@@ -408,10 +426,12 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/themeStore'
 import { useMarketplaceStore } from '../stores/marketplaceStore'
 import SolarAssistant from '../components/SolarAssistant.vue'
+import { useMessagingStore } from '../stores/messagingStore'
+import { useUserStore } from '../stores/userStore'
 import {
   calculateAssessmentPlan,
   fetchSavedAssessmentPlans,
@@ -427,10 +447,16 @@ import {
   usageProfiles
 } from '../domains/assessment/assessmentDomain'
 
+const route = useRoute()
 const router = useRouter()
 const themeStore = useThemeStore()
 const marketplaceStore = useMarketplaceStore()
+const messagingStore = useMessagingStore()
+const userStore = useUserStore()
 const isDark = computed(() => themeStore.isDarkMode)
+
+const ANONYMOUS_ASSESSMENT_KEY = 'apolakiAnonymousAssessment'
+const POST_LOGIN_REDIRECT_KEY = 'apolakiPostLoginRedirect'
 
 const currentStep = ref(0)
 const liveLoading = ref(false)
@@ -462,7 +488,8 @@ const form = reactive({
 const lead = reactive({
   name: '',
   phone: '',
-  email: ''
+  email: '',
+  message: ''
 })
 
 const visibleSteps = [
@@ -621,11 +648,12 @@ async function processAssessment() {
   try {
     if (!liveSolarData.value) await waitForLiveData(3500)
     results.value = await calculateAssessmentPlan(form, liveSolarData.value)
-    backendSavedAssessmentId.value = results.value.backendAssessmentId || ''
+    backendSavedAssessmentId.value = userStore.isAuthenticated ? results.value.backendAssessmentId || '' : ''
     savedAssessmentId.value = ''
     saveError.value = ''
     persistAssessmentState(form, results.value, liveSolarData.value)
-    loadSavedAssessments()
+    persistAnonymousAssessment()
+    if (userStore.isAuthenticated) loadSavedAssessments()
     currentStep.value = 5
   } finally {
     window.clearInterval(interval)
@@ -635,6 +663,10 @@ async function processAssessment() {
 
 async function saveAssessment() {
   if (!results.value || savingAssessment.value || savedAssessmentId.value) return
+  if (!userStore.isAuthenticated) {
+    redirectToLogin('/assessment?continue=save')
+    return
+  }
   savingAssessment.value = true
   saveError.value = ''
   try {
@@ -655,6 +687,10 @@ async function saveAssessment() {
 }
 
 async function loadSavedAssessments() {
+  if (!userStore.isAuthenticated) {
+    savedAssessments.value = []
+    return
+  }
   loadingSavedAssessments.value = true
   try {
     savedAssessments.value = await fetchSavedAssessmentPlans()
@@ -709,24 +745,32 @@ async function waitForLiveData(timeoutMs) {
 
 function submitLead() {
   submittingLead.value = true
-  const stored = JSON.parse(localStorage.getItem('assessmentLeadRequests') || '[]')
-  stored.unshift({
-    ...lead,
-    assessment: results.value,
-    form: { ...form },
-    createdAt: new Date().toISOString()
-  })
-  localStorage.setItem('assessmentLeadRequests', JSON.stringify(stored.slice(0, 10)))
-
-  window.setTimeout(() => {
+  messagingStore.submitAnonymousLead({
+    source: userStore.isAuthenticated ? 'authenticated_assessment' : 'anonymous_assessment',
+    contact: {
+      name: lead.name,
+      phone: lead.phone,
+      email: lead.email
+    },
+    contextType: 'marketplace',
+    monthlyBill: form.monthlyBill,
+    location: form.location,
+    message: lead.message || 'I would like to connect with verified solar installers for this assessment.',
+    assessment: {
+      form: { ...form },
+      results: results.value,
+      liveSolarData: liveSolarData.value
+    }
+  }).finally(() => {
     submittingLead.value = false
     showLeadForm.value = false
     leadSubmitted.value = true
-    Object.assign(lead, { name: '', phone: '', email: '' })
-  }, 500)
+    Object.assign(lead, { name: '', phone: '', email: '', message: '' })
+  })
 }
 
 function startOver() {
+  localStorage.removeItem(ANONYMOUS_ASSESSMENT_KEY)
   currentStep.value = 0
   Object.assign(form, {
     monthlyBill: null,
@@ -742,6 +786,48 @@ function startOver() {
   liveSolarData.value = null
   liveError.value = ''
   billError.value = ''
+}
+
+function persistAnonymousAssessment() {
+  if (!results.value) return
+  localStorage.setItem(ANONYMOUS_ASSESSMENT_KEY, JSON.stringify({
+    form: { ...form },
+    results: results.value,
+    liveSolarData: liveSolarData.value,
+    savedAt: new Date().toISOString()
+  }))
+}
+
+function restoreAnonymousAssessment() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(ANONYMOUS_ASSESSMENT_KEY) || 'null')
+    if (!saved?.form || !saved?.results) return
+    Object.assign(form, saved.form)
+    results.value = saved.results
+    liveSolarData.value = saved.liveSolarData || liveSolarData.value
+    backendSavedAssessmentId.value = userStore.isAuthenticated ? saved.results.backendAssessmentId || '' : ''
+    currentStep.value = 5
+  } catch {
+    localStorage.removeItem(ANONYMOUS_ASSESSMENT_KEY)
+  }
+}
+
+function redirectToLogin(nextPath) {
+  persistAnonymousAssessment()
+  localStorage.setItem(POST_LOGIN_REDIRECT_KEY, nextPath)
+  router.push({ path: '/login', query: { next: nextPath, reason: 'assessment_complete' } })
+}
+
+function continueToInstallerJourney() {
+  showLeadForm.value = true
+}
+
+function continueToProtectedRoute(path) {
+  if (userStore.isAuthenticated) {
+    router.push(path)
+    return
+  }
+  redirectToLogin(path)
 }
 
 function lonToTileX(lng, zoom) {
@@ -770,6 +856,15 @@ function buildMapTiles(lat, lng, zoom) {
 onMounted(() => {
   loadSavedAssessments()
   marketplaceStore.fetchDealers()
+  restoreAnonymousAssessment()
+
+  if (route.query.continue === 'installer' && userStore.isAuthenticated && results.value) {
+    showLeadForm.value = true
+  }
+
+  if (route.query.continue === 'save' && userStore.isAuthenticated && results.value) {
+    saveAssessment()
+  }
 
   const saved = localStorage.getItem('financingAssessmentState')
   if (!saved) return
@@ -1021,6 +1116,36 @@ onMounted(() => {
   color: #52616f;
 }
 
+.feedback-button {
+  align-items: center;
+  min-height: 46px;
+  border: 1px solid rgba(15, 108, 189, 0.2);
+  background: #ffffff;
+  color: #0f6cbd;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.feedback-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
+}
+
+.feedback-button:hover {
+  background: #e8f2fb;
+}
+
+.assessment-flow--dark .feedback-button {
+  border-color: rgba(244, 201, 76, 0.3);
+  background: rgba(244, 201, 76, 0.12);
+  color: #f4c94c;
+}
+
 .primary-button:disabled,
 .secondary-button:disabled {
   cursor: not-allowed;
@@ -1121,7 +1246,8 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   min-height: 48px;
   border: 1px solid #dbe5ee;
   border-radius: 12px;
@@ -1133,15 +1259,23 @@ select {
 }
 
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   outline-color: rgba(15, 108, 189, 0.2);
   background: #ffffff;
 }
 
 .assessment-flow--dark input,
-.assessment-flow--dark select {
+.assessment-flow--dark select,
+.assessment-flow--dark textarea {
   border-color: rgba(255, 255, 255, 0.08);
   background: #101418;
+}
+
+textarea {
+  min-height: 92px;
+  padding: 12px 14px;
+  resize: vertical;
 }
 
 .money-input {
@@ -1589,10 +1723,16 @@ select:focus {
 
 .card-link {
   display: inline-block;
+  border: 0;
+  background: transparent;
   margin-top: 10px;
   color: #0f6cbd;
+  cursor: pointer;
+  font: inherit;
   font-weight: 800;
   font-size: 0.85rem;
+  padding: 0;
+  text-align: left;
   text-decoration: underline;
 }
 
@@ -1620,6 +1760,17 @@ select:focus {
 
 .results-actions {
   align-items: center;
+}
+
+.auth-gate-note {
+  margin: 12px 0 0;
+  color: #607080;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.assessment-flow--dark .auth-gate-note {
+  color: #a7b4c3;
 }
 
 .link-button {

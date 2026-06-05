@@ -26,6 +26,7 @@ const router = useRouter()
 const userStore = useUserStore()
 const loading = ref(true)
 const error = ref(null)
+const POST_LOGIN_REDIRECT_KEY = 'apolakiPostLoginRedirect'
 
 onMounted(async () => {
   if (route.query.error) {
@@ -41,7 +42,12 @@ onMounted(async () => {
     return
   }
 
-  await router.replace(profile.onboardingComplete ? '/assessment' : '/consent')
+  const nextPath = typeof route.query.next === 'string' && route.query.next.startsWith('/')
+    ? route.query.next
+    : localStorage.getItem(POST_LOGIN_REDIRECT_KEY) || '/assessment'
+  localStorage.removeItem(POST_LOGIN_REDIRECT_KEY)
+  const onboardingComplete = profile.onboardingComplete || userStore.onboardingComplete
+  await router.replace(onboardingComplete ? nextPath : { path: '/consent', query: { next: nextPath } })
 })
 </script>
 

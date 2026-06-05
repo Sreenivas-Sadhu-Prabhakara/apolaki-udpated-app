@@ -47,6 +47,12 @@ export async function seed() {
   const INTERVAL_MIN = 5;
   const results = [];
   let totalRows = 0;
+  const installationIds = Object.keys(CAPACITY_MAP);
+
+  await query(
+    `DELETE FROM monitoring_data WHERE installation_id = ANY($1::uuid[])`,
+    [installationIds]
+  );
 
   for (const [instId, capacity] of Object.entries(CAPACITY_MAP)) {
     const rand = mulberry32(parseInt(instId.replace(/-/g, '').slice(0, 8), 16));

@@ -6,10 +6,13 @@ export const useMessagingStore = defineStore('messaging', () => {
   const conversations = ref([])
   const currentConversation = ref(null)
   const messages = ref([])
+  const leadInbox = ref([])
   const loading = ref(false)
+  const leadInboxLoading = ref(false)
   const error = ref(null)
   const pollingInterval = ref(null)
   const securityBanner = ref(null)
+  const LOCAL_LEAD_INBOX_KEY = 'apolakiCommonLeadInbox'
   
   // Widget UI State
   const isWidgetOpen = ref(false)
@@ -52,6 +55,93 @@ export const useMessagingStore = defineStore('messaging', () => {
       error.value = 'Failed to load conversations.'
     } finally {
       loading.value = false
+    }
+  }
+
+  const readLocalLeadInbox = () => {
+    try {
+      return JSON.parse(localStorage.getItem(LOCAL_LEAD_INBOX_KEY) || '[]')
+    } catch {
+      localStorage.removeItem(LOCAL_LEAD_INBOX_KEY)
+      return []
+    }
+  }
+
+  const writeLocalLeadInbox = (items) => {
+    localStorage.setItem(LOCAL_LEAD_INBOX_KEY, JSON.stringify(items.slice(0, 100)))
+  }
+
+  const normalizeLead = (payload) => {
+    const now = new Date().toISOString()
+    const contact = payload.contact || {}
+    return {
+      id: payload.id || `anon-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      source: payload.source || 'messaging',
+      status: payload.status || 'new',
+      priority: payload.priority || 'new_lead',
+      assignedTo: payload.assignedTo || payload.assigned_to || '',
+      contact: {
+        name: contact.name || payload.name || '',
+        phone: contact.phone || payload.phone || '',
+        email: contact.email || payload.email || ''
+      },
+      message: payload.message || '',
+      contextType: payload.contextType || payload.context_type || 'support',
+      contextId: payload.contextId || payload.context_id || null,
+      installerId: payload.installerId || payload.installer_id || null,
+      financierId: payload.financierId || payload.financier_id || null,
+      location: payload.location || '',
+      monthlyBill: payload.monthlyBill || payload.monthly_bill || null,
+      assessment: payload.assessment || null,
+      createdAt: payload.createdAt || payload.created_at || now,
+      updatedAt: payload.updatedAt || payload.updated_at || now
+    }
+  }
+
+  const submitAnonymousLead = async (payload) => {
+    const lead = normalizeLead(payload)
+    try {
+      const res = await messagingApi.createAnonymousLead(lead)
+      const saved = normalizeLead(res.data?.data || res.data || lead)
+      leadInbox.value = [saved, ...leadInbox.value.filter(item => item.id !== saved.id)]
+      return saved
+    } catch (err) {
+      const localInbox = readLocalLeadInbox()
+      writeLocalLeadInbox([lead, ...localInbox.filter(item => item.id !== lead.id)])
+      leadInbox.value = [lead, ...leadInbox.value.filter(item => item.id !== lead.id)]
+      return lead
+    }
+  }
+
+  const fetchLeadInbox = async () => {
+    leadInboxLoading.value = true
+    try {
+      const res = await messagingApi.getAnonymousLeads()
+      const items = res.data?.data || res.data || []
+      leadInbox.value = items.map(normalizeLead)
+    } catch {
+      leadInbox.value = readLocalLeadInbox().map(normalizeLead)
+    } finally {
+      leadInboxLoading.value = false
+    }
+  }
+
+  const updateLeadAssignment = async (leadId, payload) => {
+    const nextPayload = {
+      ...payload,
+      updatedAt: new Date().toISOString()
+    }
+    try {
+      const res = await messagingApi.updateAnonymousLead(leadId, nextPayload)
+      const updated = normalizeLead(res.data?.data || res.data || { id: leadId, ...nextPayload })
+      leadInbox.value = leadInbox.value.map(item => item.id === leadId ? { ...item, ...updated } : item)
+      return updated
+    } catch {
+      const localInbox = readLocalLeadInbox()
+      const updatedInbox = localInbox.map(item => item.id === leadId ? normalizeLead({ ...item, ...nextPayload }) : item)
+      writeLocalLeadInbox(updatedInbox)
+      leadInbox.value = leadInbox.value.map(item => item.id === leadId ? normalizeLead({ ...item, ...nextPayload }) : item)
+      return leadInbox.value.find(item => item.id === leadId)
     }
   }
 
@@ -112,6 +202,18 @@ export const useMessagingStore = defineStore('messaging', () => {
     }
   }
 
+  const resetSessionState = () => {
+    stopPolling()
+    conversations.value = []
+    currentConversation.value = null
+    messages.value = []
+    loading.value = false
+    error.value = null
+    securityBanner.value = null
+    isWidgetOpen.value = false
+    showConversationList.value = true
+  }
+
   const createConversation = async (payload) => {
     loading.value = true
     try {
@@ -130,7 +232,9 @@ export const useMessagingStore = defineStore('messaging', () => {
     conversations,
     currentConversation,
     messages,
+    leadInbox,
     loading,
+    leadInboxLoading,
     error,
     securityBanner,
     isWidgetOpen,
@@ -139,10 +243,14 @@ export const useMessagingStore = defineStore('messaging', () => {
     openChatWith,
     fetchConversations,
     fetchMessages,
+    submitAnonymousLead,
+    fetchLeadInbox,
+    updateLeadAssignment,
     sendMessage,
     fetchSecurityBanner,
     startPolling,
     stopPolling,
+    resetSessionState,
     createConversation
   }
 })

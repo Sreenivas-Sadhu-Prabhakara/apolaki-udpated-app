@@ -16,7 +16,7 @@
       <div class="nav-container max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
         <!-- Brand -->
         <BrandLogo
-          to="/dashboard"
+          to="/"
           size="sm"
           text="Apolaki"
           class="nav-brand shrink-0"
@@ -37,7 +37,7 @@
           <li><router-link to="/marketplace" class="nav-link transition">4. Marketplace</router-link></li>
           <li><router-link to="/installations" class="nav-link transition">5. Installations</router-link></li>
           <li>
-            <button @click="messagingStore.toggleWidget()" class="nav-link transition flex items-center gap-1.5 focus:outline-none">
+            <button @click="openMessages" class="nav-link transition flex items-center gap-1.5 focus:outline-none">
               Messages <span v-if="unreadCount" class="unread-dot"></span>
             </button>
           </li>
@@ -45,6 +45,21 @@
             <router-link to="/messaging?support=true" class="nav-link transition flex items-center gap-1.5">
               Get Help
             </router-link>
+          </li>
+          <li>
+            <a
+              :href="feedbackFormUrl"
+              class="nav-link nav-link-feedback transition"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open feedback form"
+              title="Share feedback"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 5.8A2.8 2.8 0 0 1 6.8 3h10.4A2.8 2.8 0 0 1 20 5.8v7.4a2.8 2.8 0 0 1-2.8 2.8H9.1L5 20v-4.2a2.8 2.8 0 0 1-1-2.1V5.8Z" />
+                <path d="M8 8h8M8 11.5h5" />
+              </svg>
+            </a>
           </li>
 
           <!-- \"More\" dropdown for secondary + role-specific links -->
@@ -65,7 +80,7 @@
                 </li>
                 <div class="dropdown-divider"></div>
                 <li v-if="canOpenDealerPortal">
-                  <router-link to="/dealer" class="dropdown-link" @click="moreMenuOpen = false">🔧 Dealer Portal</router-link>
+                  <router-link to="/installer" class="dropdown-link" @click="moreMenuOpen = false">🔧 Installer Portal</router-link>
                 </li>
                 <li v-if="canOpenOperationsPortal">
                   <router-link to="/operations" class="dropdown-link" @click="moreMenuOpen = false">🛠️ Operations</router-link>
@@ -117,7 +132,7 @@
             <li><router-link to="/installations" class="mobile-link" @click="mobileMenuOpen = false">5. Installations</router-link></li>
             <div class="dropdown-divider"></div>
             <li v-if="canOpenDealerPortal">
-              <router-link to="/dealer" class="mobile-link" @click="mobileMenuOpen = false">🔧 Dealer Portal</router-link>
+              <router-link to="/installer" class="mobile-link" @click="mobileMenuOpen = false">🔧 Installer Portal</router-link>
             </li>
             <li v-if="canOpenOperationsPortal">
               <router-link to="/operations" class="mobile-link" @click="mobileMenuOpen = false">🛠️ Operations</router-link>
@@ -127,6 +142,18 @@
             </li>
             <li v-if="userStore.user">
               <button @click="messagingStore.toggleWidget(); mobileMenuOpen = false" class="mobile-link w-full text-left">💬 Messages</button>
+            </li>
+            <li v-else>
+              <router-link to="/messaging?support=true" class="mobile-link" @click="mobileMenuOpen = false">💬 Leave a Message</router-link>
+            </li>
+            <li>
+              <a :href="feedbackFormUrl" class="mobile-link mobile-link-feedback" target="_blank" rel="noopener noreferrer" @click="mobileMenuOpen = false">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 5.8A2.8 2.8 0 0 1 6.8 3h10.4A2.8 2.8 0 0 1 20 5.8v7.4a2.8 2.8 0 0 1-2.8 2.8H9.1L5 20v-4.2a2.8 2.8 0 0 1-1-2.1V5.8Z" />
+                  <path d="M8 8h8M8 11.5h5" />
+                </svg>
+                Feedback
+              </a>
             </li>
             <li v-if="userStore.user" class="mt-2 pt-2 border-t border-white/20">
               <button @click="logout(); mobileMenuOpen = false" class="mobile-link w-full text-left">Logout</button>
@@ -164,6 +191,7 @@ const themeStore = useThemeStore()
 const messagingStore = useMessagingStore()
 const mobileMenuOpen = ref(false)
 const moreMenuOpen = ref(false)
+const feedbackFormUrl = 'https://forms.cloud.microsoft/r/9FYr3SSbvs'
 
 // Computed so templates can use it reactively
 const isDarkMode = computed(() => themeStore.isDarkMode)
@@ -188,8 +216,7 @@ const canAccessConsentFeature = (...consents) => {
 }
 
 const canOpenDealerPortal = computed(() => {
-  return userStore.hasRole('admin', 'superadmin') ||
-    (userStore.hasRole('dealer', 'installer') && userStore.hasConsent('partner_sharing'))
+  return userStore.hasRole('dealer', 'installer', 'admin', 'superadmin')
 })
 
 const canOpenOperationsPortal = computed(() => {
@@ -245,6 +272,14 @@ const toggleTheme = () => {
   themeStore.toggle()
 }
 
+const openMessages = () => {
+  if (userStore.isAuthenticated) {
+    messagingStore.toggleWidget()
+    return
+  }
+  router.push('/messaging?support=true')
+}
+
 const showChrome = computed(() => {
   return !route.path.startsWith('/login') &&
     !route.path.startsWith('/auth-callback') &&
@@ -269,8 +304,11 @@ const mainBgClass = computed(() => {
 })
 
 const logout = async () => {
+  mobileMenuOpen.value = false
+  moreMenuOpen.value = false
+  messagingStore.resetSessionState()
   await userStore.logout()
-  router.push('/login')
+  await router.replace({ path: '/login', query: { loggedOut: '1' } })
 }
 </script>
 
@@ -355,6 +393,32 @@ const logout = async () => {
   font-weight: 600;
 }
 
+.nav-link-feedback {
+  align-items: center;
+  background: #0F6CBD;
+  color: #ffffff;
+  display: inline-flex;
+  font-weight: 700;
+  justify-content: center;
+  min-width: 36px;
+}
+
+.nav-link-feedback svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
+}
+
+.nav-link-feedback:hover,
+.nav-link-feedback.router-link-active {
+  background: #0b5ca4;
+  color: #ffffff;
+}
+
 .navbar-kinetic--dark .nav-link {
   color: rgba(255, 255, 255, 0.78);
 }
@@ -363,6 +427,13 @@ const logout = async () => {
 .navbar-kinetic--dark .nav-link.router-link-active {
   color: #F4C94C;
   background: rgba(244, 201, 76, 0.12);
+}
+
+.navbar-kinetic--dark .nav-link-feedback,
+.navbar-kinetic--dark .nav-link-feedback:hover,
+.navbar-kinetic--dark .nav-link-feedback.router-link-active {
+  background: #F4C94C;
+  color: #142033;
 }
 
 /* "More" dropdown ─────────────────────────────────── */
@@ -618,6 +689,25 @@ const logout = async () => {
 .mobile-link:hover,
 .mobile-link.router-link-active {
   background: rgba(255, 255, 255, 0.15);
+}
+
+.mobile-link-feedback {
+  align-items: center;
+  background: #0F6CBD;
+  color: #ffffff;
+  display: flex;
+  gap: 0.55rem;
+  font-weight: 800;
+}
+
+.mobile-link-feedback svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
 }
 
 @media (max-width: 768px) {

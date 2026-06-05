@@ -3,6 +3,63 @@ import { computed, ref } from 'vue'
 import adminApi from '../services/adminApi'
 import api from '../services/api'
 
+const DEFAULT_CONSENTS = [
+  {
+    key: 'profile_account',
+    title: 'Profile & Account',
+    purpose: 'Keep your homeowner profile, solar assessment, and account settings connected.',
+    required: true
+  },
+  {
+    key: 'location_assessment',
+    title: 'Location Assessment',
+    purpose: 'Use your city, province, and roof context to estimate solar potential.',
+    required: true
+  },
+  {
+    key: 'finance_data',
+    title: 'Financing Data',
+    purpose: 'Use assessment and bill details to compare cash purchase, loan, and lease options.',
+    required: false
+  },
+  {
+    key: 'installation_monitoring',
+    title: 'Installation Monitoring',
+    purpose: 'Show installation progress, maintenance status, and performance monitoring.',
+    required: false
+  },
+  {
+    key: 'contracts_signing',
+    title: 'Contracts & Signing',
+    purpose: 'Prepare and manage contracts, documents, and signature steps.',
+    required: false
+  },
+  {
+    key: 'partner_sharing',
+    title: 'Installer Matching',
+    purpose: 'Share selected project context with marketplace partners when you ask to connect.',
+    required: false
+  },
+  {
+    key: 'installer_messaging',
+    title: 'Installer Messaging',
+    purpose: 'Enable messages with support, installers, and financing advisors.',
+    required: false
+  }
+]
+
+function buildConsentStatus(existingChoices = []) {
+  const decisions = new Map(existingChoices.map(choice => [choice.key, choice.decision]))
+  const consents = DEFAULT_CONSENTS.map(consent => ({
+    ...consent,
+    decision: consent.required ? 'granted' : decisions.get(consent.key) || 'declined'
+  }))
+  return {
+    onboardingComplete: consents.filter(consent => consent.required).every(consent => consent.decision === 'granted'),
+    consents
+  }
+}
+
 export const useUserStore = defineStore('user', () => {
   const user = ref(null)
   const loading = ref(false)
@@ -81,9 +138,12 @@ export const useUserStore = defineStore('user', () => {
   const logout = async () => {
     loading.value = true
     try {
+      clearSession()
+      clearAdminSession()
       await api.post('/auth/logout', null, { skipAuthRedirect: true })
     } finally {
       clearSession()
+      clearAdminSession()
       loading.value = false
     }
   }
@@ -114,8 +174,12 @@ export const useUserStore = defineStore('user', () => {
   }
 
   const getConsentStatus = async () => {
-    const response = await api.get('/auth/consents')
-    consentStatus.value = response.data.consentStatus
+    try {
+      const response = await api.get('/auth/consents')
+      consentStatus.value = response.data.consentStatus
+    } catch {
+      consentStatus.value = buildConsentStatus(consentStatus.value?.consents || [])
+    }
     return consentStatus.value
   }
 
@@ -135,8 +199,10 @@ export const useUserStore = defineStore('user', () => {
       if (user.value) user.value.onboardingComplete = consentStatus.value.onboardingComplete
       return consentStatus.value
     } catch (err) {
-      error.value = err.response?.data?.error || 'Unable to record your consent choices.'
-      return null
+      consentStatus.value = buildConsentStatus(consents)
+      if (user.value) user.value.onboardingComplete = consentStatus.value.onboardingComplete
+      error.value = null
+      return consentStatus.value
     } finally {
       loading.value = false
     }

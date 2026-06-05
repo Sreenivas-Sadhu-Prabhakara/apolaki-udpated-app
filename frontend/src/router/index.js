@@ -5,8 +5,8 @@ const routes = [
   {
     path: '/',
     name: 'Landing',
-    component: () => import('../views/ApolakiPrd.vue'),
-    meta: { requiresAuth: false, publicOnly: true }
+    component: () => import('../views/Assessment.vue'),
+    meta: { requiresAuth: false }
   },
   {
     path: '/dashboard',
@@ -81,13 +81,13 @@ const routes = [
     path: '/messaging',
     name: 'Messaging',
     component: () => import('../views/Messaging.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: false }
   },
   {
     path: '/assessment',
     name: 'Assessment',
     component: () => import('../views/Assessment.vue'),
-    meta: { requiresAuth: true, requiredConsents: ['profile_account', 'location_assessment'] }
+    meta: { requiresAuth: false }
   },
   {
     path: '/financing',
@@ -118,6 +118,12 @@ const routes = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/feedback',
+    name: 'Feedback',
+    component: () => import('../views/Feedback.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/kitchen-sink',
     redirect: '/dashboard'
   },
@@ -129,7 +135,18 @@ const routes = [
     meta: {
       requiresAuth: true,
       allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'],
-      requiredConsents: ['partner_sharing'],
+      requiredConsents: ['installation_monitoring', 'partner_sharing'],
+      consentBypassRoles: ['admin', 'superadmin']
+    }
+  },
+  {
+    path: '/installer',
+    name: 'InstallerPortal',
+    component: () => import('../views/DealerPortal.vue'),
+    meta: {
+      requiresAuth: true,
+      allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'],
+      requiredConsents: ['installation_monitoring', 'partner_sharing'],
       consentBypassRoles: ['admin', 'superadmin']
     }
   },
@@ -185,22 +202,45 @@ function missingRouteConsents(to, userStore) {
   return requiredConsents.filter(key => !userStore.hasConsent(key))
 }
 
+function routeRequiredConsents(to, userStore) {
+  const requiredConsents = to.meta.requiredConsents || []
+  const bypassRoles = to.meta.consentBypassRoles || []
+
+  if (!requiredConsents.length) return []
+  if (bypassRoles.includes(userStore.userRole)) return []
+  return requiredConsents
+}
+
 // Navigation guard for authentication & role-based access
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
   const isElevated = ['admin', 'superadmin'].includes(userStore.userRole)
   const missingConsents = missingRouteConsents(to, userStore)
+  const requiredRouteConsents = routeRequiredConsents(to, userStore)
+  const requestedNext = typeof to.query.next === 'string' && to.query.next.startsWith('/')
+    ? to.query.next
+    : null
+  const requestedConsentList = String(to.query.required || '')
+    .split(',')
+    .map(key => key.trim())
+    .filter(Boolean)
 
   if (to.meta.requiresAuth && !userStore.isAuthenticated) {
-    next('/login')
+    next({ path: '/login', query: { next: to.fullPath } })
   } else if (to.meta.requiresAuth && !to.meta.allowsPendingConsent && !userStore.onboardingComplete && !isElevated) {
-    next('/consent')
-  } else if (to.name === 'ConsentOnboarding' && userStore.onboardingComplete) {
-    next('/assessment')
+    next({
+      path: '/consent',
+      query: {
+        next: to.fullPath,
+        ...(requiredRouteConsents.length ? { required: requiredRouteConsents.join(',') } : {})
+      }
+    })
+  } else if (to.name === 'ConsentOnboarding' && userStore.onboardingComplete && !requestedConsentList.length) {
+    next(requestedNext || '/assessment')
   } else if (to.meta.publicOnly && userStore.isAuthenticated) {
-    next(userStore.onboardingComplete ? '/assessment' : '/consent')
+    next(userStore.onboardingComplete ? requestedNext || '/assessment' : '/consent')
   } else if ((to.name === 'Login' || to.name === 'Signup') && userStore.isAuthenticated) {
-    next(userStore.onboardingComplete ? '/assessment' : '/consent')
+    next(userStore.onboardingComplete ? requestedNext || '/assessment' : '/consent')
   } else if (to.meta.allowedRoles && !to.meta.allowedRoles.includes(userStore.userRole)) {
     // Role-based guard: redirect to dashboard if user lacks permission
     next('/dashboard')

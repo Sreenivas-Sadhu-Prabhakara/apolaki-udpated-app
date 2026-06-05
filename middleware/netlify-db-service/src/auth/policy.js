@@ -93,6 +93,9 @@ export const API_POLICY_MATRIX = [
   policy('GET', '/health', { access: 'public' }),
 
   policy('GET', '/messages/security-banner', { permission: 'messaging:banner:read' }),
+  policy('POST', '/messages/anonymous-leads', { access: 'public' }),
+  policy('GET', '/messages/anonymous-leads', { permission: 'messaging:lead:list', allowedRoles: ['dealer', 'operations', 'admin', 'superadmin'], auditOnAllow: true }),
+  policy('PATCH', '/messages/anonymous-leads/:leadId', { permission: 'messaging:lead:update', allowedRoles: ['dealer', 'operations', 'admin', 'superadmin'], auditOnAllow: true }),
   policy('GET', '/messages/recommendations', { permission: 'messaging:recommendation:list' }),
   policy('POST', '/messages/recommendations', { permission: 'messaging:recommendation:create', allowedRoles: ['admin', 'superadmin'], auditOnAllow: true }),
   policy('GET', '/messages/conversations', { permission: 'messaging:conversation:list' }),

@@ -155,8 +155,18 @@ export async function seed() {
          (id, installation_id, maintenance_type, description, performed_date,
           completed_date, cost, status, technician, notes, created_at, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, NOW(), NOW())
-       ON CONFLICT (id) DO NOTHING
-       RETURNING id`,
+       ON CONFLICT (id) DO UPDATE SET
+         installation_id = EXCLUDED.installation_id,
+         maintenance_type = EXCLUDED.maintenance_type,
+         description = EXCLUDED.description,
+         performed_date = EXCLUDED.performed_date,
+         completed_date = EXCLUDED.completed_date,
+         cost = EXCLUDED.cost,
+         status = EXCLUDED.status,
+         technician = EXCLUDED.technician,
+         notes = EXCLUDED.notes,
+         updated_at = NOW()
+       RETURNING id, (xmax = 0) AS inserted`,
       [
         m.id, m.installation_id, m.maintenance_type, m.description,
         m.performed_date, m.completed_date, m.cost, m.status,
@@ -167,7 +177,7 @@ export async function seed() {
     results.push({
       type: m.maintenance_type,
       installation: m.installation_id.slice(-4),
-      status: res.rowCount > 0 ? 'created' : 'skipped (exists)',
+      status: res.rows[0]?.inserted ? 'created' : 'repaired',
     });
   }
 

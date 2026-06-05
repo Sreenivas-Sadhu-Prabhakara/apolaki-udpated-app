@@ -50,6 +50,16 @@ function sessionCookieOptions(maxAge = SESSION_MAX_AGE) {
   };
 }
 
+function expiredSessionCookieOptions() {
+  return {
+    httpOnly: true,
+    expires: new Date(0),
+    path: '/',
+    sameSite: 'lax',
+    secure: isProduction
+  };
+}
+
 function stateCookieName(provider) {
   return `apolaki_${provider}_oauth_state`;
 }
@@ -245,7 +255,7 @@ router.get('/facebook/callback', requireOAuthState('facebook'), finishOAuth('fac
 
 router.post('/logout', async (req, res) => {
   const sessionToken = readCookie(req, SESSION_COOKIE_NAME);
-  res.clearCookie(SESSION_COOKIE_NAME, sessionCookieOptions(0));
+  res.clearCookie(SESSION_COOKIE_NAME, expiredSessionCookieOptions());
 
   if (sessionToken) {
     try {
