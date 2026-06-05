@@ -17,6 +17,19 @@ function uuidOrNull(id) {
   return id && UUID_RE.test(String(id)) ? String(id) : null;
 }
 
+// Public health/config probe — confirms whether THIS deploy actually has the
+// SOLAR_ASSISTANT_URL env var in effect (no secrets revealed beyond the host).
+router.get('/health', (req, res) => {
+  let target = null;
+  try { target = new URL(BASE).host; } catch { /* ignore */ }
+  res.json({
+    ok: true,
+    configured: Boolean(process.env.SOLAR_ASSISTANT_URL),
+    target,
+    usingLocalhostDefault: BASE === 'http://localhost:8090',
+  });
+});
+
 router.post('/chat', authenticateToken, async (req, res) => {
   const { message, mode, context, conversation_id: conversationId } = req.body || {};
   if (!message || !String(message).trim()) {
