@@ -1322,6 +1322,22 @@ export const assessments = {
   }
 };
 
+// Idempotently ensure the wishlist table exists. ensureSchema() is fire-and-forget
+// at module load and may not complete in serverless (the function freezes after a
+// response), so wishlist endpoints create their table on-demand. CREATE TABLE IF
+// NOT EXISTS is a cheap metadata check once the table is present.
+async function ensureWishlistTable(sqlInstance) {
+  await sqlInstance`
+    CREATE TABLE IF NOT EXISTS wishlist (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      product_id UUID NOT NULL REFERENCES marketplace_products(id) ON DELETE CASCADE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (user_id, product_id)
+    )
+  `;
+}
+
 /**
  * Marketplace operations
  */
@@ -1437,6 +1453,7 @@ export const marketplace = {
    */
   async getWishlist(userId) {
     const sqlInstance = getSqlInstance();
+    await ensureWishlistTable(sqlInstance);
     return await sqlInstance`
       SELECT w.id as wishlist_id, w.created_at as added_at, p.*
       FROM wishlist w
@@ -1451,6 +1468,7 @@ export const marketplace = {
    */
   async addToWishlist(userId, productId) {
     const sqlInstance = getSqlInstance();
+    await ensureWishlistTable(sqlInstance);
     const result = await sqlInstance`
       INSERT INTO wishlist (user_id, product_id)
       VALUES (${userId}, ${productId})
@@ -1465,6 +1483,7 @@ export const marketplace = {
    */
   async removeFromWishlist(userId, productId) {
     const sqlInstance = getSqlInstance();
+    await ensureWishlistTable(sqlInstance);
     return await sqlInstance`
       DELETE FROM wishlist
       WHERE user_id = ${userId} AND product_id = ${productId}
