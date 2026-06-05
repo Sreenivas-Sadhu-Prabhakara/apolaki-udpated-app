@@ -419,6 +419,8 @@
         <button class="primary-button" type="button" @click="leadSubmitted = false">Done</button>
       </section>
     </div>
+
+    <SolarAssistant :context="assistantContext" mode="customer" />
   </main>
 </template>
 
@@ -427,6 +429,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/themeStore'
 import { useMarketplaceStore } from '../stores/marketplaceStore'
+import SolarAssistant from '../components/SolarAssistant.vue'
 import { useMessagingStore } from '../stores/messagingStore'
 import { useUserStore } from '../stores/userStore'
 import {
@@ -503,6 +506,17 @@ const heroSolarPayment = computed(() => {
   return Math.round((heroBill.value * (1 - discountFactor)) / 100) * 100
 })
 const costBasisLabel = `${formatPeso(INSTALLED_COST_PER_KW)} / kW`
+
+// Short, plain-language context handed to the solar assistant so answers can
+// reference the user's current numbers. Defensive: tolerates missing values.
+const assistantContext = computed(() => {
+  const parts = []
+  if (typeof heroBill.value === 'number') parts.push(`kasalukuyang Meralco bill ~₱${heroBill.value}/buwan`)
+  const r = results.value
+  if (r?.systemSize) parts.push(`tinatayang system ~${r.systemSize} kW`)
+  if (r?.paybackYears) parts.push(`payback ~${r.paybackYears} taon`)
+  return parts.join(', ')
+})
 const processingMessages = [
   'Checking live solar potential',
   'Reading irradiance and temperature signals',

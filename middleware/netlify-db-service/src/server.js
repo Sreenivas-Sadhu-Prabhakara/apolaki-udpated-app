@@ -57,6 +57,7 @@ import adminUserRoutesModule from './routes/admin/users.js';
 import authRoutesModule from './routes/auth.js';
 import messageRoutesModule from './routes/messages.js';
 import personaRoutesModule from './routes/personas.js';
+import assistantRoutesModule from './routes/assistant.js';
 
 // Handle CJS/ESM interop — esbuild bundling on Netlify can wrap default exports
 const passport = passportModule.default || passportModule;
@@ -64,6 +65,7 @@ const routes = routesModule.default || routesModule;
 const authRoutes = authRoutesModule.default || authRoutesModule;
 const messageRoutes = messageRoutesModule.default || messageRoutesModule;
 const personaRoutes = personaRoutesModule.default || personaRoutesModule;
+const assistantRoutes = assistantRoutesModule.default || assistantRoutesModule;
 const adminAuthRoutes = adminAuthRoutesModule.default || adminAuthRoutesModule;
 const adminUserRoutes = adminUserRoutesModule.default || adminUserRoutesModule;
 const adminAuditLogRoutes = adminAuditLogRoutesModule.default || adminAuditLogRoutesModule;
@@ -119,6 +121,9 @@ app.get('/health', async (req, res) => {
 });
 
 // Auth routes
+// Solar assistant proxy (own auth; bypasses the consent-policy layer)
+app.use('/api/assistant', assistantRoutes);
+
 app.use('/api', enforceApiPolicy);
 
 app.use('/api/auth', authRoutes);
