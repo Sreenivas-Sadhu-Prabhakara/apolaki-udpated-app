@@ -12,6 +12,7 @@ import multer from 'multer';
 import path from 'path';
 import { CONSENT_VERSION, normalizeRole } from '../auth/access-control.js';
 import { authenticateToken, authorizeRole } from '../auth/middleware.js';
+import { requiresInstallerMessagingConsent } from '../messaging/consent.js';
 import { auditLogs, messaging, userConsents, users, pushSubscriptions } from '../db.js';
 
 const express = expressModule.default || expressModule;
@@ -428,7 +429,7 @@ router.post('/conversations', authenticateToken, async (req, res) => {
     return res.status(400).json({ success: false, error: 'Target user not found.', code: 'INVALID_TARGET' });
   }
 
-  if (!(await hasInstallerMessagingConsent(consumerId))) {
+  if (requiresInstallerMessagingConsent(targetContextType) && !(await hasInstallerMessagingConsent(consumerId))) {
     return consentRequired(res);
   }
 
@@ -479,7 +480,7 @@ router.post('/conversations/:conversationId/messages', authenticateToken, async 
   if (!isConversationParticipant(req.user, conversation)) {
     return res.status(403).json({ success: false, error: 'Only conversation participants can send messages.', code: 'CONVERSATION_DENIED' });
   }
-  if (!(await hasInstallerMessagingConsent(conversation.consumer_id))) {
+  if (requiresInstallerMessagingConsent(conversation.context_type) && !(await hasInstallerMessagingConsent(conversation.consumer_id))) {
     return consentRequired(res);
   }
 
