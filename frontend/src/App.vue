@@ -171,6 +171,10 @@
     </main>
 
     <ChatWidget />
+
+    <!-- App-wide AI solar help chatbot (the /assessment view mounts its own
+         context-aware instance, so exclude that route here to avoid a duplicate) -->
+    <SolarAssistant v-if="showChrome && route.name !== 'Assessment'" placement="left" />
   </div>
 </template>
 
@@ -179,6 +183,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BrandLogo from './components/BrandLogo.vue'
 import ChatWidget from './components/ChatWidget.vue'
+import SolarAssistant from './components/SolarAssistant.vue'
 import { useMessagingStore } from './stores/messagingStore'
 import { useThemeStore } from './stores/themeStore'
 import { useUserStore } from './stores/userStore'
