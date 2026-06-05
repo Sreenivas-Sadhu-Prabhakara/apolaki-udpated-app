@@ -1,5 +1,5 @@
 <template>
-  <div class="solar-assistant">
+  <div class="solar-assistant" :class="'sa-place-' + placement">
     <button v-if="!open" class="sa-toggle" data-test="assistant-toggle" @click="open = true">
       ☀️ Tanong sa Solar Assistant
     </button>
@@ -50,6 +50,7 @@ import assistantApi from '../services/assistantApi'
 const props = defineProps({
   context: { type: String, default: '' },
   mode: { type: String, default: 'customer' },
+  placement: { type: String, default: 'right' }, // 'left' | 'right'
 })
 
 const open = ref(false)
@@ -100,7 +101,9 @@ async function rate(m, rating) {
 </script>
 
 <style scoped>
-.solar-assistant { position: fixed; right: 1rem; bottom: 1rem; z-index: 50; }
+.solar-assistant { position: fixed; bottom: 1rem; z-index: 50; }
+.sa-place-right { right: 1rem; }
+.sa-place-left { left: 1rem; }
 .sa-toggle { padding: .6rem 1rem; border: none; border-radius: 999px; background: #f59e0b; color: #1f2937; font-weight: 600; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.2); }
 .sa-panel { width: min(380px, 92vw); height: 520px; display: flex; flex-direction: column; background: #fff; color: #1f2937; border: 1px solid #e5e7eb; border-radius: .8rem; box-shadow: 0 12px 40px rgba(0,0,0,.25); overflow: hidden; }
 .sa-header { display: flex; justify-content: space-between; align-items: center; padding: .6rem .8rem; background: #f59e0b; color: #1f2937; }

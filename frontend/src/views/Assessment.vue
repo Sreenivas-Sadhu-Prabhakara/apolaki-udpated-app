@@ -420,7 +420,7 @@
       </section>
     </div>
 
-    <SolarAssistant :context="assistantContext" mode="customer" />
+    <SolarAssistant :context="assistantContext" mode="customer" placement="left" />
   </main>
 </template>
 
