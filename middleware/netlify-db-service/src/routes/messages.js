@@ -14,6 +14,7 @@ import { CONSENT_VERSION, normalizeRole } from '../auth/access-control.js';
 import { authenticateToken, authorizeRole } from '../auth/middleware.js';
 import { requiresInstallerMessagingConsent, isSupportContext } from '../messaging/consent.js';
 import { canSendToConversation } from '../messaging/access.js';
+import { isValidEncryptedBody } from '../messaging/payload.js';
 import { auditLogs, messaging, userConsents, users, pushSubscriptions } from '../db.js';
 
 const express = expressModule.default || expressModule;
@@ -496,7 +497,7 @@ router.post('/conversations/:conversationId/messages', authenticateToken, async 
   }
 
   const encryptedBody = req.body?.encryptedBody;
-  if (typeof encryptedBody !== 'string' || encryptedBody.trim().length < 12) {
+  if (!isValidEncryptedBody(encryptedBody)) {
     return encryptedPayloadRequired(res);
   }
 
