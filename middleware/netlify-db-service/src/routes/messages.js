@@ -12,7 +12,8 @@ import multer from 'multer';
 import path from 'path';
 import { CONSENT_VERSION, normalizeRole } from '../auth/access-control.js';
 import { authenticateToken, authorizeRole } from '../auth/middleware.js';
-import { requiresInstallerMessagingConsent } from '../messaging/consent.js';
+import { requiresInstallerMessagingConsent, isSupportContext } from '../messaging/consent.js';
+import { canSendToConversation } from '../messaging/access.js';
 import { auditLogs, messaging, userConsents, users, pushSubscriptions } from '../db.js';
 
 const express = expressModule.default || expressModule;
@@ -477,8 +478,18 @@ router.post('/conversations/:conversationId/messages', authenticateToken, async 
   if (!conversation) {
     return res.status(404).json({ success: false, error: 'Conversation not found.', code: 'CONVERSATION_NOT_FOUND' });
   }
-  if (!isConversationParticipant(req.user, conversation)) {
+  const senderIsParticipant = isConversationParticipant(req.user, conversation);
+  if (!canSendToConversation({
+    isParticipant: senderIsParticipant,
+    isPrivileged: isPrivileged(req.user),
+    isSupport: isSupportContext(conversation.context_type),
+  })) {
     return res.status(403).json({ success: false, error: 'Only conversation participants can send messages.', code: 'CONVERSATION_DENIED' });
+  }
+  if (!senderIsParticipant && isPrivileged(req.user)) {
+    await audit(req, 'MESSAGING_ADMIN_REPLY', 'messaging_conversation', conversation.id, 'success', {
+      reason: 'support_quality_control_or_legal_review'
+    });
   }
   if (requiresInstallerMessagingConsent(conversation.context_type) && !(await hasInstallerMessagingConsent(conversation.consumer_id))) {
     return consentRequired(res);
