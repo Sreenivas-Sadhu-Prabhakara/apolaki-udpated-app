@@ -728,3 +728,43 @@ When choosing between two approaches:
 ---
 
 **This document is authoritative. If any generated code conflicts with these guidelines, the guidelines win.**
+
+---
+
+## Solar Assistant (AI chat) — integration notes & gotchas
+
+The AI chat widget proxies to a **self-hosted Go assistant on the Mac Studio** (repo `llm-slm`)
+via `/api/assistant/*`. Operational steps: **`docs/solar-assistant-runbook.md`**. Key files:
+`src/assistant/proxy.js`, `src/routes/assistant.js` (backend); `frontend/src/components/SolarAssistant.vue`,
+`frontend/src/services/assistantApi.js` (frontend). It's same-origin (CSP-safe) and non-streaming
+(the proxy consumes the assistant's SSE server-side and returns JSON).
+
+**Gotchas learned the hard way (re-read before debugging these areas):**
+
+1. **`ensureSchema()` does NOT reliably run in production.** It's fire-and-forget at module load
+   (`server.js`), and Netlify Functions freeze after responding, so its later `CREATE TABLE`s may
+   never execute. Symptom: `relation "<table>" does not exist` 500s for newer tables.
+   **Fix pattern:** create the table **on-demand** in the feature's db functions
+   (`CREATE TABLE IF NOT EXISTS` at the top), like `ensureWishlistTable` in `db.js`. Don't rely on
+   `ensureSchema` alone for a new table in prod.
+
+2. **Netlify env vars only apply on a NEW deploy.** Setting/changing `SOLAR_ASSISTANT_URL` (or any
+   env var) does nothing until you trigger a fresh deploy. The deployed function reads
+   `process.env` at cold-start. Always **redeploy after env changes**.
+
+3. **Messaging authorization model** (`src/routes/messages.js` + `src/messaging/`):
+   - **Support conversations** (`context_type:'support'`) are exempt from the `installer_messaging`
+     consent gate (`messaging/consent.js`) and route to an admin agent. Installer/private chats
+     still require it.
+   - **Send access** (`messaging/access.js`): participants always; **privileged** roles
+     (admin/operations/superadmin) may reply to **support** conversations only — mirroring the
+     GET read-exemption. Keep GET-read and POST-send permission rules in sync.
+   - Message body is a base64 envelope; **do not impose an arbitrary min length** — short messages
+     encode to few chars (`messaging/payload.js`: non-empty is the only requirement).
+
+4. **`enforceApiPolicy` runs before most routes** and 403s `POLICY_NOT_REGISTERED` for unregistered
+   `/api/*` paths (`src/auth/policy.js`). A route mounted **before** it (e.g. `/api/assistant`)
+   bypasses the consent-policy layer and must do its own auth.
+
+5. **Backend tests** use Node's built-in `node --test` (zero new deps); see `src/messaging/*.test.js`,
+   `src/assistant/proxy.test.js`. Keep new authz/validation logic in small pure helpers + tests.
