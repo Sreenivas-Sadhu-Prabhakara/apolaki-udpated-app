@@ -106,7 +106,7 @@ else
   gc storage buckets create "${BUCKET_URI}" \
     --location="${REGION}" \
     --uniform-bucket-level-access \
-    --pap=enforced \
+    --public-access-prevention \
     --default-storage-class=STANDARD
   log "Created ${BUCKET_URI}"
 fi
@@ -114,7 +114,7 @@ fi
 # Re-assert the privacy settings on every run (cheap, makes drift impossible).
 gc storage buckets update "${BUCKET_URI}" \
   --uniform-bucket-level-access \
-  --pap=enforced
+  --public-access-prevention
 log "Re-asserted: uniform bucket-level access ON, public access prevention ENFORCED."
 
 # -----------------------------------------------------------------------------

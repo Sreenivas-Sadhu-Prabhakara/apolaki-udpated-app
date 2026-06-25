@@ -1,15 +1,8 @@
 {
-  "//": "Conservative lifecycle for the Apolaki assessment-photo bucket. It ONLY cleans up storage waste, it never deletes real user photos. The backend writes objects via signed PUT and inserts a DB row with status='pending' first; if the browser upload is abandoned mid-flight (network drop, user closes tab) the object can be left as an incomplete/un-finalized upload. The rules below reclaim that stray data. Tune/disable to taste — see infra/gcs/README.md. This file is consumed by: gcloud storage buckets update gs://BUCKET --lifecycle-file=lifecycle.json",
   "rule": [
     {
-      "//": "Abort incomplete multipart/resumable uploads that never finished. These are not visible objects, just wasted, billable, un-finalized upload state. 1 day is generous for a single-photo upload that should take seconds.",
-      "action": { "type": "AbortIncompleteMultipartUpload" },
-      "condition": { "age": 1 }
-    },
-    {
-      "//": "Belt-and-suspenders: if object versioning is ever enabled, purge noncurrent (overwritten/deleted) object versions after 7 days so erased photos cannot linger. This is a no-op unless versioning is turned on. Safe to remove.",
       "action": { "type": "Delete" },
-      "condition": { "daysSinceNoncurrentTime": 7, "isLive": false }
+      "condition": { "daysSinceNoncurrentTime": 7 }
     }
   ]
 }
