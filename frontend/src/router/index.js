@@ -78,6 +78,18 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/installer-feed',
+    name: 'InstallerFeed',
+    component: () => import('../views/InstallerFeed.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/installer-feed/i/:handle',
+    name: 'InstallerProfile',
+    component: () => import('../views/InstallerProfile.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/messaging',
     name: 'Messaging',
     component: () => import('../views/Messaging.vue'),

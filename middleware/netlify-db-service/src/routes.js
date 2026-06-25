@@ -8,6 +8,7 @@ import express from 'express';
 import { CONSENT_VERSION, normalizeRole } from './auth/access-control.js';
 import { authenticateToken } from './auth/middleware.js';
 import assessmentPhotosRouter from './routes/assessmentPhotos.js';
+import installerFeedRouter from './routes/installerFeed.js';
 import {
     assessments,
     contracts,
@@ -1266,6 +1267,25 @@ router.post('/solar/lookup', authenticateToken, async (req, res) => {
 //   GET    /api/assessments/:id/photos
 //   DELETE /api/assessments/:id/photos/:photoId
 router.use('/assessments/:id/photos', assessmentPhotosRouter);
+
+// ============================================
+// INSTALLER FEED ROUTES (anonymised contractor portfolio + GCS photos)
+// ============================================
+//
+// Mounted at /api/installer-feed. The router declares full relative paths so
+// the final routes resolve to exactly:
+//   GET    /api/installer-feed
+//   GET    /api/installer-feed/posts/:postId
+//   GET    /api/installer-feed/installers/:handle
+//   GET    /api/installer-feed/my/installations
+//   POST   /api/installer-feed/posts
+//   PATCH  /api/installer-feed/posts/:postId
+//   DELETE /api/installer-feed/posts/:postId
+//   POST   /api/installer-feed/posts/:postId/photos/upload-url
+//   POST   /api/installer-feed/posts/:postId/photos/:photoId/confirm
+//   GET    /api/installer-feed/posts/:postId/photos
+//   DELETE /api/installer-feed/posts/:postId/photos/:photoId
+router.use('/installer-feed', installerFeedRouter);
 
 /**
  * GET /api/assessments

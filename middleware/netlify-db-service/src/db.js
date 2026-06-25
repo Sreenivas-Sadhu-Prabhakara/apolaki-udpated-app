@@ -4,8 +4,20 @@
  */
 
 import { neon } from '@netlify/neon';
+import { createHash } from 'crypto';
 import pkg from 'pg';
 const { Pool } = pkg;
+
+/**
+ * Deterministic pseudonymous handle for a contractor.
+ * Format: INST-XXXXXXXX = 'INST-' + sha256(userId + salt).slice(0,8).toUpperCase().
+ * Kept in sync with getInstallerHandle() in src/services/installerIdentity.js.
+ */
+function computeInstallerHandle(userId) {
+  const salt = process.env.INSTALLER_HANDLE_SALT || 'apolaki-installer-feed';
+  const hex = createHash('sha256').update(String(userId) + salt).digest('hex');
+  return 'INST-' + hex.slice(0, 8).toUpperCase();
+}
 
 let sql;
 let pool;
@@ -505,6 +517,61 @@ async function ensureMarketplaceSchema() {
   }
 }
 
+let installerFeedSchemaEnsured = false;
+
+/**
+ * Idempotent schema for the anonymised installer feed.
+ * Depends on solar_installations and dealer_profiles already existing, so it is
+ * called AFTER ensureMarketplaceSchema() in both ensureSchema() branches.
+ */
+async function ensureInstallerFeedSchema() {
+  if (installerFeedSchemaEnsured) return;
+
+  const sqlInstance = getSqlInstance();
+  try {
+    // Link an installation to the contractor who commissioned it.
+    await sqlInstance`ALTER TABLE solar_installations ADD COLUMN IF NOT EXISTS installer_user_id UUID REFERENCES users(id)`;
+    // Stable pseudonymous handle for a contractor (INST-XXXXXXXX).
+    await sqlInstance`ALTER TABLE dealer_profiles ADD COLUMN IF NOT EXISTS public_handle VARCHAR(24) UNIQUE`;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS installer_feed_posts (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        installer_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        installation_id UUID NOT NULL REFERENCES solar_installations(id) ON DELETE CASCADE,
+        caption TEXT,
+        status VARCHAR(16) NOT NULL DEFAULT 'published',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS installer_feed_photos (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        post_id UUID NOT NULL REFERENCES installer_feed_posts(id) ON DELETE CASCADE,
+        installer_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        object_path TEXT NOT NULL,
+        content_type VARCHAR(64) NOT NULL,
+        size_bytes BIGINT,
+        status VARCHAR(16) NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        uploaded_at TIMESTAMP
+      )
+    `;
+
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_installer_feed_posts_installer ON installer_feed_posts(installer_user_id)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_installer_feed_posts_installation ON installer_feed_posts(installation_id)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_installer_feed_posts_feed ON installer_feed_posts(status, created_at DESC)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_installer_feed_photos_post ON installer_feed_photos(post_id)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_installer_feed_photos_installer ON installer_feed_photos(installer_user_id)`;
+    installerFeedSchemaEnsured = true;
+  } catch (error) {
+    installerFeedSchemaEnsured = false;
+    throw error;
+  }
+}
+
 async function ensureSchema() {
   if (schemaEnsured) return;
   schemaEnsured = true;
@@ -526,6 +593,7 @@ async function ensureSchema() {
       await ensureMessagingSchema();
       await ensureMarketplaceSchema();
       await ensureAssessmentPhotosSchema();
+      await ensureInstallerFeedSchema();
       console.log('✅ Database schema already exists');
       return;
     }
@@ -785,6 +853,7 @@ async function ensureSchema() {
     await ensureMessagingSchema();
     await ensureMarketplaceSchema();
     await ensureAssessmentPhotosSchema();
+    await ensureInstallerFeedSchema();
 
     console.log('✅ Database schema created successfully');
   } catch (error) {
@@ -793,7 +862,7 @@ async function ensureSchema() {
   }
 }
 
-export { ensureAdminSchema, ensureAssessmentPhotosSchema, ensureConsentSchema, ensureInitialized, ensureMarketplaceSchema, ensureMessagingSchema, ensureSchema, initializeDatabase };
+export { ensureAdminSchema, ensureAssessmentPhotosSchema, ensureConsentSchema, ensureInitialized, ensureInstallerFeedSchema, ensureMarketplaceSchema, ensureMessagingSchema, ensureSchema, initializeDatabase };
 
 /**
  * User operations
@@ -928,13 +997,14 @@ export const solarInstallations = {
     longitude,
     capacity,
     panelCount,
-    inverterType
+    inverterType,
+    installerUserId = null
   }) {
     const sqlInstance = getSqlInstance();
     const result = await sqlInstance`
-      INSERT INTO solar_installations 
-      (user_id, name, address, city, state, zip_code, latitude, longitude, capacity, panel_count, inverter_type)
-      VALUES (${userId}, ${name}, ${address}, ${city}, ${state}, ${zipCode}, ${latitude}, ${longitude}, ${capacity}, ${panelCount}, ${inverterType})
+      INSERT INTO solar_installations
+      (user_id, name, address, city, state, zip_code, latitude, longitude, capacity, panel_count, inverter_type, installer_user_id)
+      VALUES (${userId}, ${name}, ${address}, ${city}, ${state}, ${zipCode}, ${latitude}, ${longitude}, ${capacity}, ${panelCount}, ${inverterType}, ${installerUserId})
       RETURNING *
     `;
     return result[0];
@@ -957,10 +1027,37 @@ export const solarInstallations = {
   async getByUserId(userId) {
     const sqlInstance = getSqlInstance();
     return await sqlInstance`
-      SELECT * FROM solar_installations 
+      SELECT * FROM solar_installations
       WHERE user_id = ${userId}
       ORDER BY created_at DESC
     `;
+  },
+
+  /**
+   * Get all installations commissioned by a contractor (installer feed).
+   */
+  async getByInstaller(installerUserId) {
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`
+      SELECT * FROM solar_installations
+      WHERE installer_user_id = ${installerUserId}
+      ORDER BY created_at DESC
+    `;
+  },
+
+  /**
+   * Set (or clear) the contractor who commissioned this installation.
+   */
+  async setInstaller(id, installerUserId) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      UPDATE solar_installations
+      SET installer_user_id = ${installerUserId},
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${id}
+      RETURNING *
+    `;
+    return result[0];
   },
 
   /**
@@ -1620,6 +1717,263 @@ export const marketplaceBookings = {
       WHERE b.user_id = ${userId}
       ORDER BY b.created_at DESC
     `;
+  }
+};
+
+/**
+ * Dealer profile operations used by the installer feed.
+ * A contractor is a user with role 'dealer' whose dealer_profiles.type === 'installer'.
+ */
+export const dealerProfiles = {
+  /**
+   * Get the dealer profile owned by a user (one row per user expected).
+   */
+  async getByUserId(userId) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      SELECT * FROM dealer_profiles WHERE user_id = ${userId} ORDER BY created_at ASC LIMIT 1
+    `;
+    return result[0];
+  },
+
+  /**
+   * Look up a dealer profile by its public (pseudonymous) handle.
+   */
+  async getByHandle(handle) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      SELECT * FROM dealer_profiles WHERE public_handle = ${handle} LIMIT 1
+    `;
+    return result[0];
+  },
+
+  /**
+   * Lazily assign + persist the pseudonymous public_handle for a contractor.
+   * Idempotent: returns the existing handle if already set. The handle is a
+   * deterministic function of the user id so re-assignment is stable.
+   * @returns {Promise<string|null>} the handle, or null if the user has no dealer profile
+   */
+  async ensureHandle(userId) {
+    const sqlInstance = getSqlInstance();
+    const existing = await sqlInstance`
+      SELECT id, public_handle FROM dealer_profiles WHERE user_id = ${userId} ORDER BY created_at ASC LIMIT 1
+    `;
+    if (!existing[0]) return null;
+    if (existing[0].public_handle) return existing[0].public_handle;
+
+    const handle = computeInstallerHandle(userId);
+    const updated = await sqlInstance`
+      UPDATE dealer_profiles
+      SET public_handle = ${handle}, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${existing[0].id}
+      RETURNING public_handle
+    `;
+    return updated[0]?.public_handle || handle;
+  }
+};
+
+/**
+ * Installer feed post operations (anonymised contractor portfolio).
+ */
+export const installerFeedPosts = {
+  /**
+   * Create a published (default) post for one of the contractor's installations.
+   */
+  async create({ installerUserId, installationId, caption = null, status = 'published' }) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      INSERT INTO installer_feed_posts
+      (installer_user_id, installation_id, caption, status)
+      VALUES (${installerUserId}, ${installationId}, ${caption}, ${status})
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  /**
+   * Get a post by id, joined with its installation (for the POSTCARD shape).
+   */
+  async getById(id) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      SELECT p.*,
+        i.capacity AS installation_capacity,
+        i.panel_count AS installation_panel_count,
+        i.city AS installation_city,
+        i.state AS installation_state,
+        i.install_date AS installation_install_date,
+        i.inverter_type AS installation_inverter_type,
+        i.user_id AS installation_owner_id
+      FROM installer_feed_posts p
+      JOIN solar_installations i ON i.id = p.installation_id
+      WHERE p.id = ${id}
+    `;
+    return result[0];
+  },
+
+  /**
+   * Get all posts for a contractor (newest first), joined with installation data.
+   */
+  async getByInstaller(installerUserId) {
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`
+      SELECT p.*,
+        i.capacity AS installation_capacity,
+        i.panel_count AS installation_panel_count,
+        i.city AS installation_city,
+        i.state AS installation_state,
+        i.install_date AS installation_install_date,
+        i.inverter_type AS installation_inverter_type,
+        i.user_id AS installation_owner_id
+      FROM installer_feed_posts p
+      JOIN solar_installations i ON i.id = p.installation_id
+      WHERE p.installer_user_id = ${installerUserId}
+      ORDER BY p.created_at DESC
+    `;
+  },
+
+  /**
+   * Cursor-paginated global feed of published posts (newest first).
+   * Cursor is an ISO created_at timestamp; rows strictly older than it are returned.
+   * @returns {Promise<{ items: Array, nextCursor: string|null }>}
+   */
+  async listFeed({ cursor = null, limit = 20 } = {}) {
+    const sqlInstance = getSqlInstance();
+    const lim = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 50);
+    const fetch = lim + 1;
+    let rows;
+    if (cursor) {
+      rows = await sqlInstance`
+        SELECT p.*,
+          i.capacity AS installation_capacity,
+          i.panel_count AS installation_panel_count,
+          i.city AS installation_city,
+          i.state AS installation_state,
+          i.install_date AS installation_install_date,
+          i.inverter_type AS installation_inverter_type,
+          i.user_id AS installation_owner_id
+        FROM installer_feed_posts p
+        JOIN solar_installations i ON i.id = p.installation_id
+        WHERE p.status = 'published' AND p.created_at < ${cursor}
+        ORDER BY p.created_at DESC
+        LIMIT ${fetch}
+      `;
+    } else {
+      rows = await sqlInstance`
+        SELECT p.*,
+          i.capacity AS installation_capacity,
+          i.panel_count AS installation_panel_count,
+          i.city AS installation_city,
+          i.state AS installation_state,
+          i.install_date AS installation_install_date,
+          i.inverter_type AS installation_inverter_type,
+          i.user_id AS installation_owner_id
+        FROM installer_feed_posts p
+        JOIN solar_installations i ON i.id = p.installation_id
+        WHERE p.status = 'published'
+        ORDER BY p.created_at DESC
+        LIMIT ${fetch}
+      `;
+    }
+    let nextCursor = null;
+    if (rows.length > lim) {
+      const last = rows[lim - 1];
+      nextCursor = last.created_at instanceof Date ? last.created_at.toISOString() : last.created_at;
+      rows = rows.slice(0, lim);
+    }
+    return { items: rows, nextCursor };
+  },
+
+  /**
+   * Update a post's caption and/or status.
+   */
+  async update(id, { caption, status } = {}) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      UPDATE installer_feed_posts
+      SET caption = COALESCE(${caption !== undefined ? caption : null}, caption),
+          status = COALESCE(${status || null}, status),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${id}
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  /**
+   * Delete a post (photo rows cascade via FK).
+   */
+  async remove(id) {
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`DELETE FROM installer_feed_posts WHERE id = ${id}`;
+  }
+};
+
+/**
+ * Installer feed photo operations.
+ * Photos live in a PRIVATE GCS bucket; this table tracks metadata and the
+ * server-derived object_path. Access is only via short-lived signed URLs.
+ */
+export const installerFeedPhotos = {
+  /**
+   * Create a pending photo record (before the client uploads to GCS).
+   */
+  async create({ id, postId, installerUserId, objectPath, contentType, sizeBytes }) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      INSERT INTO installer_feed_photos
+      (id, post_id, installer_user_id, object_path, content_type, size_bytes, status)
+      VALUES (${id}, ${postId}, ${installerUserId}, ${objectPath}, ${contentType}, ${sizeBytes ?? null}, 'pending')
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  /**
+   * Get all photos for a post (oldest first).
+   */
+  async getByPost(postId) {
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`
+      SELECT * FROM installer_feed_photos
+      WHERE post_id = ${postId}
+      ORDER BY created_at ASC
+    `;
+  },
+
+  /**
+   * Get a photo by id.
+   */
+  async getById(id) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      SELECT * FROM installer_feed_photos WHERE id = ${id}
+    `;
+    return result[0];
+  },
+
+  /**
+   * Mark a pending photo as uploaded.
+   */
+  async markUploaded(id, sizeBytes) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      UPDATE installer_feed_photos
+      SET status = 'uploaded',
+          uploaded_at = CURRENT_TIMESTAMP,
+          size_bytes = COALESCE(${sizeBytes ?? null}, size_bytes)
+      WHERE id = ${id}
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  /**
+   * Delete a photo record. GCS object is removed separately (best-effort).
+   */
+  async remove(id) {
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`DELETE FROM installer_feed_photos WHERE id = ${id}`;
   }
 };
 
@@ -2372,5 +2726,8 @@ export default {
   userConsents,
   breakGlassSessions,
   messaging,
-  pushSubscriptions
+  pushSubscriptions,
+  dealerProfiles,
+  installerFeedPosts,
+  installerFeedPhotos
 };

@@ -65,6 +65,16 @@ export function buildObjectPath({ userId, assessmentId, photoId, ext }) {
   return `users/${userId}/assessments/${assessmentId}/${photoId}.${ext}`;
 }
 
+/**
+ * Build the canonical, server-derived GCS object path for an installer feed
+ * post photo. Path is ALWAYS server-derived from the authenticated contractor
+ * id — never trust client-supplied paths.
+ * @returns {string} installers/{installerUserId}/posts/{postId}/{photoId}.{ext}
+ */
+export function buildInstallerPostObjectPath({ installerUserId, postId, photoId, ext }) {
+  return `installers/${installerUserId}/posts/${postId}/${photoId}.${ext}`;
+}
+
 export function getUploadTtlSec() {
   return parseInt(process.env.GCS_SIGNED_UPLOAD_TTL_SEC || String(DEFAULT_UPLOAD_TTL_SEC), 10);
 }
@@ -175,6 +185,7 @@ export default {
   GcsNotConfiguredError,
   extForContentType,
   buildObjectPath,
+  buildInstallerPostObjectPath,
   getUploadTtlSec,
   getReadTtlSec,
   getSignedUploadUrl,

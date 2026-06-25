@@ -103,9 +103,23 @@ import Button from './Button.vue'
 import assessmentPhotoApi from '../services/assessmentPhotoApi'
 
 const props = defineProps({
+  // Original assessment-photos usage. Kept so Assessment.vue works unchanged.
   assessmentId: {
     type: [String, Number],
-    required: true
+    default: null
+  },
+  // Generic resource id (e.g. an installer-feed postId). Takes precedence over
+  // assessmentId when both are somehow provided.
+  resourceId: {
+    type: [String, Number],
+    default: null
+  },
+  // Pluggable photo api. Must expose requestUploadUrl(id, {...}),
+  // uploadToGcs(url, file, headers, onProgress), confirmUpload(id, photoId, {...}),
+  // listPhotos(id), deletePhoto(id, photoId). Defaults to the assessment api.
+  photoApi: {
+    type: Object,
+    default: null
   },
   readonly: {
     type: Boolean,
@@ -115,6 +129,11 @@ const props = defineProps({
 
 const themeStore = useThemeStore()
 const isDark = computed(() => themeStore.isDarkMode)
+
+// Resolve the resource id + api object once; everything below works against
+// these instead of touching props.assessmentId / assessmentPhotoApi directly.
+const resolvedId = computed(() => props.resourceId ?? props.assessmentId)
+const apiObj = computed(() => props.photoApi ?? assessmentPhotoApi)
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic']
 const MAX_BYTES = 10 * 1024 * 1024
@@ -252,7 +271,7 @@ async function runUpload(tile) {
   const file = tile.file
   try {
     // 1) ask backend for a signed PUT url + pending row
-    const { data: urlRes } = await assessmentPhotoApi.requestUploadUrl(props.assessmentId, {
+    const { data: urlRes } = await apiObj.value.requestUploadUrl(resolvedId.value, {
       contentType: file.type,
       filename: file.name,
       sizeBytes: file.size
@@ -261,12 +280,12 @@ async function runUpload(tile) {
     tile.photoId = photoId
 
     // 2) upload the raw file straight to GCS with progress
-    await assessmentPhotoApi.uploadToGcs(uploadUrl, file, requiredHeaders, (percent) => {
+    await apiObj.value.uploadToGcs(uploadUrl, file, requiredHeaders, (percent) => {
       tile.progress = percent
     })
 
     // 3) confirm with the backend so the row flips to 'uploaded'
-    await assessmentPhotoApi.confirmUpload(props.assessmentId, photoId, { sizeBytes: file.size })
+    await apiObj.value.confirmUpload(resolvedId.value, photoId, { sizeBytes: file.size })
 
     tile.status = 'uploaded'
     tile.progress = 100
@@ -305,7 +324,7 @@ async function removeTile(tile) {
   tile.removing = true
   errorMessage.value = ''
   try {
-    await assessmentPhotoApi.deletePhoto(props.assessmentId, tile.photoId)
+    await apiObj.value.deletePhoto(resolvedId.value, tile.photoId)
     detachTile(tile)
   } catch {
     tile.removing = false
@@ -325,7 +344,7 @@ function detachTile(tile) {
 async function loadExisting() {
   loadingExisting.value = true
   try {
-    const { data: res } = await assessmentPhotoApi.listPhotos(props.assessmentId)
+    const { data: res } = await apiObj.value.listPhotos(resolvedId.value)
     const rows = res.data || []
     for (const row of rows) {
       // Only render rows that actually landed and carry a signed read url.
@@ -350,7 +369,7 @@ async function loadExisting() {
 }
 
 onMounted(() => {
-  if (props.assessmentId) loadExisting()
+  if (resolvedId.value) loadExisting()
 })
 
 onBeforeUnmount(() => {
