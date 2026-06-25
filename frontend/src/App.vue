@@ -36,6 +36,7 @@
           <li><router-link to="/finance" class="nav-link transition">3. Financing</router-link></li>
           <li><router-link to="/marketplace" class="nav-link transition">4. Marketplace</router-link></li>
           <li><router-link to="/installations" class="nav-link transition">5. Installations</router-link></li>
+          <li v-if="userStore.user"><router-link to="/installer-feed" class="nav-link transition">📸 Install Feed</router-link></li>
           <li>
             <button @click="openMessages" class="nav-link transition flex items-center gap-1.5 focus:outline-none">
               Messages <span v-if="unreadCount" class="unread-dot"></span>
@@ -130,6 +131,7 @@
             <li><router-link to="/finance" class="mobile-link" @click="mobileMenuOpen = false">3. Financing</router-link></li>
             <li><router-link to="/marketplace" class="mobile-link" @click="mobileMenuOpen = false">4. Marketplace</router-link></li>
             <li><router-link to="/installations" class="mobile-link" @click="mobileMenuOpen = false">5. Installations</router-link></li>
+            <li v-if="userStore.user"><router-link to="/installer-feed" class="mobile-link" @click="mobileMenuOpen = false">📸 Install Feed</router-link></li>
             <div class="dropdown-divider"></div>
             <li v-if="canOpenDealerPortal">
               <router-link to="/installer" class="mobile-link" @click="mobileMenuOpen = false">🔧 Installer Portal</router-link>

@@ -135,7 +135,43 @@ export const API_POLICY_MATRIX = [
   policy('POST', '/assessments/calculate', { permission: 'assessment:calculate', requiredConsents: ['location_assessment'], auditOnAllow: true }),
   policy('POST', '/assessments', { permission: 'assessment:create', requiredConsents: ['location_assessment'], auditOnAllow: true }),
   policy('GET', '/assessments/:id', { permission: 'assessment:read', requiredConsents: ['location_assessment'], boundary: 'assessmentId', consentSubject: 'owner' }),
+  // Assessment photos (PRIVATE GCS bucket). Ownership of the parent assessment is
+  // enforced here at the gate (boundary 'assessmentId' resolves owner via :id) and
+  // again inside the route handlers (defense in depth). Photo object paths are
+  // always server-derived from req.user.id — the client never names a path.
+  // More specific (longer) paths are listed before the bare collection route.
+  policy('POST', '/assessments/:id/photos/upload-url', { permission: 'assessment:photo:create', requiredConsents: ['location_assessment'], boundary: 'assessmentId', consentSubject: 'owner', auditOnAllow: true }),
+  policy('POST', '/assessments/:id/photos/:photoId/confirm', { permission: 'assessment:photo:create', requiredConsents: ['location_assessment'], boundary: 'assessmentId', consentSubject: 'owner', auditOnAllow: true }),
+  policy('DELETE', '/assessments/:id/photos/:photoId', { permission: 'assessment:photo:delete', requiredConsents: ['location_assessment'], boundary: 'assessmentId', consentSubject: 'owner', auditOnAllow: true }),
+  policy('GET', '/assessments/:id/photos', { permission: 'assessment:photo:list', requiredConsents: ['location_assessment'], boundary: 'assessmentId', consentSubject: 'owner' }),
   policy('GET', '/users/:userId/assessments', { permission: 'assessment:list', requiredConsents: ['location_assessment'], boundary: 'userIdParam', consentSubject: 'owner' }),
+
+  // Installer feed (anonymised contractor portfolio + PRIVATE GCS photos).
+  //
+  // Browse routes are readable by ANY authenticated user (no allowedRoles, no
+  // ownership boundary, no consent) — responses are anonymised by default and
+  // identity is unlocked per-viewer in the handlers via canRevealInstaller.
+  //
+  // Management/photo routes are limited to installer contractors + admins
+  // (allowedRoles dealer/installer/admin/superadmin, partner_sharing consent).
+  // Post/installation ownership and dealer_profiles.type==='installer' are
+  // enforced in the handlers — the gate has no boundary type for posts.
+  //
+  // ORDERING (matchPolicy returns the FIRST match): more specific paths come
+  // before generic ones. The literal '/installer-feed/my/installations' is
+  // listed BEFORE '/installer-feed/installers/:handle' so the single-segment
+  // wildcard does not shadow it. Photo sub-paths precede '/posts/:postId'.
+  policy('POST', '/installer-feed/posts/:postId/photos/upload-url', { permission: 'installerFeed:write', allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'], requiredConsents: ['partner_sharing'], auditOnAllow: true }),
+  policy('POST', '/installer-feed/posts/:postId/photos/:photoId/confirm', { permission: 'installerFeed:write', allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'], requiredConsents: ['partner_sharing'], auditOnAllow: true }),
+  policy('DELETE', '/installer-feed/posts/:postId/photos/:photoId', { permission: 'installerFeed:write', allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'], requiredConsents: ['partner_sharing'], auditOnAllow: true }),
+  policy('GET', '/installer-feed/posts/:postId/photos', { permission: 'installerFeed:write', allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'], requiredConsents: ['partner_sharing'], auditOnAllow: true }),
+  policy('POST', '/installer-feed/posts', { permission: 'installerFeed:write', allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'], requiredConsents: ['partner_sharing'], auditOnAllow: true }),
+  policy('PATCH', '/installer-feed/posts/:postId', { permission: 'installerFeed:write', allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'], requiredConsents: ['partner_sharing'], auditOnAllow: true }),
+  policy('DELETE', '/installer-feed/posts/:postId', { permission: 'installerFeed:write', allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'], requiredConsents: ['partner_sharing'], auditOnAllow: true }),
+  policy('GET', '/installer-feed/posts/:postId', { permission: 'installerFeed:read' }),
+  policy('GET', '/installer-feed/my/installations', { permission: 'installerFeed:write', allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'], requiredConsents: ['partner_sharing'], auditOnAllow: true }),
+  policy('GET', '/installer-feed/installers/:handle', { permission: 'installerFeed:read' }),
+  policy('GET', '/installer-feed', { permission: 'installerFeed:read' }),
 
   policy('POST', '/marketplace/products/:id/reviews', { permission: 'marketplace:review', requiredConsents: ['profile_account'], auditOnAllow: true }),
   policy('GET', '/marketplace/wishlist', { permission: 'marketplace:wishlist', requiredConsents: ['profile_account'] }),

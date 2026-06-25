@@ -216,6 +216,79 @@ CREATE TABLE IF NOT EXISTS assessments (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Assessment Photos table
+-- Photos live in a PRIVATE GCS bucket; this table tracks metadata and the
+-- server-derived object_path. Access is only via short-lived signed URLs.
+CREATE TABLE IF NOT EXISTS assessment_photos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  assessment_id UUID NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  object_path TEXT NOT NULL,
+  content_type VARCHAR(64) NOT NULL,
+  size_bytes BIGINT,
+  status VARCHAR(16) NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  uploaded_at TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_assessment_photos_assessment_id ON assessment_photos(assessment_id);
+CREATE INDEX IF NOT EXISTS idx_assessment_photos_user_id ON assessment_photos(user_id);
+
+-- ============================================================================
+-- Installer Feed (anonymised contractor portfolio)
+-- Contractors (role 'dealer' with dealer_profiles.type='installer') publish
+-- posts about installations they commissioned. The feed is browsable by any
+-- authenticated user but the contractor's identity is ANONYMISED behind a
+-- stable pseudonymous handle (dealer_profiles.public_handle) unless the viewer
+-- satisfies the identity-reveal predicate (see src/services/installerIdentity.js).
+-- ============================================================================
+
+-- Link an installation to the contractor who commissioned it (set during
+-- dealer commission). Nullable; the installation owner remains solar_installations.user_id.
+ALTER TABLE solar_installations ADD COLUMN IF NOT EXISTS installer_user_id UUID REFERENCES users(id);
+
+-- Stable pseudonymous handle for a contractor, format INST-XXXXXXXX.
+-- dealer_profiles is created by ensureMarketplaceSchema() in src/db.js; this
+-- ALTER is guarded so applying schema.sql standalone does not fail when the
+-- table has not been created yet.
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'dealer_profiles') THEN
+    ALTER TABLE dealer_profiles ADD COLUMN IF NOT EXISTS public_handle VARCHAR(24) UNIQUE;
+  END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS installer_feed_posts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  installer_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  installation_id UUID NOT NULL REFERENCES solar_installations(id) ON DELETE CASCADE,
+  caption TEXT,
+  status VARCHAR(16) NOT NULL DEFAULT 'published',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_installer_feed_posts_installer ON installer_feed_posts(installer_user_id);
+CREATE INDEX IF NOT EXISTS idx_installer_feed_posts_installation ON installer_feed_posts(installation_id);
+CREATE INDEX IF NOT EXISTS idx_installer_feed_posts_feed ON installer_feed_posts(status, created_at DESC);
+
+-- Photos live in a PRIVATE GCS bucket; this table tracks metadata and the
+-- server-derived object_path. Access is only via short-lived signed URLs.
+CREATE TABLE IF NOT EXISTS installer_feed_photos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id UUID NOT NULL REFERENCES installer_feed_posts(id) ON DELETE CASCADE,
+  installer_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  object_path TEXT NOT NULL,
+  content_type VARCHAR(64) NOT NULL,
+  size_bytes BIGINT,
+  status VARCHAR(16) NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  uploaded_at TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_installer_feed_photos_post ON installer_feed_photos(post_id);
+CREATE INDEX IF NOT EXISTS idx_installer_feed_photos_installer ON installer_feed_photos(installer_user_id);
+
 -- Marketplace Products table
 CREATE TABLE IF NOT EXISTS marketplace_products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

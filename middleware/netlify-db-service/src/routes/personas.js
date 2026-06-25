@@ -138,6 +138,9 @@ router.post('/dealer/commission', authenticateToken, authorizeRole('dealer', 'in
       capacity: capacity || 0,
       panelCount: panelCount || 0,
       inverterType: inverterType || '',
+      // The commissioning contractor owns this installation for the installer
+      // feed (lets them post it later). The installation OWNER remains ownerId.
+      installerUserId: req.user.id,
     });
 
     await auditLogs.create({

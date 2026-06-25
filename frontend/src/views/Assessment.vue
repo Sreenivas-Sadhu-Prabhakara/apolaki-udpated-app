@@ -269,6 +269,12 @@
           {{ savingAssessment ? 'Saving' : savedAssessmentId ? 'Saved' : 'Save assessment' }}
         </button>
         </div>
+
+        <PhotoUploader v-if="canAttachPhotos" :assessment-id="attachableAssessmentId" />
+        <p v-else class="photo-attach-note">
+          {{ userStore.isAuthenticated ? 'Save your assessment to attach site photos.' : 'Sign in and save your assessment to attach site photos.' }}
+        </p>
+
         <div class="results-grid">
           <div class="metric-card">
             <span>System size</span>
@@ -432,6 +438,7 @@ import { useMarketplaceStore } from '../stores/marketplaceStore'
 import SolarAssistant from '../components/SolarAssistant.vue'
 import { useMessagingStore } from '../stores/messagingStore'
 import { useUserStore } from '../stores/userStore'
+import PhotoUploader from '../components/PhotoUploader.vue'
 import {
   calculateAssessmentPlan,
   fetchSavedAssessmentPlans,
@@ -523,6 +530,11 @@ const processingMessages = [
   'Running backend payment calculation',
   'Preparing installer-ready recommendation'
 ]
+
+// Assessment id a photo can be attached to: the explicitly-saved id, or the
+// backend id created automatically during processing for an authenticated user.
+const attachableAssessmentId = computed(() => savedAssessmentId.value || backendSavedAssessmentId.value || '')
+const canAttachPhotos = computed(() => userStore.isAuthenticated && Boolean(attachableAssessmentId.value))
 
 const selectedProfile = computed(() => getUsageProfile(form.propertyType))
 const isStep1Valid = computed(() => Number(form.monthlyBill || 0) >= 500)
@@ -1770,6 +1782,23 @@ textarea {
 }
 
 .assessment-flow--dark .auth-gate-note {
+  color: #a7b4c3;
+}
+
+.photo-attach-note {
+  margin: 0;
+  border: 1px dashed #c7d6e4;
+  border-radius: 14px;
+  background: #f3f7fb;
+  padding: 16px 18px;
+  color: #607080;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.assessment-flow--dark .photo-attach-note {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
   color: #a7b4c3;
 }
 

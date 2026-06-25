@@ -58,3 +58,8 @@ tests/mochawesome-report/
 security_config.yaml
 users.json
 cors_env.txt
+
+# GCS service-account keys (NEVER commit). setup-gcs.sh writes one to repo root.
+*.key.json
+apolaki-gcs-signer*.json
+**/service-account*.json
