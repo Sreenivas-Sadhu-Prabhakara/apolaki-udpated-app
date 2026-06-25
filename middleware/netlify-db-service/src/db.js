@@ -379,6 +379,35 @@ async function ensureMessagingSchema() {
   }
 }
 
+let assessmentPhotosSchemaEnsured = false;
+
+async function ensureAssessmentPhotosSchema() {
+  if (assessmentPhotosSchemaEnsured) return;
+
+  const sqlInstance = getSqlInstance();
+  try {
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS assessment_photos (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        assessment_id UUID NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        object_path TEXT NOT NULL,
+        content_type VARCHAR(64) NOT NULL,
+        size_bytes BIGINT,
+        status VARCHAR(16) NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        uploaded_at TIMESTAMP
+      )
+    `;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_assessment_photos_assessment_id ON assessment_photos(assessment_id)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_assessment_photos_user_id ON assessment_photos(user_id)`;
+    assessmentPhotosSchemaEnsured = true;
+  } catch (error) {
+    assessmentPhotosSchemaEnsured = false;
+    throw error;
+  }
+}
+
 let marketplaceSchemaEnsured = false;
 
 async function ensureMarketplaceSchema() {
@@ -496,6 +525,7 @@ async function ensureSchema() {
       await ensureAdminSchema();
       await ensureMessagingSchema();
       await ensureMarketplaceSchema();
+      await ensureAssessmentPhotosSchema();
       console.log('✅ Database schema already exists');
       return;
     }
@@ -754,6 +784,7 @@ async function ensureSchema() {
     await ensureAdminSchema();
     await ensureMessagingSchema();
     await ensureMarketplaceSchema();
+    await ensureAssessmentPhotosSchema();
 
     console.log('✅ Database schema created successfully');
   } catch (error) {
@@ -762,7 +793,7 @@ async function ensureSchema() {
   }
 }
 
-export { ensureAdminSchema, ensureConsentSchema, ensureInitialized, ensureMarketplaceSchema, ensureMessagingSchema, ensureSchema, initializeDatabase };
+export { ensureAdminSchema, ensureAssessmentPhotosSchema, ensureConsentSchema, ensureInitialized, ensureMarketplaceSchema, ensureMessagingSchema, ensureSchema, initializeDatabase };
 
 /**
  * User operations
@@ -1309,6 +1340,74 @@ export const assessments = {
       RETURNING *
     `;
     return result[0];
+  }
+};
+
+/**
+ * Assessment Photo operations.
+ * Photos are stored in a PRIVATE GCS bucket; this table tracks metadata and
+ * the server-derived object_path. Access is always via short-lived signed URLs.
+ */
+export const assessmentPhotos = {
+  /**
+   * Create a pending photo record (before the client uploads to GCS).
+   */
+  async create({ id, assessmentId, userId, objectPath, contentType, sizeBytes }) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      INSERT INTO assessment_photos
+      (id, assessment_id, user_id, object_path, content_type, size_bytes, status)
+      VALUES (${id}, ${assessmentId}, ${userId}, ${objectPath}, ${contentType}, ${sizeBytes ?? null}, 'pending')
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  /**
+   * Get all photos for an assessment (oldest first).
+   */
+  async getByAssessment(assessmentId) {
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`
+      SELECT * FROM assessment_photos
+      WHERE assessment_id = ${assessmentId}
+      ORDER BY created_at ASC
+    `;
+  },
+
+  /**
+   * Get a photo by id.
+   */
+  async getById(id) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      SELECT * FROM assessment_photos WHERE id = ${id}
+    `;
+    return result[0];
+  },
+
+  /**
+   * Mark a pending photo as uploaded.
+   */
+  async markUploaded(id, sizeBytes) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      UPDATE assessment_photos
+      SET status = 'uploaded',
+          uploaded_at = CURRENT_TIMESTAMP,
+          size_bytes = COALESCE(${sizeBytes ?? null}, size_bytes)
+      WHERE id = ${id}
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  /**
+   * Delete a photo record (right-to-erasure). GCS object is removed separately.
+   */
+  async remove(id) {
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`DELETE FROM assessment_photos WHERE id = ${id}`;
   }
 };
 

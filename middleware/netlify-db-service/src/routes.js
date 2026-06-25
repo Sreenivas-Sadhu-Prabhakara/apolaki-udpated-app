@@ -7,6 +7,7 @@ import axios from 'axios';
 import express from 'express';
 import { CONSENT_VERSION, normalizeRole } from './auth/access-control.js';
 import { authenticateToken } from './auth/middleware.js';
+import assessmentPhotosRouter from './routes/assessmentPhotos.js';
 import {
     assessments,
     contracts,
@@ -1258,6 +1259,13 @@ router.post('/solar/lookup', authenticateToken, async (req, res) => {
 // ============================================
 // ASSESSMENT ROUTES
 // ============================================
+
+// GCS-backed assessment photo routes (mergeParams exposes :id = assessmentId):
+//   POST   /api/assessments/:id/photos/upload-url
+//   POST   /api/assessments/:id/photos/:photoId/confirm
+//   GET    /api/assessments/:id/photos
+//   DELETE /api/assessments/:id/photos/:photoId
+router.use('/assessments/:id/photos', assessmentPhotosRouter);
 
 /**
  * GET /api/assessments

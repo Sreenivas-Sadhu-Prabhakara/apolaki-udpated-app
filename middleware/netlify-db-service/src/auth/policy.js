@@ -135,6 +135,15 @@ export const API_POLICY_MATRIX = [
   policy('POST', '/assessments/calculate', { permission: 'assessment:calculate', requiredConsents: ['location_assessment'], auditOnAllow: true }),
   policy('POST', '/assessments', { permission: 'assessment:create', requiredConsents: ['location_assessment'], auditOnAllow: true }),
   policy('GET', '/assessments/:id', { permission: 'assessment:read', requiredConsents: ['location_assessment'], boundary: 'assessmentId', consentSubject: 'owner' }),
+  // Assessment photos (PRIVATE GCS bucket). Ownership of the parent assessment is
+  // enforced here at the gate (boundary 'assessmentId' resolves owner via :id) and
+  // again inside the route handlers (defense in depth). Photo object paths are
+  // always server-derived from req.user.id — the client never names a path.
+  // More specific (longer) paths are listed before the bare collection route.
+  policy('POST', '/assessments/:id/photos/upload-url', { permission: 'assessment:photo:create', requiredConsents: ['location_assessment'], boundary: 'assessmentId', consentSubject: 'owner', auditOnAllow: true }),
+  policy('POST', '/assessments/:id/photos/:photoId/confirm', { permission: 'assessment:photo:create', requiredConsents: ['location_assessment'], boundary: 'assessmentId', consentSubject: 'owner', auditOnAllow: true }),
+  policy('DELETE', '/assessments/:id/photos/:photoId', { permission: 'assessment:photo:delete', requiredConsents: ['location_assessment'], boundary: 'assessmentId', consentSubject: 'owner', auditOnAllow: true }),
+  policy('GET', '/assessments/:id/photos', { permission: 'assessment:photo:list', requiredConsents: ['location_assessment'], boundary: 'assessmentId', consentSubject: 'owner' }),
   policy('GET', '/users/:userId/assessments', { permission: 'assessment:list', requiredConsents: ['location_assessment'], boundary: 'userIdParam', consentSubject: 'owner' }),
 
   policy('POST', '/marketplace/products/:id/reviews', { permission: 'marketplace:review', requiredConsents: ['profile_account'], auditOnAllow: true }),

@@ -216,6 +216,24 @@ CREATE TABLE IF NOT EXISTS assessments (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Assessment Photos table
+-- Photos live in a PRIVATE GCS bucket; this table tracks metadata and the
+-- server-derived object_path. Access is only via short-lived signed URLs.
+CREATE TABLE IF NOT EXISTS assessment_photos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  assessment_id UUID NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  object_path TEXT NOT NULL,
+  content_type VARCHAR(64) NOT NULL,
+  size_bytes BIGINT,
+  status VARCHAR(16) NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  uploaded_at TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_assessment_photos_assessment_id ON assessment_photos(assessment_id);
+CREATE INDEX IF NOT EXISTS idx_assessment_photos_user_id ON assessment_photos(user_id);
+
 -- Marketplace Products table
 CREATE TABLE IF NOT EXISTS marketplace_products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
