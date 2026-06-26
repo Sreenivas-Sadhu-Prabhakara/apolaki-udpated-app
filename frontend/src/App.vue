@@ -83,6 +83,9 @@
                 <li v-if="canOpenDealerPortal">
                   <router-link to="/installer" class="dropdown-link" @click="moreMenuOpen = false">🔧 Installer Portal</router-link>
                 </li>
+                <li v-if="canOpenDealerPortal">
+                  <router-link to="/quotes" class="dropdown-link" @click="moreMenuOpen = false">🧾 Quotes</router-link>
+                </li>
                 <li v-if="canOpenOperationsPortal">
                   <router-link to="/operations" class="dropdown-link" @click="moreMenuOpen = false">🛠️ Operations</router-link>
                 </li>
@@ -135,6 +138,9 @@
             <div class="dropdown-divider"></div>
             <li v-if="canOpenDealerPortal">
               <router-link to="/installer" class="mobile-link" @click="mobileMenuOpen = false">🔧 Installer Portal</router-link>
+            </li>
+            <li v-if="canOpenDealerPortal">
+              <router-link to="/quotes" class="mobile-link" @click="mobileMenuOpen = false">🧾 Quotes</router-link>
             </li>
             <li v-if="canOpenOperationsPortal">
               <router-link to="/operations" class="mobile-link" @click="mobileMenuOpen = false">🛠️ Operations</router-link>

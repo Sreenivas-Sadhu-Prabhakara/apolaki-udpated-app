@@ -173,6 +173,20 @@ export const API_POLICY_MATRIX = [
   policy('GET', '/installer-feed/installers/:handle', { permission: 'installerFeed:read' }),
   policy('GET', '/installer-feed', { permission: 'installerFeed:read' }),
 
+  // Dealer quote generator (role 'dealer', plus admin/superadmin; 'installer' is
+  // an alias of 'dealer' via normalizeRole). Wired to the existing dealer
+  // permissions view:quotes / create:quote. The 'permission' here is an AUDIT
+  // LABEL only — real enforcement is allowedRoles + handler ownership checks
+  // (dealer_id === req.user.id OR admin). Order: the literal '/quotes/calculate'
+  // precedes the bare '/quotes' collection so the wildcard '/quotes/:id' does not
+  // shadow it; specific routes before the generic ':id'.
+  policy('POST', '/quotes/calculate', { permission: 'quote:calculate', allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'] }),
+  policy('POST', '/quotes', { permission: 'quote:create', allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'], auditOnAllow: true }),
+  policy('GET', '/quotes', { permission: 'quote:list', allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'] }),
+  policy('GET', '/quotes/:id', { permission: 'quote:read', allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'] }),
+  policy('PATCH', '/quotes/:id', { permission: 'quote:update', allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'], auditOnAllow: true }),
+  policy('DELETE', '/quotes/:id', { permission: 'quote:delete', allowedRoles: ['dealer', 'installer', 'admin', 'superadmin'], auditOnAllow: true }),
+
   policy('POST', '/marketplace/products/:id/reviews', { permission: 'marketplace:review', requiredConsents: ['profile_account'], auditOnAllow: true }),
   policy('GET', '/marketplace/wishlist', { permission: 'marketplace:wishlist', requiredConsents: ['profile_account'] }),
   policy('POST', '/marketplace/wishlist/:productId', { permission: 'marketplace:wishlist', requiredConsents: ['profile_account'], auditOnAllow: true }),

@@ -163,6 +163,15 @@ const routes = [
     }
   },
   {
+    path: '/quotes',
+    name: 'QuoteGenerator',
+    component: () => import('../views/QuoteGenerator.vue'),
+    meta: {
+      requiresAuth: true,
+      allowedRoles: ['dealer', 'installer', 'admin', 'superadmin']
+    }
+  },
+  {
     path: '/operations',
     name: 'OperationsCenter',
     component: () => import('../views/OperationsCenter.vue'),

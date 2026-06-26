@@ -63,3 +63,6 @@ cors_env.txt
 *.key.json
 apolaki-gcs-signer*.json
 **/service-account*.json
+
+# Local Netlify folder
+.netlify

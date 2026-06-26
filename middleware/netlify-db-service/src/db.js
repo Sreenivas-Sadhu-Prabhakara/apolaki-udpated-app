@@ -572,6 +572,49 @@ async function ensureInstallerFeedSchema() {
   }
 }
 
+let quotesSchemaEnsured = false;
+
+/**
+ * Idempotent schema for the dealer quote generator.
+ * A quote is owned by the dealer (dealer_id -> users.id) who generated it.
+ * Depends only on the users table, so it is safe to call alongside the others.
+ */
+async function ensureQuotesSchema() {
+  if (quotesSchemaEnsured) return;
+
+  const sqlInstance = getSqlInstance();
+  try {
+    await sqlInstance`
+      CREATE TABLE IF NOT EXISTS quotes (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        dealer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        quote_number VARCHAR(32) UNIQUE NOT NULL,
+        method VARCHAR(16) NOT NULL,
+        input JSONB NOT NULL,
+        customer_name VARCHAR(255),
+        customer_email VARCHAR(255),
+        customer_address VARCHAR(255),
+        notes TEXT,
+        system_kw DECIMAL(10,2) NOT NULL,
+        price_total_php DECIMAL(14,2) NOT NULL,
+        currency VARCHAR(8) NOT NULL DEFAULT 'PHP',
+        breakdown JSONB NOT NULL,
+        monthly_kwh DECIMAL(12,2),
+        status VARCHAR(16) NOT NULL DEFAULT 'draft',
+        valid_until TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_quotes_dealer_id ON quotes(dealer_id)`;
+    await sqlInstance`CREATE INDEX IF NOT EXISTS idx_quotes_quote_number ON quotes(quote_number)`;
+    quotesSchemaEnsured = true;
+  } catch (error) {
+    quotesSchemaEnsured = false;
+    throw error;
+  }
+}
+
 async function ensureSchema() {
   if (schemaEnsured) return;
   schemaEnsured = true;
@@ -594,6 +637,7 @@ async function ensureSchema() {
       await ensureMarketplaceSchema();
       await ensureAssessmentPhotosSchema();
       await ensureInstallerFeedSchema();
+      await ensureQuotesSchema();
       console.log('✅ Database schema already exists');
       return;
     }
@@ -864,6 +908,7 @@ async function ensureSchema() {
     await ensureMarketplaceSchema();
     await ensureAssessmentPhotosSchema();
     await ensureInstallerFeedSchema();
+    await ensureQuotesSchema();
 
     console.log('✅ Database schema created successfully');
   } catch (error) {
@@ -872,7 +917,7 @@ async function ensureSchema() {
   }
 }
 
-export { ensureAdminSchema, ensureAssessmentPhotosSchema, ensureConsentSchema, ensureInitialized, ensureInstallerFeedSchema, ensureMarketplaceSchema, ensureMessagingSchema, ensureSchema, initializeDatabase };
+export { ensureAdminSchema, ensureAssessmentPhotosSchema, ensureConsentSchema, ensureInitialized, ensureInstallerFeedSchema, ensureMarketplaceSchema, ensureMessagingSchema, ensureQuotesSchema, ensureSchema, initializeDatabase };
 
 /**
  * User operations
@@ -2007,6 +2052,118 @@ export const installerFeedPhotos = {
 };
 
 /**
+ * Dealer quote operations.
+ * Each quote is owned by the dealer (dealer_id) who generated it. JSONB columns
+ * (input, breakdown) are stored as serialized JSON; rows are returned as-is and
+ * the route layer reshapes them into the QUOTE envelope.
+ */
+export const quotes = {
+  /**
+   * Generate the next unique quote number: APQ-YYYYMM-XXXXXX (6 base36 upper).
+   * Retries on the (vanishingly rare) UNIQUE collision.
+   */
+  async nextQuoteNumber() {
+    const sqlInstance = getSqlInstance();
+    const now = new Date();
+    const yyyymm = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const rand = Math.random().toString(36).slice(2, 8).toUpperCase().padEnd(6, '0');
+      const candidate = `APQ-${yyyymm}-${rand}`;
+      const existing = await sqlInstance`SELECT 1 FROM quotes WHERE quote_number = ${candidate} LIMIT 1`;
+      if (!existing.length) return candidate;
+    }
+    // Last resort: append a high-entropy suffix (padded to 6 chars to satisfy the
+    // quoteNumber regex /^APQ-[0-9]{6}-[A-Z0-9]{6}$/ even on the rare short slice).
+    return `APQ-${yyyymm}-${Math.random().toString(36).slice(2, 8).toUpperCase().padEnd(6, '0')}`;
+  },
+
+  /**
+   * Persist a quote for a dealer.
+   */
+  async create({
+    dealerId,
+    quoteNumber,
+    method,
+    input,
+    customerName = null,
+    customerEmail = null,
+    customerAddress = null,
+    notes = null,
+    systemKw,
+    priceTotalPhp,
+    currency = 'PHP',
+    breakdown,
+    monthlyKwh = null,
+    status = 'draft',
+    validUntil = null
+  }) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      INSERT INTO quotes
+      (dealer_id, quote_number, method, input, customer_name, customer_email, customer_address,
+       notes, system_kw, price_total_php, currency, breakdown, monthly_kwh, status, valid_until)
+      VALUES (${dealerId}, ${quoteNumber}, ${method}, ${JSON.stringify(input)},
+              ${customerName}, ${customerEmail}, ${customerAddress}, ${notes},
+              ${systemKw}, ${priceTotalPhp}, ${currency}, ${JSON.stringify(breakdown)},
+              ${monthlyKwh}, ${status}, ${validUntil})
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  /**
+   * Get a single quote by id.
+   */
+  async getById(id) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`SELECT * FROM quotes WHERE id = ${id}`;
+    return result[0];
+  },
+
+  /**
+   * Get all quotes owned by a dealer (newest first).
+   */
+  async getByDealer(dealerId) {
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`
+      SELECT * FROM quotes WHERE dealer_id = ${dealerId} ORDER BY created_at DESC
+    `;
+  },
+
+  /**
+   * Get every quote (admin view, newest first).
+   */
+  async listAll() {
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`SELECT * FROM quotes ORDER BY created_at DESC`;
+  },
+
+  /**
+   * Update a quote's status and/or notes.
+   */
+  async update(id, { status, notes } = {}) {
+    const sqlInstance = getSqlInstance();
+    const result = await sqlInstance`
+      UPDATE quotes
+      SET status = COALESCE(${status || null}, status),
+          notes = COALESCE(${notes !== undefined ? notes : null}, notes),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${id}
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  /**
+   * Delete a quote.
+   */
+  async remove(id) {
+    const sqlInstance = getSqlInstance();
+    return await sqlInstance`DELETE FROM quotes WHERE id = ${id}`;
+  }
+};
+
+/**
  * Finance operations
  */
 export const finance = {
@@ -2758,5 +2915,6 @@ export default {
   pushSubscriptions,
   dealerProfiles,
   installerFeedPosts,
-  installerFeedPhotos
+  installerFeedPhotos,
+  quotes
 };

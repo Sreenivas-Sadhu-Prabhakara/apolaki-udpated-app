@@ -7,8 +7,9 @@ import axios from 'axios';
 import express from 'express';
 import { CONSENT_VERSION, normalizeRole } from './auth/access-control.js';
 import { authenticateToken } from './auth/middleware.js';
-import assessmentPhotosRouter from './routes/assessmentPhotos.js';
-import installerFeedRouter from './routes/installerFeed.js';
+import * as assessmentPhotosModule from './routes/assessmentPhotos.js';
+import * as installerFeedModule from './routes/installerFeed.js';
+import * as quotesModule from './routes/quotes.js';
 import {
     assessments,
     contracts,
@@ -27,6 +28,16 @@ import {
 } from './db.js';
 
 const router = express.Router();
+
+// CJS/ESM default-interop for bundled (Netlify) environments. The deployed
+// function is transpiled to CJS, where a bare default import of these ESM
+// sub-routers resolves to `undefined` and crashes router.use() at load
+// ("argument handler must be a function"), taking down all of /api. Match the
+// `module.default || module` guard already used in server.js and handler.js.
+const assessmentPhotosRouter = assessmentPhotosModule.default || assessmentPhotosModule;
+const installerFeedRouter = installerFeedModule.default || installerFeedModule;
+const quotesRouter = quotesModule.default || quotesModule;
+
 const ADMIN_SERVICE_URL = process.env.ADMIN_SERVICE_URL || 'http://localhost:3002';
 
 function safeUser(user) {
@@ -1286,6 +1297,21 @@ router.use('/assessments/:id/photos', assessmentPhotosRouter);
 //   GET    /api/installer-feed/posts/:postId/photos
 //   DELETE /api/installer-feed/posts/:postId/photos/:photoId
 router.use('/installer-feed', installerFeedRouter);
+
+// ============================================
+// DEALER QUOTE GENERATOR ROUTES
+// ============================================
+//
+// The quotes router declares full relative paths, so mounting at the router
+// root resolves them to exactly:
+//   POST   /api/quotes/calculate   (stateless; no DB write)
+//   POST   /api/quotes             (persists)
+//   GET    /api/quotes             (dealer's own; admin all)
+//   GET    /api/quotes/:id         (owner dealer or admin)
+//   PATCH  /api/quotes/:id         (owner/admin)
+//   DELETE /api/quotes/:id         (owner/admin)
+// Role gating (dealer/installer/admin/superadmin) is enforced in policy.js.
+router.use('/', quotesRouter);
 
 /**
  * GET /api/assessments

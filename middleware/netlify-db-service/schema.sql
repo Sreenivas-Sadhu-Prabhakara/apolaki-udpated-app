@@ -347,6 +347,37 @@ CREATE TABLE IF NOT EXISTS finance (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ============================================================================
+-- Dealer Quote Generator
+-- A quote is owned by the dealer (dealer_id -> users.id) who generated it.
+-- Pricing/sizing is computed server-side by src/services/quoteCalc.js; this
+-- table persists the resulting indicative quote. input + breakdown are JSONB.
+-- quote_number format: APQ-YYYYMM-XXXXXX (6 base36 upper), generated on save.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS quotes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  dealer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  quote_number VARCHAR(32) UNIQUE NOT NULL,
+  method VARCHAR(16) NOT NULL,
+  input JSONB NOT NULL,
+  customer_name VARCHAR(255),
+  customer_email VARCHAR(255),
+  customer_address VARCHAR(255),
+  notes TEXT,
+  system_kw DECIMAL(10, 2) NOT NULL,
+  price_total_php DECIMAL(14, 2) NOT NULL,
+  currency VARCHAR(8) NOT NULL DEFAULT 'PHP',
+  breakdown JSONB NOT NULL,
+  monthly_kwh DECIMAL(12, 2),
+  status VARCHAR(16) NOT NULL DEFAULT 'draft',
+  valid_until TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_quotes_dealer_id ON quotes(dealer_id);
+CREATE INDEX IF NOT EXISTS idx_quotes_quote_number ON quotes(quote_number);
+
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
