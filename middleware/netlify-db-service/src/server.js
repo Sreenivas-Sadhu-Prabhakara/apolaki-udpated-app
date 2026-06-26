@@ -58,6 +58,9 @@ import authRoutesModule from './routes/auth.js';
 import messageRoutesModule from './routes/messages.js';
 import personaRoutesModule from './routes/personas.js';
 import assistantRoutesModule from './routes/assistant.js';
+import assessmentPhotosRoutesModule from './routes/assessmentPhotos.js';
+import installerFeedRoutesModule from './routes/installerFeed.js';
+import quotesRoutesModule from './routes/quotes.js';
 
 // Handle CJS/ESM interop — esbuild bundling on Netlify can wrap default exports
 const passport = passportModule.default || passportModule;
@@ -71,6 +74,9 @@ const adminUserRoutes = adminUserRoutesModule.default || adminUserRoutesModule;
 const adminAuditLogRoutes = adminAuditLogRoutesModule.default || adminAuditLogRoutesModule;
 const adminBreakGlassRoutes = adminBreakGlassRoutesModule.default || adminBreakGlassRoutesModule;
 const adminMfaRoutes = adminMfaRoutesModule.default || adminMfaRoutesModule;
+const assessmentPhotosRoutes = assessmentPhotosRoutesModule.default || assessmentPhotosRoutesModule;
+const installerFeedRoutes = installerFeedRoutesModule.default || installerFeedRoutesModule;
+const quotesRoutes = quotesRoutesModule.default || quotesRoutesModule;
 
 const app = express();
 app.disable('x-powered-by');
@@ -133,6 +139,15 @@ app.use('/api/messages', messageRoutes);
 
 // Persona routes
 app.use('/api/personas', personaRoutes);
+
+// Feature sub-routers — mounted here in the entry module so esbuild bundles
+// them into the function. Mounting them inside routes.js made the Netlify
+// bundler emit unresolved requires whose default was undefined, crashing
+// router.use() at load and 500-ing all of /api. These sit after the policy
+// gate (enforceApiPolicy) so authorization still applies.
+app.use('/api/assessments/:id/photos', assessmentPhotosRoutes);
+app.use('/api/installer-feed', installerFeedRoutes);
+app.use('/api', quotesRoutes);
 
 // API routes
 app.use('/api', routes);
